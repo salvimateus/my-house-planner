@@ -1,6 +1,7 @@
 import { castDraft } from 'immer';
 import { nanoid } from 'nanoid';
 import { deleteFrontageItem } from '../editor/select/frontage.ts';
+import { withFixedSize } from '../editor/select/item.ts';
 import type { ToolId } from '../editor/tools/types.ts';
 import { deleteArea } from '../geometry/areaOps.ts';
 import type { Rect } from '../geometry/types.ts';
@@ -327,7 +328,12 @@ export const commands = {
     if (clipboard.length === 0 || !canEdit()) return false;
     pasteCount += 1;
     const offset = PASTE_OFFSET * pasteCount;
-    const copies = clipboard.map((i) => ({ ...i, id: newId(), x: i.x + offset, y: i.y + offset }));
+    const copies = clipboard.map((i) => ({
+      ...withFixedSize(i),
+      id: newId(),
+      x: i.x + offset,
+      y: i.y + offset,
+    }));
     docStore.getState().commit('Colar', (d) => {
       d.items.push(...copies);
     });
@@ -343,7 +349,12 @@ export const commands = {
     const ids = new Set(sel.ids);
     const copies = doc.items
       .filter((i) => ids.has(i.id))
-      .map((i) => ({ ...i, id: newId(), x: i.x + PASTE_OFFSET, y: i.y + PASTE_OFFSET }));
+      .map((i) => ({
+        ...withFixedSize(i),
+        id: newId(),
+        x: i.x + PASTE_OFFSET,
+        y: i.y + PASTE_OFFSET,
+      }));
     if (copies.length === 0) return false;
     docStore.getState().commit('Duplicar', (d) => {
       d.items.push(...copies);
