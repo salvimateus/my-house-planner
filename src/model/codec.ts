@@ -13,7 +13,12 @@ import {
 import { bboxOf, isRectilinear, signedArea, simplifyRing } from '../geometry/shape.ts';
 import type { Rect } from '../geometry/types.ts';
 import { DEFAULT_LOT } from './defaults.ts';
-import { DEFAULT_PROJECT_NAME } from './factories.ts';
+import {
+  DEFAULT_PROJECT_NAME,
+  WALKWAY_COLORS,
+  WALKWAY_MAX_POINTS,
+  WALKWAY_WIDTH,
+} from './factories.ts';
 import { newId } from './ids.ts';
 import { CodecError, migrate } from './migrate.ts';
 import { projectSchema } from './schema.ts';
@@ -36,6 +41,7 @@ import type {
   StreetTree,
   Structure,
   Vec,
+  Walkway,
   WallPresetIds,
 } from './types.ts';
 
@@ -110,7 +116,9 @@ type RepairKind =
   | 'item'
   | 'rulerDropped'
   | 'rulerClamped'
-  | 'frontage';
+  | 'frontage'
+  | 'walkway'
+  | 'walkwayDropped';
 
 const plural = (n: number, one: string, many: string): string =>
   n === 1 ? `1 ${one}` : `${n} ${many}`;
@@ -149,6 +157,10 @@ const REPAIR_TEXT: Record<RepairKind, (n: number) => string> = {
     `${plural(n, 'régua foi trazida', 'réguas foram trazidas')} para dentro do terreno.`,
   frontage: (n) =>
     `${plural(n, 'item da calçada foi ajustado', 'itens da calçada foram ajustados')}.`,
+  walkway: (n) =>
+    `${plural(n, 'caminho do jardim foi ajustado', 'caminhos do jardim foram ajustados')}.`,
+  walkwayDropped: (n) =>
+    `${plural(n, 'caminho com menos de dois pontos foi removido', 'caminhos com menos de dois pontos foram removidos')}.`,
 };
 
 class RepairLog {
@@ -174,6 +186,7 @@ const OPENING_SILL = { min: 0, max: 2_500 };
 const ITEM_SIZE = { min: 50, max: 20_000 };
 /** Items may stand partly outside the lot (the health panel reports it), but not far away. */
 const ITEM_MARGIN: Mm = 5_000;
+const MAX_WALKWAYS = 200;
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 const SAFE_ID = /^[A-Za-z0-9_-]{1,40}$/;
@@ -394,6 +407,16 @@ export function sanitize(input: SanitizeInput, opts: SanitizeOptions = {}): Pars
     if (clean) rulers.push({ ...clean, id: uniqueId(r.id) });
   }
 
+  const walkways: Walkway[] = [];
+  for (const w of input.walkways) {
+    if (walkways.length >= MAX_WALKWAYS) {
+      log.add('walkwayDropped');
+      continue;
+    }
+    const clean = cleanWalkway(w, lot, log);
+    if (clean) walkways.push({ ...clean, id: uniqueId(w.id) });
+  }
+
   let projectId = input.id;
   if (!SAFE_ID.test(projectId)) {
     log.add('id');
@@ -414,6 +437,7 @@ export function sanitize(input: SanitizeInput, opts: SanitizeOptions = {}): Pars
     openings,
     items,
     rulers,
+    walkways,
   };
   return { doc, repairs: log.lines() };
 }
@@ -588,4 +612,41 @@ function cleanRuler(r: Ruler, lot: LotSize, log: RepairLog): Ruler | null {
   const origin = { x: clamp(o.x, 0, lot.width), y: clamp(o.y, 0, lot.depth) };
   if (origin.x !== o.x || origin.y !== o.y) log.add('rulerClamped');
   return { id: r.id, mode: 'fit', origin, axis: r.axis };
+}
+
+/** Rounded points near the lot without repeats, at most 40, a width in range and a hex color. */
+function cleanWalkway(w: Walkway, lot: LotSize, log: RepairLog): Walkway | null {
+  let changed = false;
+  const flag = () => {
+    changed = true;
+  };
+  const points: Vec[] = [];
+  for (const raw of w.points) {
+    const p = {
+      x: fitMm(raw.x, -ITEM_MARGIN, lot.width + ITEM_MARGIN, flag),
+      y: fitMm(raw.y, -ITEM_MARGIN, lot.depth + ITEM_MARGIN, flag),
+    };
+    const last = points[points.length - 1];
+    if (last && last.x === p.x && last.y === p.y) {
+      flag();
+      continue;
+    }
+    points.push(p);
+  }
+  if (points.length > WALKWAY_MAX_POINTS) {
+    points.length = WALKWAY_MAX_POINTS;
+    flag();
+  }
+  if (points.length < 2) {
+    log.add('walkwayDropped');
+    return null;
+  }
+  let color = w.color;
+  if (!HEX_COLOR.test(color)) {
+    color = WALKWAY_COLORS[w.style][0]!;
+    log.add('color');
+  }
+  const width = fitMm(w.width, WALKWAY_WIDTH.min, WALKWAY_WIDTH.max, flag);
+  if (changed) log.add('walkway');
+  return { id: w.id, points, width, style: w.style, color };
 }

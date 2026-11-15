@@ -12,6 +12,7 @@ import { LotLayer } from './layers/LotLayer.tsx';
 import { OpeningsLayer } from './layers/OpeningsLayer.tsx';
 import { RulersLayer } from './layers/RulersLayer.tsx';
 import { SunLayer } from './layers/SunLayer.tsx';
+import { WalkwaysLayer } from './layers/WalkwaysLayer.tsx';
 import { WallsLayer } from './layers/WallsLayer.tsx';
 import { PatternDefs } from './PatternDefs.tsx';
 import { type RenderContext, RenderContextProvider } from './RenderContext.ts';
@@ -57,6 +58,7 @@ export function SceneLayers({ data, ctx }: { data: SceneData; ctx: RenderContext
         <LotLayer lot={doc.lot} boundaryGeom={scene.boundaryGeom} ctx={ctx} pxPerMm={pxPerMm} />
         <AreasLayer areas={doc.areas} derived={scene.areas} ctx={ctx} pxPerMm={pxPerMm} />
         <GridLayer lot={doc.lot} ctx={ctx} />
+        <WalkwaysLayer />
         <WallsLayer
           wallsGeom={scene.wallsGeom}
           wallRects={scene.wallRects}

@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { useLayoutEffect, useRef } from 'react';
 import { useStore } from 'zustand';
 import { regionPath } from '../../geometry/shape.ts';
+import { WalkwaySelection } from '../../render/layers/WalkwaysLayer.tsx';
 import { type RenderContext, RenderContextProvider } from '../../render/RenderContext.ts';
 import { camera } from '../../store/cameraStore.ts';
 import { useDoc } from '../../store/docStore.ts';
@@ -173,6 +174,10 @@ function SelectionOutline(): ReactElement | null {
     case 'street-tree':
     case 'sidewalk-ramp':
       return <FrontageOutline sel={sel} lot={doc.lot} />;
+    case 'walkway': {
+      const w = doc.walkways.find((x) => x.id === sel.id);
+      return w ? <WalkwaySelection key={w.id} walkway={w} /> : null;
+    }
     case 'ruler':
       return (
         <g className="overlay-sel overlay-sel-ruler">

@@ -62,7 +62,8 @@ const isBlank = (doc: ProjectDoc) =>
   doc.areas.length === 0 &&
   doc.items.length === 0 &&
   doc.openings.length === 0 &&
-  doc.rulers.length === 0;
+  doc.rulers.length === 0 &&
+  doc.walkways.length === 0;
 
 function isTypingTarget(t: EventTarget | null): boolean {
   if (!(t instanceof HTMLElement)) return false;

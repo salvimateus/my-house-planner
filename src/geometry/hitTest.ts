@@ -4,6 +4,7 @@ import { frontageHit } from './frontage.ts';
 import { labelTextRect } from './labels.ts';
 import { distToSegment, pointInRect, pointInRotatedRect, pointInShape } from './shape.ts';
 import type { HitTarget, Scene } from './types.ts';
+import { hitWalkway } from './walkway.ts';
 import { boundarySide } from './walls.ts';
 
 const usable = (layers: ViewPrefs['layers'], id: keyof ViewPrefs['layers']) =>
@@ -11,8 +12,8 @@ const usable = (layers: ViewPrefs['layers'], id: keyof ViewPrefs['layers']) =>
 
 /**
  * Geometric hit test, in priority order: openings > items (last first) > rulers > street trees and sidewalk
- * ramps > label of the selected area > walls > boundary walls > rooms and covered areas > outdoor areas (last
- * first) > lot. Hidden or locked layers are skipped. `tolMm` is the pointer tolerance in world mm.
+ * ramps > label of the selected area > walls > boundary walls > garden walkways (last first) > rooms and
+ * covered areas > outdoor areas (last first) > lot. Walkways belong to the items layer. Hidden or locked layers are skipped. `tolMm` is the pointer tolerance in world mm.
  */
 export function hitTest(
   doc: ProjectDoc,
@@ -90,6 +91,14 @@ export function hitTest(
     const seg = scene.boundary.find((s) => s.id === r.segId);
     const side = seg ? boundarySide(seg, doc.lot) : null;
     if (side) return { kind: 'boundary', side };
+  }
+
+  if (usable(layers, 'items')) {
+    for (let i = doc.walkways.length - 1; i >= 0; i--) {
+      const w = doc.walkways[i]!;
+      const hit = hitWalkway(w, p, tolMm / 2);
+      if (hit) return { kind: 'walkway', id: w.id, point: hit.point };
+    }
   }
 
   for (let i = doc.areas.length - 1; i >= 0; i--) {

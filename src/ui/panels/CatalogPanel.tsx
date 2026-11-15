@@ -1,4 +1,4 @@
-import { Search, X } from 'lucide-react';
+import { PenLine, Search, X } from 'lucide-react';
 import type { DragEvent as ReactDragEvent, ReactElement } from 'react';
 import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { ITEMS } from '../../catalog/registry.ts';
@@ -11,10 +11,14 @@ import {
 } from '../../editor/tools/item.ts';
 import type { LayerId, Mm, Vec } from '../../model/types.ts';
 import { formatCm } from '../../model/units.ts';
+import { WalkwayPreview } from '../../render/layers/WalkwaysLayer.tsx';
 import type { RenderContext } from '../../render/RenderContext.ts';
 import { SCENE_THEME } from '../../render/theme.ts';
 import { camera } from '../../store/cameraStore.ts';
+import { uiStore } from '../../store/uiStore.ts';
 import { Chip } from '../controls/Chip.tsx';
+import { toast } from '../controls/Toast.tsx';
+import { commands } from '../shortcuts.ts';
 import './CatalogPanel.css';
 
 export const CATEGORY_LABEL: Record<ItemCategory, string> = {
@@ -102,6 +106,46 @@ const SEARCH_TEXT = new Map(
 );
 
 const CATEGORIES = CATEGORY_ORDER.filter((c) => SORTED.some((d) => d.category === c));
+
+const WALKWAY_SEARCH = fold(
+  'Caminho no jardim trilha pisante pisantes passarela calçada pedrisco área externa jardim',
+);
+
+/** The walkway card switches to the drawing tool instead of placing an item. */
+function startWalkway(): void {
+  const ui = uiStore.getState();
+  const layer = ui.layers.items;
+  if (layer.locked) {
+    toast('A camada Objetos está travada. Destrave em Camadas para desenhar o caminho.');
+    return;
+  }
+  if (!layer.visible) ui.toggleLayer('items', 'visible');
+  if (ui.pendingItem) ui.setPending({ item: null });
+  commands.activateTool('walkway');
+}
+
+const WalkwayCard = memo(function WalkwayCard(): ReactElement {
+  return (
+    <li className="catalog-cell">
+      <button
+        type="button"
+        className="catalog-card catalog-card-walkway"
+        aria-label="Caminho no jardim: toque na planta para marcar os pontos"
+        title="Desenhe um caminho com curvas tocando na planta"
+        onClick={startWalkway}
+      >
+        <span className="catalog-thumb">
+          <WalkwayPreview className="catalog-preview" />
+        </span>
+        <span className="catalog-label">Caminho no jardim</span>
+        <span className="catalog-size catalog-draw" aria-hidden="true">
+          <PenLine />
+          Desenhar
+        </span>
+      </button>
+    </li>
+  );
+});
 
 // The panel remounts on every sheet switch; the last search and category stay for the session.
 let lastQuery = '';
@@ -235,6 +279,11 @@ export function CatalogPanel(): ReactElement {
     [words, category],
   );
 
+  const showWalkway =
+    words.length > 0
+      ? words.every((w) => WALKWAY_SEARCH.includes(w))
+      : category === null || category === 'outdoor';
+
   const onDragStart = useRef((def: ItemDef, e: ReactDragEvent<HTMLButtonElement>) => {
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('text/plain', def.label);
@@ -293,8 +342,9 @@ export function CatalogPanel(): ReactElement {
         ))}
       </fieldset>
 
-      {list.length > 0 ? (
+      {list.length > 0 || showWalkway ? (
         <ul className="catalog-grid" aria-label="Objetos">
+          {showWalkway ? <WalkwayCard /> : null}
           {list.map((def) => (
             <CatalogCard
               key={def.type}

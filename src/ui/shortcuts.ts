@@ -3,13 +3,19 @@ import { nanoid } from 'nanoid';
 import { copyArea, duplicateArea, hasAreaClipboard, pasteArea } from '../editor/select/area.ts';
 import { deleteFrontageItem } from '../editor/select/frontage.ts';
 import { withFixedSize } from '../editor/select/item.ts';
+import {
+  deleteWalkway,
+  duplicateWalkway,
+  findWalkway,
+  placeWalkwayCopy,
+} from '../editor/select/walkway.ts';
 import type { ToolId } from '../editor/tools/types.ts';
 import { deleteArea } from '../geometry/areaOps.ts';
 import type { Rect } from '../geometry/types.ts';
 import { feedback } from '../juice/feedback.ts';
 import { tuning } from '../juice/tuning.ts';
 import { SNAP_STEP } from '../model/defaults.ts';
-import type { Item, Lot, Mm, Vec } from '../model/types.ts';
+import type { Item, Lot, Mm, Vec, Walkway } from '../model/types.ts';
 import { camera } from '../store/cameraStore.ts';
 import { docStore } from '../store/docStore.ts';
 import { type BuildMode, uiStore } from '../store/uiStore.ts';
@@ -32,7 +38,8 @@ const PASTE_OFFSET: Mm = 500;
 let preferredSnapStep: Mm = SNAP_STEP;
 let clipboard: Item[] = [];
 let pasteCount = 0;
-let pasteKind: 'items' | 'area' = 'items';
+let walkwayClipboard: Walkway | null = null;
+let pasteKind: 'items' | 'area' | 'walkway' = 'items';
 let readOnlyWarned = 0;
 
 const newId = () => nanoid(10);
@@ -275,6 +282,11 @@ export const commands = {
       });
       feedback.remove(shapeCenter(area.shape[0]));
       toast([`“${area.name}” excluído.`, ...res.messages].join(' '), { undo: true });
+    } else if (sel.kind === 'walkway') {
+      const at = deleteWalkway(sel.id);
+      if (!at) return false;
+      feedback.remove(at);
+      toast('Caminho excluído.', { undo: true });
     } else if (sel.kind === 'street-tree' || sel.kind === 'sidewalk-ramp') {
       const at = deleteFrontageItem(sel);
       if (!at) return false;
@@ -323,6 +335,14 @@ export const commands = {
       if (copied) pasteKind = 'area';
       return copied;
     }
+    if (sel?.kind === 'walkway') {
+      walkwayClipboard = findWalkway(doc, sel.id);
+      if (!walkwayClipboard) return false;
+      pasteKind = 'walkway';
+      pasteCount = 0;
+      toast('Caminho copiado.');
+      return true;
+    }
     if (sel?.kind !== 'item' || !doc) return false;
     const ids = new Set(sel.ids);
     clipboard = doc.items.filter((i) => ids.has(i.id));
@@ -334,6 +354,15 @@ export const commands = {
 
   paste(): boolean {
     if (pasteKind === 'area' && hasAreaClipboard()) return canEdit() ? pasteArea() : false;
+    if (pasteKind === 'walkway' && walkwayClipboard) {
+      if (!canEdit()) return false;
+      pasteCount += 1;
+      if (!placeWalkwayCopy(walkwayClipboard, PASTE_OFFSET * pasteCount, 'Colar caminho')) {
+        return false;
+      }
+      feedback.place();
+      return true;
+    }
     if (clipboard.length === 0 || !canEdit()) return false;
     pasteCount += 1;
     const offset = PASTE_OFFSET * pasteCount;
@@ -355,6 +384,10 @@ export const commands = {
     const sel = uiStore.getState().selection;
     const doc = docStore.getState().doc;
     if (sel?.kind === 'area') return canEdit() ? duplicateArea(sel.id) : true;
+    if (sel?.kind === 'walkway') {
+      if (canEdit() && duplicateWalkway(sel.id)) feedback.place();
+      return true;
+    }
     if (sel?.kind !== 'item' || !doc || !canEdit()) return false;
     const ids = new Set(sel.ids);
     const copies = doc.items

@@ -5,6 +5,7 @@ import { paintTool } from './paint.ts';
 import { rulerTool } from './ruler.ts';
 import { selectTool } from './select.ts';
 import type { Tool, ToolId } from './types.ts';
+import { walkwayTool } from './walkway.ts';
 
 export const TOOLS: Record<ToolId, Tool> = {
   select: selectTool,
@@ -13,6 +14,7 @@ export const TOOLS: Record<ToolId, Tool> = {
   item: itemTool,
   ruler: rulerTool,
   paint: paintTool,
+  walkway: walkwayTool,
 };
 
 export const toolFor = (id: ToolId): Tool => TOOLS[id];

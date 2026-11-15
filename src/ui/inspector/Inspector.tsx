@@ -8,6 +8,7 @@ import { ItemInspector } from './ItemInspector.tsx';
 import { LotInspector } from './LotInspector.tsx';
 import { OpeningInspector } from './OpeningInspector.tsx';
 import { RulerInspector } from './RulerInspector.tsx';
+import { WalkwayInspector } from './WalkwayInspector.tsx';
 import { WallInspector } from './WallInspector.tsx';
 import './Inspector.css';
 
@@ -29,6 +30,8 @@ export function inspectorTitle(sel: Selection): string {
       return 'Árvore da calçada';
     case 'sidewalk-ramp':
       return 'Rampa para carro';
+    case 'walkway':
+      return 'Caminho no jardim';
     default:
       return 'Seleção';
   }
@@ -51,6 +54,8 @@ function SelectionBody({ sel }: { sel: Selection }): ReactElement {
     case 'street-tree':
     case 'sidewalk-ramp':
       return <FrontageInspector key={sel.id} />;
+    case 'walkway':
+      return <WalkwayInspector key={sel.id} />;
     default:
       return <EmptySelection />;
   }

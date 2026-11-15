@@ -519,6 +519,7 @@ const BUILDERS: Record<DemoTool, (st: Stage) => DemoPlan | null> = {
   item: itemDemo,
   ruler: rulerDemo,
   paint: paintDemo,
+  walkway: () => null,
 };
 
 /** The demo for a tool on the current plan and view, or null when the plan has no target yet. */

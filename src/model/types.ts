@@ -30,6 +30,7 @@ export interface ProjectDoc {
   openings: Opening[];
   items: Item[];
   rulers: Ruler[];
+  walkways: Walkway[];
 }
 
 export interface Lot {
@@ -164,6 +165,19 @@ export interface Item {
 export type Ruler =
   | { id: Id; mode: 'free'; a: Vec; b: Vec }
   | { id: Id; mode: 'fit'; origin: Vec; axis: Axis };
+
+export type WalkwayStyle = 'stepping' | 'solid' | 'gravel';
+
+/** Garden path: a smooth curve through `points` (centripetal Catmull-Rom), `width` across it. */
+export interface Walkway {
+  id: Id;
+  /** Control points, 2..40. */
+  points: Vec[];
+  width: Mm;
+  style: WalkwayStyle;
+  /** #rrggbb */
+  color: string;
+}
 
 export interface NewProjectInput {
   name: string;

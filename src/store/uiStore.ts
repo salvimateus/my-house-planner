@@ -26,6 +26,7 @@ export type Selection =
   | { kind: 'ruler'; ids: Id[] }
   | { kind: 'street-tree'; id: Id }
   | { kind: 'sidewalk-ramp'; id: Id }
+  | { kind: 'walkway'; id: Id }
   | null;
 export type SheetId =
   | 'build'

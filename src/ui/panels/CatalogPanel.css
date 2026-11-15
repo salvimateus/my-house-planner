@@ -177,6 +177,23 @@
     font-size: 0.75rem;
   }
 
+  .catalog-card-walkway .catalog-thumb {
+    background: color-mix(in oklch, oklch(0.75 0.12 135) 18%, var(--sunken));
+  }
+
+  .catalog-draw {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--brand-strong);
+    font-weight: 600;
+
+    & svg {
+      inline-size: 13px;
+      block-size: 13px;
+    }
+  }
+
   .catalog-empty {
     padding: 1.5rem 0.5rem;
     color: var(--ink-2);

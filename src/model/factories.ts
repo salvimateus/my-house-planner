@@ -18,6 +18,8 @@ import type {
   Ruler,
   Shape,
   Vec,
+  Walkway,
+  WalkwayStyle,
 } from './types.ts';
 import { FORMAT, SCHEMA_VERSION } from './types.ts';
 
@@ -62,6 +64,7 @@ export function createProject(input: NewProjectInput): ProjectDoc {
     openings: [],
     items: [],
     rulers: [],
+    walkways: [],
   };
 }
 
@@ -118,4 +121,29 @@ export function createFreeRuler(a: Vec, b: Vec): Ruler {
 
 export function createFitRuler(origin: Vec, axis: Axis): Ruler {
   return { id: newId(), mode: 'fit', origin: roundVec(origin), axis };
+}
+
+export const WALKWAY_WIDTH = { min: 500, max: 1200, default: 600 } as const;
+export const WALKWAY_MAX_POINTS = 40;
+
+/** Swatches per style: concrete tones for stones and cement, stone tones for gravel. The first is the default. */
+export const WALKWAY_COLORS: Record<WalkwayStyle, readonly string[]> = {
+  stepping: ['#C9C5BC', '#DDD8CE', '#B4ADA2', '#A39A8C', '#8D8C88'],
+  solid: ['#CFCAC0', '#E0DBD1', '#BAB4AA', '#B59F88', '#93918C'],
+  gravel: ['#D6CFC1', '#E4E0D8', '#C2B69F', '#B5ADA0', '#9A968F'],
+};
+
+export function createWalkway(
+  points: Vec[],
+  opts: Partial<Pick<Walkway, 'width' | 'style' | 'color'>> = {},
+): Walkway {
+  const style = opts.style ?? 'stepping';
+  const width = Math.round(opts.width ?? WALKWAY_WIDTH.default);
+  return {
+    id: newId(),
+    points: points.map(roundVec),
+    width: Math.min(WALKWAY_WIDTH.max, Math.max(WALKWAY_WIDTH.min, width)),
+    style,
+    color: opts.color ?? WALKWAY_COLORS[style][0]!,
+  };
 }

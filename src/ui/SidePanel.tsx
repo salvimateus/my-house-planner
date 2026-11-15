@@ -22,6 +22,7 @@ const TOOL_PANEL: Record<ToolId, PanelId | null> = {
   item: 'catalog',
   ruler: 'ruler',
   paint: 'paint',
+  walkway: null,
 };
 
 export const toolPanelId = (tool: ToolId): PanelId | null => TOOL_PANEL[tool];
@@ -79,6 +80,7 @@ const TOOL_TAB_LABEL: Record<ToolId, string> = {
   item: 'Objetos',
   ruler: 'Régua',
   paint: 'Pintar',
+  walkway: 'Caminho',
 };
 
 const scrollMemory = new Map<PanelId | null, number>();

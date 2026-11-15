@@ -10,6 +10,7 @@ import { itemHandler } from '../select/item.ts';
 import { lotHandler } from '../select/lot.ts';
 import { openingHandler } from '../select/opening.ts';
 import { rulerHandler } from '../select/ruler.ts';
+import { walkwayHandler } from '../select/walkway.ts';
 import { wallHandler } from '../select/wall.ts';
 import { setCanvasCursor, tolPxFor } from '../toolContext.ts';
 import type { PointerInput, SelectHandler, Tool, ToolContext } from './types.ts';
@@ -28,6 +29,7 @@ export const SELECT_HANDLERS: Record<HitKind, SelectHandler> = {
   area: areaHandler,
   'street-tree': streetTreeHandler,
   'sidewalk-ramp': sidewalkRampHandler,
+  walkway: walkwayHandler,
   lot: lotHandler,
 };
 
@@ -123,6 +125,9 @@ function selectHit(hit: HitTarget, ctx: ToolContext, additive: boolean): void {
     case 'sidewalk-ramp':
       ctx.ui.select({ kind: hit.kind, id: hit.id });
       return;
+    case 'walkway':
+      ctx.ui.select({ kind: 'walkway', id: hit.id });
+      return;
     default:
       if (additive) toggleInSelection(hit.kind, hit.id, ctx);
       else ctx.ui.select({ kind: hit.kind, ids: [hit.id] });
@@ -198,6 +203,11 @@ export const selectTool: Tool = {
   },
 
   onLongPress(p, ctx) {
+    const h = handleAt(p, ctx);
+    if (h?.handler.onHandleLongPress) {
+      h.handler.onHandleLongPress(h.handle.id, ctx);
+      return;
+    }
     const hit = hitAt(p, ctx);
     if (!hit) return;
     // Long press is the touch way to add to a multi selection.
@@ -279,6 +289,7 @@ export const selectTool: Tool = {
       (isMulti(hit.kind) ||
         hit.kind === 'street-tree' ||
         hit.kind === 'sidewalk-ramp' ||
+        hit.kind === 'walkway' ||
         hit.kind === 'wall' ||
         hit.kind === 'label' ||
         (hit.kind === 'area' && sel?.kind === 'area' && sel.id === hit.id));

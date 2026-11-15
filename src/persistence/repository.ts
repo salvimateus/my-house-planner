@@ -148,7 +148,12 @@ async function openFresh(doc: ProjectDoc): Promise<void> {
 }
 
 const isEmptyPlan = (doc: ProjectDoc): boolean =>
-  doc.areas.length + doc.items.length + doc.openings.length + doc.rulers.length === 0;
+  doc.areas.length +
+    doc.items.length +
+    doc.openings.length +
+    doc.rulers.length +
+    doc.walkways.length ===
+  0;
 
 async function readStored(id: Id): Promise<ProjectDoc> {
   const raw = await loadProjectRecord(id);

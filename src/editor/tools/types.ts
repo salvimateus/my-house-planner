@@ -4,7 +4,7 @@ import type { CameraApi } from '../../store/cameraStore.ts';
 import type { DocActions, DocState } from '../../store/docStore.ts';
 import type { UiActions, UiState } from '../../store/uiStore.ts';
 
-export type ToolId = 'select' | 'build' | 'opening' | 'item' | 'ruler' | 'paint';
+export type ToolId = 'select' | 'build' | 'opening' | 'item' | 'ruler' | 'paint' | 'walkway';
 
 export interface PointerInput {
   world: Vec;
@@ -77,6 +77,8 @@ export interface SelectHandler {
     phase: 'start' | 'move' | 'end',
   ): void;
   onHandleTap?(handleId: string, ctx: ToolContext): void;
+  /** Touch long press on a handle. */
+  onHandleLongPress?(handleId: string, ctx: ToolContext): void;
 }
 
 export type { Id };

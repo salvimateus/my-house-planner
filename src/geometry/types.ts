@@ -123,6 +123,7 @@ export type HitTarget =
   | { kind: 'area'; id: Id }
   | { kind: 'street-tree'; id: Id }
   | { kind: 'sidewalk-ramp'; id: Id }
+  | { kind: 'walkway'; id: Id; point: number | null }
   | { kind: 'lot' }
   | null;
 

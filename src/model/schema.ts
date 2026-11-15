@@ -105,6 +105,15 @@ const ruler = z.discriminatedUnion('mode', [
   z.object({ id, mode: z.literal('fit'), origin: vec, axis }),
 ]);
 
+// Structure only: sanitize() caps the points, clamps the width and repairs the color.
+const walkway = z.object({
+  id,
+  points: z.array(vec).max(1000),
+  width: num,
+  style: z.enum(['stepping', 'solid', 'gravel']).catch('stepping'),
+  color: z.string().max(16),
+});
+
 export const projectSchema = z.object({
   format: z.literal(FORMAT),
   schemaVersion: z.literal(SCHEMA_VERSION),
@@ -119,6 +128,7 @@ export const projectSchema = z.object({
   openings: z.array(opening).max(500),
   items: z.array(item).max(2000),
   rulers: z.array(ruler).max(500),
+  walkways: z.array(walkway).max(500).default([]),
 });
 
 export type ProjectSchemaOutput = z.infer<typeof projectSchema>;
