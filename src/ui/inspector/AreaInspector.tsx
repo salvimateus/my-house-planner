@@ -1,4 +1,4 @@
-import { BrickWall, Combine, Trash2, X } from 'lucide-react';
+import { BrickWall, Combine, Copy, Trash2, X } from 'lucide-react';
 import type { KeyboardEvent, ReactElement } from 'react';
 import { useEffect, useId, useState } from 'react';
 import { useStore } from 'zustand';
@@ -181,6 +181,9 @@ export function AreaInspector(): ReactElement | null {
             Juntar com…
           </Button>
         )}
+        <Button icon={<Copy />} block onClick={() => commands.duplicateSelection()}>
+          Duplicar
+        </Button>
         <Button icon={<Trash2 />} variant="danger" block onClick={() => commands.deleteSelection()}>
           Excluir
         </Button>

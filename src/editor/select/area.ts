@@ -4,6 +4,7 @@ import { GENERIC_PRESET_ID, presetFor } from '../../catalog/roomPresets.ts';
 import {
   areasTouch,
   type EdgeRef,
+  freeSpotFor,
   insertArea,
   mergeAreas,
   moveEdge,
@@ -12,9 +13,12 @@ import {
 } from '../../geometry/areaOps.ts';
 import { bboxOf, edges } from '../../geometry/shape.ts';
 import { alignmentLines, snapCoord } from '../../geometry/snap.ts';
-import type { Guide, OpResult, Rect, SnapContext } from '../../geometry/types.ts';
+import type { Guide, Handle, OpResult, Rect, SnapContext } from '../../geometry/types.ts';
+import { feedback } from '../../juice/feedback.ts';
 import { tuning } from '../../juice/tuning.ts';
 import { animateEl } from '../../juice/tween.ts';
+import { MIN_ROOM_SIDE } from '../../model/defaults.ts';
+import { newId } from '../../model/ids.ts';
 import type {
   Area,
   AreaKind,
@@ -25,15 +29,17 @@ import type {
   RoomPresetId,
   Vec,
 } from '../../model/types.ts';
-import { formatLength } from '../../model/units.ts';
+import { formatArea, formatLength, formatLengthShort } from '../../model/units.ts';
+import { camera } from '../../store/cameraStore.ts';
 import { docStore } from '../../store/docStore.ts';
-import { EMPTY_TRANSIENT } from '../../store/uiStore.ts';
+import { EMPTY_TRANSIENT, uiStore } from '../../store/uiStore.ts';
 import { toast } from '../../ui/controls/Toast.tsx';
 import { tolPxFor } from '../toolContext.ts';
 import {
   afterPaint,
   areaEl,
   closeRoomPicker,
+  dropArea,
   numberedName,
   overlapRects,
   rippleArea,
@@ -262,6 +268,294 @@ function mergeInto(keepId: Id, otherId: Id, ctx: ToolContext): void {
 }
 
 /* ------------------------------------------------------------------------------------------------
+ * Copy and paste of areas: shape, kind, preset, fill and name only
+ * ---------------------------------------------------------------------------------------------- */
+
+let areaClipboard: Area | null = null;
+
+export function copyArea(areaId: Id): boolean {
+  const area = docStore.getState().doc?.areas.find((a) => a.id === areaId);
+  if (!area) return false;
+  areaClipboard = { ...area, labelOffset: null };
+  toast('Cômodo copiado.');
+  return true;
+}
+
+export const hasAreaClipboard = (): boolean => areaClipboard !== null;
+
+/** Places a copy next to the source without carving anything, names it and selects it. */
+function placeCopy(source: Area, label: string): boolean {
+  const doc = editable();
+  if (!doc) return false;
+  const { vw, vh } = camera.get();
+  const shape = freeSpotFor(doc, source.shape, camera.screenToWorld({ x: vw / 2, y: vh / 2 }));
+  if (!shape) {
+    feedback.invalid();
+    toast('Não achei espaço livre para colar o cômodo.');
+    return true;
+  }
+  const copy: Area = {
+    id: newId(),
+    kind: source.kind,
+    preset: source.preset,
+    name: numberedName(source.name.replace(/ \d+$/, ''), doc.areas),
+    shape,
+    fill: { ...source.fill },
+    labelOffset: null,
+  };
+  docStore.getState().commit(label, (d) => {
+    d.areas.push(castDraft(copy));
+  });
+  if (docStore.getState().doc === doc) return true;
+  uiStore.getState().select({ kind: 'area', id: copy.id });
+  feedback.place();
+  afterPaint(() => dropArea(copy.id));
+  return true;
+}
+
+export function pasteArea(): boolean {
+  return areaClipboard ? placeCopy(areaClipboard, 'Colar cômodo') : false;
+}
+
+export function duplicateArea(areaId: Id): boolean {
+  const area = docStore.getState().doc?.areas.find((a) => a.id === areaId);
+  return area ? placeCopy(area, 'Duplicar cômodo') : false;
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Transform handles: corners and edge midpoints of a rectangle, one midpoint per outer edge else
+ * ---------------------------------------------------------------------------------------------- */
+
+type Side = 'n' | 'e' | 's' | 'w';
+const RECT_HANDLES: Record<string, Side[]> = {
+  nw: ['w', 'n'],
+  n: ['n'],
+  ne: ['e', 'n'],
+  e: ['e'],
+  se: ['e', 's'],
+  s: ['s'],
+  sw: ['w', 's'],
+  w: ['w'],
+};
+const CURSOR: Record<string, string> = {
+  nw: 'nwse-resize',
+  se: 'nwse-resize',
+  ne: 'nesw-resize',
+  sw: 'nesw-resize',
+  n: 'ns-resize',
+  s: 'ns-resize',
+  e: 'ew-resize',
+  w: 'ew-resize',
+};
+const EDGE_PREFIX = 'edge:';
+
+interface ResizeEdge {
+  axis: 'h' | 'v';
+  line: Mm;
+  /** Fixed point along the edge for a free shape; null for a rectangle (its current center). */
+  mid: Mm | null;
+  min: Mm;
+  max: Mm;
+}
+
+interface Resize {
+  id: Id;
+  edges: ResizeEdge[];
+  snap: SnapContext;
+  key: string;
+  valid: boolean;
+  changed: boolean;
+  message: string | null;
+}
+
+let resize: Resize | null = null;
+
+const coarse = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+
+function selectedArea(ctx: ToolContext): Area | null {
+  const sel = ctx.getUi().selection;
+  if (sel?.kind !== 'area') return null;
+  return ctx.getDoc()?.areas.find((a) => a.id === sel.id) ?? null;
+}
+
+function edgeAt(area: Area, axis: 'h' | 'v', line: Mm, mid: Mm | null): EdgeRef | null {
+  const b = bboxOf(area.shape);
+  const along = mid ?? (axis === 'h' ? (b.x0 + b.x1) / 2 : (b.y0 + b.y1) / 2);
+  for (let ring = 0; ring < area.shape.length; ring++) {
+    const list = edges(area.shape[ring]!);
+    for (let index = 0; index < list.length; index++) {
+      const [p, q] = list[index]!;
+      if (axis === 'h' && p.y === q.y && p.y === line) {
+        if (along > Math.min(p.x, q.x) && along < Math.max(p.x, q.x)) return { ring, index };
+      } else if (axis === 'v' && p.x === q.x && p.x === line) {
+        if (along > Math.min(p.y, q.y) && along < Math.max(p.y, q.y)) return { ring, index };
+      }
+    }
+  }
+  return null;
+}
+
+function rectEdge(side: Side, r: Rect, lot: ProjectDoc['lot']): ResizeEdge {
+  switch (side) {
+    case 'n':
+      return { axis: 'h', line: r.y0, mid: null, min: 0, max: r.y1 - MIN_ROOM_SIDE };
+    case 's':
+      return { axis: 'h', line: r.y1, mid: null, min: r.y0 + MIN_ROOM_SIDE, max: lot.depth };
+    case 'w':
+      return { axis: 'v', line: r.x0, mid: null, min: 0, max: r.x1 - MIN_ROOM_SIDE };
+    case 'e':
+      return { axis: 'v', line: r.x1, mid: null, min: r.x0 + MIN_ROOM_SIDE, max: lot.width };
+  }
+}
+
+function resizeEdges(area: Area, handleId: string, lot: ProjectDoc['lot']): ResizeEdge[] {
+  const r = rectOf(area);
+  if (r) return (RECT_HANDLES[handleId] ?? []).map((side) => rectEdge(side, r, lot));
+  if (!handleId.startsWith(EDGE_PREFIX)) return [];
+  const pair = edges(area.shape[0] ?? [])[Number(handleId.slice(EDGE_PREFIX.length))];
+  if (!pair) return [];
+  const [p, q] = pair;
+  return p.y === q.y
+    ? [{ axis: 'h', line: p.y, mid: (p.x + q.x) / 2, min: 0, max: lot.depth }]
+    : [{ axis: 'v', line: p.x, mid: (p.y + q.y) / 2, min: 0, max: lot.width }];
+}
+
+function areaHandles(ctx: ToolContext): Handle[] {
+  const area = selectedArea(ctx);
+  if (!area || ctx.doc.readOnly || drag) return [];
+  const size = coarse() ? tuning.touch.handlePx : tuning.touch.mouseHandlePx;
+  const at = (x: Mm, y: Mm) => ctx.camera.worldToScreen({ x, y });
+  const r = rectOf(area);
+  const out: Handle[] = [];
+  if (r) {
+    const zoom = ctx.camera.get().zoom;
+    const sw = (r.x1 - r.x0) * zoom;
+    const sh = (r.y1 - r.y0) * zoom;
+    const mx = (r.x0 + r.x1) / 2;
+    const my = (r.y0 + r.y1) / 2;
+    const pos: Record<string, Vec> = {
+      nw: { x: r.x0, y: r.y0 },
+      n: { x: mx, y: r.y0 },
+      ne: { x: r.x1, y: r.y0 },
+      e: { x: r.x1, y: my },
+      se: { x: r.x1, y: r.y1 },
+      s: { x: mx, y: r.y1 },
+      sw: { x: r.x0, y: r.y1 },
+      w: { x: r.x0, y: my },
+    };
+    // Edge handles would crowd the corners on a small room; the corners stay.
+    const showNS = sw >= size * 3.5;
+    const showEW = sh >= size * 3.5;
+    for (const id of Object.keys(RECT_HANDLES)) {
+      if ((id === 'n' || id === 's') && !showNS) continue;
+      if ((id === 'e' || id === 'w') && !showEW) continue;
+      const s = at(pos[id]!.x, pos[id]!.y);
+      out.push({
+        id,
+        x: s.x,
+        y: s.y,
+        shape: id.length === 2 ? 'square' : 'circle',
+        cursor: CURSOR[id],
+      });
+    }
+    return out;
+  }
+  edges(area.shape[0] ?? []).forEach(([p, q], index) => {
+    const a = at(p.x, p.y);
+    const b = at(q.x, q.y);
+    if (Math.hypot(b.x - a.x, b.y - a.y) < size * 2) return;
+    out.push({
+      id: `${EDGE_PREFIX}${index}`,
+      x: (a.x + b.x) / 2,
+      y: (a.y + b.y) / 2,
+      shape: 'circle',
+      cursor: p.y === q.y ? 'ns-resize' : 'ew-resize',
+    });
+  });
+  return out;
+}
+
+function sizeReadout(area: Area, ctx: ToolContext): string {
+  const b = bboxOf(area.shape);
+  const size = `${formatLengthShort(b.x1 - b.x0)} × ${formatLengthShort(b.y1 - b.y0)} m`;
+  const net = ctx.getScene().areas.get(area.id)?.netArea;
+  if (net === undefined) return size;
+  return `${size} · ${formatArea(net)}${area.kind === 'outdoor' ? '' : ' úteis'}`;
+}
+
+function resizeMove(r: Resize, p: PointerInput, start: PointerInput, ctx: ToolContext): void {
+  const base = docStore.getState().gesture?.base;
+  if (!base) return;
+  const targets = r.edges.map((e) => {
+    const raw = e.axis === 'h' ? p.world.y - start.world.y : p.world.x - start.world.x;
+    const s = snapCoord(e.line + raw, e.axis === 'h' ? 'y' : 'x', r.snap);
+    return { e, v: Math.min(e.max, Math.max(e.min, s.v)), guide: s.guide };
+  });
+  const guides = targets.map((t) => t.guide).filter((g): g is Guide => g !== null);
+  const readout = { x: p.screen.x, y: p.screen.y };
+  const key = targets.map((t) => t.v).join(',');
+  if (key !== r.key) {
+    r.key = key;
+    let cur: ProjectDoc = base;
+    let message: string | null = null;
+    for (const { e, v } of targets) {
+      const delta = v - e.line;
+      if (delta === 0) continue;
+      const area = cur.areas.find((a) => a.id === r.id);
+      const ref = area ? edgeAt(area, e.axis, e.line, e.mid) : null;
+      const res = ref ? moveEdge(cur, r.id, ref, delta) : null;
+      if (!res?.valid) {
+        message = res?.messages[0] ?? 'Não dá para mudar o tamanho assim.';
+        break;
+      }
+      cur = { ...cur, ...res.patch };
+    }
+    r.valid = message === null;
+    r.message = message;
+    if (r.valid) {
+      r.changed = cur !== base;
+      const next = cur;
+      ctx.doc.updateGesture((draft) => {
+        Object.assign(
+          draft,
+          castDraft({
+            areas: next.areas,
+            openings: next.openings,
+            openBoundaries: next.openBoundaries,
+          }),
+        );
+      });
+      ctx.feedback.tick();
+    }
+  }
+  const area = ctx.getDoc()?.areas.find((a) => a.id === r.id);
+  if (!area) return;
+  if (r.valid) {
+    ctx.ui.setTransient({
+      guides,
+      ghost: null,
+      invalid: false,
+      readout: { ...readout, text: sizeReadout(area, ctx) },
+    });
+    return;
+  }
+  const box = bboxOf(base.areas.find((a) => a.id === r.id)?.shape ?? area.shape);
+  for (const { e, v } of targets) {
+    if (e.axis === 'h') {
+      if (e.line === box.y0) box.y0 = Math.min(v, box.y1 - 1);
+      else box.y1 = Math.max(v, box.y0 + 1);
+    } else if (e.line === box.x0) box.x0 = Math.min(v, box.x1 - 1);
+    else box.x1 = Math.max(v, box.x0 + 1);
+  }
+  ctx.ui.setTransient({
+    guides,
+    ghost: { kind: 'area', rect: box, valid: false, carve: [] },
+    invalid: true,
+    readout: { ...readout, text: 'Não dá assim', sub: r.message ?? undefined, invalid: true },
+  });
+}
+
+/* ------------------------------------------------------------------------------------------------
  * Select handler
  * ---------------------------------------------------------------------------------------------- */
 
@@ -477,8 +771,49 @@ export const areaHandler: SelectHandler = {
     if (d.kind === 'move' && (d.dx || d.dy)) ctx.feedback.place();
   },
 
+  getHandles: areaHandles,
+
+  onHandleDrag(handleId, p, start, ctx, phase) {
+    if (phase === 'start') {
+      const doc = ctx.getDoc();
+      const area = selectedArea(ctx);
+      if (!doc || !area || ctx.doc.readOnly) return;
+      const edgesToMove = resizeEdges(area, handleId, doc.lot);
+      if (!edgesToMove.length) return;
+      resize = {
+        id: area.id,
+        edges: edgesToMove,
+        snap: moveSnapContext(doc, area.id, ctx),
+        key: '',
+        valid: true,
+        changed: false,
+        message: null,
+      };
+      ctx.doc.beginGesture(area.kind === 'room' ? 'Redimensionar cômodo' : 'Redimensionar área');
+      ctx.ui.setTransient({
+        readout: { x: p.screen.x, y: p.screen.y, text: sizeReadout(area, ctx) },
+      });
+      return;
+    }
+    const r = resize;
+    if (!r) return;
+    resizeMove(r, p, start, ctx);
+    if (phase !== 'end') return;
+    resize = null;
+    ctx.ui.setTransient(EMPTY_TRANSIENT);
+    if (!r.valid) {
+      ctx.doc.cancelGesture();
+      ctx.feedback.invalid();
+      if (r.message) toast(r.message, { tone: 'error' });
+      return;
+    }
+    ctx.doc.endGesture();
+    if (r.changed) ctx.feedback.place();
+  },
+
   onCancel(ctx) {
     drag = null;
+    resize = null;
     ctx.ui.setTransient(EMPTY_TRANSIENT);
   },
 };

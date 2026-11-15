@@ -1,5 +1,6 @@
 import { castDraft } from 'immer';
 import { nanoid } from 'nanoid';
+import { copyArea, duplicateArea, hasAreaClipboard, pasteArea } from '../editor/select/area.ts';
 import { deleteFrontageItem } from '../editor/select/frontage.ts';
 import { withFixedSize } from '../editor/select/item.ts';
 import type { ToolId } from '../editor/tools/types.ts';
@@ -31,6 +32,7 @@ const PASTE_OFFSET: Mm = 500;
 let preferredSnapStep: Mm = SNAP_STEP;
 let clipboard: Item[] = [];
 let pasteCount = 0;
+let pasteKind: 'items' | 'area' = 'items';
 let readOnlyWarned = 0;
 
 const newId = () => nanoid(10);
@@ -316,15 +318,22 @@ export const commands = {
   copySelection(): boolean {
     const sel = uiStore.getState().selection;
     const doc = docStore.getState().doc;
+    if (sel?.kind === 'area') {
+      const copied = copyArea(sel.id);
+      if (copied) pasteKind = 'area';
+      return copied;
+    }
     if (sel?.kind !== 'item' || !doc) return false;
     const ids = new Set(sel.ids);
     clipboard = doc.items.filter((i) => ids.has(i.id));
     pasteCount = 0;
+    if (clipboard.length > 0) pasteKind = 'items';
     if (clipboard.length > 0) toast(clipboard.length > 1 ? 'Objetos copiados.' : 'Objeto copiado.');
     return clipboard.length > 0;
   },
 
   paste(): boolean {
+    if (pasteKind === 'area' && hasAreaClipboard()) return canEdit() ? pasteArea() : false;
     if (clipboard.length === 0 || !canEdit()) return false;
     pasteCount += 1;
     const offset = PASTE_OFFSET * pasteCount;
@@ -345,6 +354,7 @@ export const commands = {
   duplicateSelection(): boolean {
     const sel = uiStore.getState().selection;
     const doc = docStore.getState().doc;
+    if (sel?.kind === 'area') return canEdit() ? duplicateArea(sel.id) : true;
     if (sel?.kind !== 'item' || !doc || !canEdit()) return false;
     const ids = new Set(sel.ids);
     const copies = doc.items

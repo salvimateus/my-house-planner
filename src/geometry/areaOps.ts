@@ -573,3 +573,44 @@ export function clampToLot(doc: ProjectDoc): OpResult {
   }
   return finalize(doc, next, { messages });
 }
+
+/**
+ * A free place for a copy of `shape`: next to it on the right, below, left or above (edge to edge),
+ * else centered on `fallbackCenter` on the 0,5 m grid. Free = inside the lot and over no room or
+ * covered area. Null when no spot is free.
+ */
+export function freeSpotFor(
+  doc: ProjectDoc,
+  shape: Shape,
+  fallbackCenter: { x: Mm; y: Mm } | null,
+): Shape | null {
+  const b = bboxOf(shape);
+  const w = b.x1 - b.x0;
+  const h = b.y1 - b.y0;
+  const offsets: [Mm, Mm][] = [
+    [w, 0],
+    [0, h],
+    [-w, 0],
+    [0, -h],
+  ];
+  if (fallbackCenter) {
+    const step = 500;
+    offsets.push([
+      Math.round((fallbackCenter.x - w / 2) / step) * step - b.x0,
+      Math.round((fallbackCenter.y - h / 2) / step) * step - b.y0,
+    ]);
+  }
+  for (const [dx, dy] of offsets) {
+    const box = { x0: b.x0 + dx, x1: b.x1 + dx, y0: b.y0 + dy, y1: b.y1 + dy };
+    if (box.x0 < 0 || box.y0 < 0 || box.x1 > doc.lot.width || box.y1 > doc.lot.depth) continue;
+    const moved = translateShape(shape, dx, dy);
+    const hit = doc.areas.some(
+      (r) =>
+        isBuilt(r) &&
+        rectsOverlap(box, bboxOf(r.shape)) &&
+        area(intersection([moved], [r.shape])) > 0,
+    );
+    if (!hit) return moved;
+  }
+  return null;
+}
