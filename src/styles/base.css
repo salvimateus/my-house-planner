@@ -1,0 +1,35 @@
+/* biome-ignore-all lint/complexity/noImportantStyles: the reduced motion override must win over every component transition. */
+@layer base {
+  :where(html, body, #root) {
+    height: 100%;
+  }
+
+  :where(body) {
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.45;
+    color: var(--ink);
+    background: var(--paper);
+    overscroll-behavior: none;
+  }
+
+  :where(input, output, data, time, .num) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :where(:focus-visible) {
+    outline: 2px solid var(--select);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
