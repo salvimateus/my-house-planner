@@ -1,22 +1,21 @@
 import type { ReactElement } from 'react';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   CERAMIC,
   clamp,
   corner,
-  detail,
   detailColor,
   hasDetails,
   hasShadow,
   lighten,
+  line,
   outline,
-  SHADOW_DX,
-  SHADOW_DY,
+  SHADOW,
   SHADOW_FILL,
-  segPath,
+  softDetail,
   strokeFor,
   WOOD,
-} from '../living/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 const BLANKET = { fill: '#D6E6F5', stroke: '#93AFCB' };
 
@@ -35,14 +34,14 @@ function CribSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   let slats = '';
   for (let i = 1; i < count; i++) {
     const y = y0 + rail + i * step;
-    slats += segPath(x0, y, x0 + rail, y) + segPath(-x0 - rail, y, -x0, y);
+    slats += line(x0, y, x0 + rail, y) + line(-x0 - rail, y, -x0, y);
   }
   const blanketTop = y0 + rail + mH * 0.42;
   const blanketH = y0 + rail + mH - blanketTop;
   return (
     <g>
       {hasShadow(ctx) && (
-        <rect x={x0 + SHADOW_DX} y={y0 + SHADOW_DY} width={w} height={d} rx={r} {...SHADOW_FILL} />
+        <rect x={x0 + SHADOW.dx} y={y0 + SHADOW.dy} width={w} height={d} rx={r} {...SHADOW_FILL} />
       )}
       <rect
         x={x0}
@@ -62,11 +61,11 @@ function CribSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
         rx={corner(mW, mH, 30)}
         fill={CERAMIC.fill}
         stroke={CERAMIC.stroke}
-        {...detail(ctx)}
+        {...softDetail(ctx)}
       />
       {hasDetails(ctx) && (
         <>
-          <path d={slats} fill="none" stroke={WOOD.stroke} {...detail(ctx)} />
+          <path d={slats} fill="none" stroke={WOOD.stroke} {...softDetail(ctx)} />
           <rect
             x={x0 + rail + mW * 0.06}
             y={blanketTop}
@@ -75,7 +74,7 @@ function CribSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             rx={corner(mW, blanketH, 40)}
             fill={color}
             stroke={stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           <rect
             x={x0 + rail + mW * 0.06}
@@ -85,7 +84,7 @@ function CribSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             rx={corner(mW, blanketH * 0.16, 30)}
             fill={lighten(color, 0.5)}
             stroke={detailColor(color, stroke)}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
         </>
       )}

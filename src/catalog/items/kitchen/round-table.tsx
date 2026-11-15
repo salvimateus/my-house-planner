@@ -1,16 +1,16 @@
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
-  detail,
+  detailPen,
   ellipse,
   FABRIC,
   fixed,
   hasDetails,
-  outline,
+  outlinePen,
   paint,
   shadow,
   WOOD,
   WOOD_COLORS,
-} from '../bathroom/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 import { addChair, type ChairPaths } from './chairs.ts';
 
 const SEAT_ARC = 700;
@@ -21,7 +21,7 @@ function RoundTable({ w, d, color, ctx }: SymbolProps) {
   const rx = w / 2;
   const ry = d / 2;
   const top = ellipse(0, 0, rx, ry);
-  if (!hasDetails(ctx)) return <path d={top} fill={p.fill} {...outline(ctx, p.stroke)} />;
+  if (!hasDetails(ctx)) return <path d={top} fill={p.fill} {...outlinePen(ctx, p.stroke)} />;
   const count = Math.max(2, Math.floor((Math.PI * Math.min(w, d)) / SEAT_ARC));
   const chairs: ChairPaths = { seats: '', backs: '' };
   for (let i = 0; i < count; i++) {
@@ -32,10 +32,10 @@ function RoundTable({ w, d, color, ctx }: SymbolProps) {
   return (
     <g>
       {sh && <path d={chairs.seats + top} {...sh} />}
-      <path d={chairs.seats} fill={c.fill} {...outline(ctx, c.stroke)} />
-      <path d={chairs.backs} fill={c.stroke} {...detail(ctx, c.stroke)} />
-      <path d={top} fill={p.fill} {...outline(ctx, p.stroke)} />
-      <path d={ellipse(0, 0, rx - 35, ry - 35)} fill="none" {...detail(ctx, p.detail)} />
+      <path d={chairs.seats} fill={c.fill} {...outlinePen(ctx, c.stroke)} />
+      <path d={chairs.backs} fill={c.stroke} {...detailPen(ctx, c.stroke)} />
+      <path d={top} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
+      <path d={ellipse(0, 0, rx - 35, ry - 35)} fill="none" {...detailPen(ctx, p.detail)} />
     </g>
   );
 }

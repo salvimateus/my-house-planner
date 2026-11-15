@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
+import { blob, edge, pen, SHADOW, shade } from '../../symbolKit.ts';
 import { defineItem, type SymbolProps } from '../../types.ts';
-import { blob, edge, pen, SHADOW, shade } from './kit.ts';
 
 const LOBES = 12;
 const SEED = 11;

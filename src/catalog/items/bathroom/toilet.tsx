@@ -1,19 +1,19 @@
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   CERAMIC,
   CERAMIC_COLORS,
   clamp,
   corner,
-  detail,
+  detailPen,
   ellipse,
   hasDetails,
-  ink,
-  outline,
+  mono,
+  outlinePen,
   paint,
   rrect,
   shadow,
   WATER,
-} from './symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 function Toilet({ w, d, color, ctx }: SymbolProps) {
   const p = paint(ctx, color, CERAMIC);
@@ -28,26 +28,27 @@ function Toilet({ w, d, color, ctx }: SymbolProps) {
   const tank = rrect(0, tankCy, tankW, tankD, corner(tankW, tankD));
   const bowl = ellipse(0, bowlCy, bowlRx, bowlRy);
   const sh = shadow(ctx);
-  if (!hasDetails(ctx)) return <path d={tank + bowl} fill={p.fill} {...outline(ctx, p.stroke)} />;
+  if (!hasDetails(ctx))
+    return <path d={tank + bowl} fill={p.fill} {...outlinePen(ctx, p.stroke)} />;
   return (
     <g>
       {sh && <path d={tank + bowl} {...sh} />}
-      <path d={bowl} fill={p.fill} {...outline(ctx, p.stroke)} />
+      <path d={bowl} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
       <path
         d={ellipse(0, bowlCy + bowlRy * 0.1, bowlRx * 0.74, bowlRy * 0.72)}
         fill={p.fill}
-        {...detail(ctx, p.detail)}
+        {...detailPen(ctx, p.detail)}
       />
       <path
         d={ellipse(0, bowlCy + bowlRy * 0.18, bowlRx * 0.46, bowlRy * 0.44)}
-        fill={ink(ctx, WATER)}
-        {...detail(ctx, p.detail)}
+        fill={mono(ctx, WATER)}
+        {...detailPen(ctx, p.detail)}
       />
-      <path d={tank} fill={p.fill} {...outline(ctx, p.stroke)} />
+      <path d={tank} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
       <path
         d={rrect(0, tankCy, tankW - 60, tankD - 50, corner(tankW, tankD, 25))}
         fill="none"
-        {...detail(ctx, p.detail)}
+        {...detailPen(ctx, p.detail)}
       />
       <path d={ellipse(0, tankCy, clamp(tankD * 0.18, 15, 30))} fill={p.detail} />
     </g>

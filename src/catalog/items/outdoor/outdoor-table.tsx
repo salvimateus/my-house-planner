@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
+import { clamp, corner, cornerRect, edge, n, oval, pen, SHADOW, shade } from '../../symbolKit.ts';
 import { defineItem, type SymbolProps } from '../../types.ts';
-import { clamp, corner, edge, n, oval, pen, rrect, SHADOW, shade } from './kit.ts';
 
 const SEAT = 600;
 
@@ -21,18 +21,22 @@ function OutdoorTableSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   let backs = '';
   for (let i = 0; i < across; i++) {
     const x = -tw / 2 + (tw * (i + 0.5)) / across - cs / 2;
-    seats += rrect(x, -d / 2, cs, cs, chairR) + rrect(x, d / 2 - cs, cs, cs, chairR);
-    backs += rrect(x, -d / 2, cs, backT, chairR) + rrect(x, d / 2 - backT, cs, backT, chairR);
+    seats += cornerRect(x, -d / 2, cs, cs, chairR) + cornerRect(x, d / 2 - cs, cs, cs, chairR);
+    backs +=
+      cornerRect(x, -d / 2, cs, backT, chairR) + cornerRect(x, d / 2 - backT, cs, backT, chairR);
   }
   for (let i = 0; i < along; i++) {
     const y = -td / 2 + (td * (i + 0.5)) / along - cs / 2;
-    seats += rrect(-w / 2, y, cs, cs, chairR) + rrect(w / 2 - cs, y, cs, cs, chairR);
-    backs += rrect(-w / 2, y, backT, cs, chairR) + rrect(w / 2 - backT, y, backT, cs, chairR);
+    seats += cornerRect(-w / 2, y, cs, cs, chairR) + cornerRect(w / 2 - cs, y, cs, cs, chairR);
+    backs +=
+      cornerRect(-w / 2, y, backT, cs, chairR) + cornerRect(w / 2 - backT, y, backT, cs, chairR);
   }
-  const top = round ? oval(0, 0, tw / 2, td / 2) : rrect(-tw / 2, -td / 2, tw, td, corner(tw, td));
+  const top = round
+    ? oval(0, 0, tw / 2, td / 2)
+    : cornerRect(-tw / 2, -td / 2, tw, td, corner(tw, td));
   const shadowTop = round
     ? oval(SHADOW.dx, SHADOW.dy, tw / 2, td / 2)
-    : rrect(-tw / 2 + SHADOW.dx, -td / 2 + SHADOW.dy, tw, td, corner(tw, td));
+    : cornerRect(-tw / 2 + SHADOW.dx, -td / 2 + SHADOW.dy, tw, td, corner(tw, td));
   const wood = p.c(color);
   const woodEdge = p.c(edge(color));
   const chair = p.c(shade(color, -0.12));
@@ -48,7 +52,7 @@ function OutdoorTableSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             d={
               round
                 ? oval(0, 0, tw * 0.42, td * 0.42)
-                : rrect(-tw * 0.43, -td * 0.43, tw * 0.86, td * 0.86, corner(tw, td))
+                : cornerRect(-tw * 0.43, -td * 0.43, tw * 0.86, td * 0.86, corner(tw, td))
             }
             fill="none"
             stroke={woodEdge}

@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
+import { n, pen } from '../../symbolKit.ts';
 import { defineItem, type SymbolProps } from '../../types.ts';
-import { n, pen } from '../outdoor/kit.ts';
 
 // Same fill as the walls, so the pillar reads as part of the structure, like a cut section.
 function PillarSymbol({ w, d, ctx }: SymbolProps): ReactElement {

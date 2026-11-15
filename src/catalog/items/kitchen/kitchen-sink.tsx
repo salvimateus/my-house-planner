@@ -1,22 +1,22 @@
 import { strokeProps } from '../../../render/RenderContext.ts';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   clamp,
   corner,
-  detail,
+  detailPen,
   ellipse,
   fixed,
   hasDetails,
   line,
   mirror,
-  outline,
+  outlinePen,
   paint,
   rrect,
   STEEL,
   STONE,
   STONE_COLORS,
   shadow,
-} from '../bathroom/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 function KitchenSink({ w, d, color, mirrored, ctx }: SymbolProps) {
   const p = paint(ctx, color, STONE);
@@ -25,7 +25,7 @@ function KitchenSink({ w, d, color, mirrored, ctx }: SymbolProps) {
   const hd = d / 2;
   const body = rrect(0, 0, w, d, corner(w, d));
   const sh = shadow(ctx);
-  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />;
+  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />;
 
   const count = w >= 1750 ? 2 : 1;
   const margin = clamp(w * 0.06, 50, 120);
@@ -57,23 +57,23 @@ function KitchenSink({ w, d, color, mirrored, ctx }: SymbolProps) {
   return (
     <g>
       {sh && <path d={body} {...sh} />}
-      <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />
+      <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
       <path
         d={line(-hw + 20, -hd + 25, hw - 20, -hd + 25)}
         fill="none"
-        {...detail(ctx, p.detail)}
+        {...detailPen(ctx, p.detail)}
       />
       <g transform={mirror(mirrored)}>
         {boardW > 160 && (
           <path
             d={rrect((boardX0 + boardX1) / 2, by, boardW, bh, 40)}
             fill={s.fill}
-            {...outline(ctx, s.stroke)}
+            {...outlinePen(ctx, s.stroke)}
           />
         )}
-        {ribs && <path d={ribs} fill="none" {...detail(ctx, s.detail)} />}
-        <path d={bowls} fill={s.fill} {...outline(ctx, s.stroke)} />
-        <path d={drains} fill={s.detail} {...detail(ctx, s.stroke)} />
+        {ribs && <path d={ribs} fill="none" {...detailPen(ctx, s.detail)} />}
+        <path d={bowls} fill={s.fill} {...outlinePen(ctx, s.stroke)} />
+        <path d={drains} fill={s.detail} {...detailPen(ctx, s.stroke)} />
         <path
           d={line(faucetX, faucetY, faucetX, faucetY + clamp(d * 0.3, 120, 200))}
           fill="none"
@@ -81,7 +81,7 @@ function KitchenSink({ w, d, color, mirrored, ctx }: SymbolProps) {
           strokeLinecap="round"
           {...strokeProps(ctx, 2.5, 0.35)}
         />
-        <path d={ellipse(faucetX, faucetY, 28)} fill={s.fill} {...outline(ctx, s.stroke)} />
+        <path d={ellipse(faucetX, faucetY, 28)} fill={s.fill} {...outlinePen(ctx, s.stroke)} />
       </g>
     </g>
   );

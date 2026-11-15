@@ -1,6 +1,6 @@
 import { createElement as h, type ReactElement } from 'react';
+import { cornerRect, edge, n, pen, SHADOW, shade } from '../../symbolKit.ts';
 import type { SymbolProps } from '../../types.ts';
-import { edge, n, pen, rrect, SHADOW, shade } from '../outdoor/kit.ts';
 
 /** Body proportions along the length (u: -0.5 rear .. +0.5 front) and width (v: -0.5 .. 0.5). */
 export interface CarProfile {
@@ -67,7 +67,7 @@ export function carSymbol(profile: CarProfile, { w, d, color, ctx }: SymbolProps
   let wheels = '';
   for (const a of profile.axles) {
     for (const s of [-1, 1]) {
-      wheels += rrect(
+      wheels += cornerRect(
         (a - wheelL / 2) * w,
         s < 0 ? -0.495 * d : (b - 0.1) * d,
         wheelL * w,
@@ -88,15 +88,15 @@ export function carSymbol(profile: CarProfile, { w, d, color, ctx }: SymbolProps
     `Q${pt(rw - 0.015, 0)} ${pt(rw, -0.34)}L${pt(profile.roofRear, -0.41)}L${pt(profile.roofFront, -0.41)}Z`;
 
   const roofLen = profile.roofFront - profile.roofRear;
-  const roof = rrect(profile.roofRear * w, -0.33 * d, roofLen * w, 0.66 * d, d * 0.07);
+  const roof = cornerRect(profile.roofRear * w, -0.33 * d, roofLen * w, 0.66 * d, d * 0.07);
   const pillar = (profile.roofFront + profile.roofRear) / 2;
 
   const hood = `M${pt(ws + 0.02, -0.2)}Q${pt(0.38, -0.24)} ${pt(0.46, -0.3)}M${pt(ws + 0.02, 0.2)}Q${pt(0.38, 0.24)} ${pt(0.46, 0.3)}`;
 
   // Lamps sit inside the rounded corners, so they never cross the outline.
   const lamps = (u0: number, u1: number): string =>
-    rrect(u0 * w, -0.35 * d, (u1 - u0) * w, 0.13 * d, d * 0.03) +
-    rrect(u0 * w, 0.22 * d, (u1 - u0) * w, 0.13 * d, d * 0.03);
+    cornerRect(u0 * w, -0.35 * d, (u1 - u0) * w, 0.13 * d, d * 0.03) +
+    cornerRect(u0 * w, 0.22 * d, (u1 - u0) * w, 0.13 * d, d * 0.03);
 
   return h(
     'g',

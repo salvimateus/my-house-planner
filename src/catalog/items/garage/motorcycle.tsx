@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
+import { cornerRect, edge, n, oval, pen, SHADOW, shade } from '../../symbolKit.ts';
 import { defineItem, type SymbolProps } from '../../types.ts';
-import { edge, n, oval, pen, rrect, SHADOW, shade } from '../outdoor/kit.ts';
 
 const TIRE = '#2B2E33';
 const DARK = '#2E3136';
@@ -11,7 +11,7 @@ function MotorcycleSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   // Front at +x; u runs along the length, v across, both from -0.5 to 0.5.
   const P = (u: number, v: number): string => `${n(u * w)} ${n(v * d)}`;
   const box = (u0: number, u1: number, v0: number, v1: number, r: number): string =>
-    rrect(u0 * w, v0 * d, (u1 - u0) * w, (v1 - v0) * d, r * d);
+    cornerRect(u0 * w, v0 * d, (u1 - u0) * w, (v1 - v0) * d, r * d);
   const body =
     `M${P(-0.38, 0)}C${P(-0.38, -0.1)} ${P(-0.2, -0.17)} ${P(0, -0.2)}` +
     `C${P(0.12, -0.22)} ${P(0.28, -0.16)} ${P(0.3, 0)}` +

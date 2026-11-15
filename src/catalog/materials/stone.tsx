@@ -1,16 +1,6 @@
+import { shiftHsl } from '../color.ts';
 import { defineMaterial } from '../types.ts';
-import {
-  blend,
-  dotsD,
-  highlight,
-  lineW,
-  rectD,
-  rng,
-  shade,
-  shiftHsl,
-  strokesD,
-  Tile,
-} from './lib/kit.tsx';
+import { blend, dotsD, highlight, lineW, rectD, rng, shade, strokesD, Tile } from './lib/kit.tsx';
 
 // São Tomé-style ashlar in two staggered rows of 40 cm; module 20 cm. No joint crosses
 // another, also across the wrap from the bottom row to the top one.

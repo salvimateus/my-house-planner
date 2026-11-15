@@ -1,5 +1,5 @@
+import { FABRIC } from '../../symbolKit.ts';
 import { defineItem } from '../../types.ts';
-import { FABRIC } from '../living/symbolKit.ts';
 import { BedSymbol } from './bed-double.tsx';
 
 export default defineItem({

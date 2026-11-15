@@ -1,21 +1,20 @@
 import type { ReactElement } from 'react';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   APPLIANCE,
   clamp,
   corner,
-  detail,
   detailColor,
   hasDetails,
   hasShadow,
   outline,
   SCREEN,
-  SHADOW_DX,
-  SHADOW_DY,
+  SHADOW,
   SHADOW_FILL,
+  softDetail,
   strokeFor,
   WOOD,
-} from './symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 /** Low rack with a flat TV standing near the back edge. */
 function TvRackSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
@@ -32,7 +31,7 @@ function TvRackSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   return (
     <g>
       {hasShadow(ctx) && (
-        <rect x={x0 + SHADOW_DX} y={y0 + SHADOW_DY} width={w} height={d} rx={r} {...SHADOW_FILL} />
+        <rect x={x0 + SHADOW.dx} y={y0 + SHADOW.dy} width={w} height={d} rx={r} {...SHADOW_FILL} />
       )}
       <rect
         x={x0}
@@ -54,7 +53,7 @@ function TvRackSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             rx={corner(w - 2 * inset, d - 2 * inset, 25)}
             fill="none"
             stroke={detailColor(color, stroke)}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           <rect
             x={-standW / 2}
@@ -64,7 +63,7 @@ function TvRackSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             rx={corner(standW, standD, 30)}
             fill={APPLIANCE.fill}
             stroke={APPLIANCE.stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           <rect
             x={-tvW / 2}

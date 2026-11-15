@@ -1,4 +1,4 @@
-import { rrect } from '../bathroom/symbolKit.ts';
+import { rrect } from '../../symbolKit.ts';
 
 export const CHAIR = 440;
 /** How far a tucked chair reaches past the table edge. */

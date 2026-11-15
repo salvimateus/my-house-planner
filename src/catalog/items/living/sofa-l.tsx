@@ -1,9 +1,7 @@
 import type { ReactElement } from 'react';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   clamp,
   corner,
-  detail,
   detailColor,
   FABRIC,
   hasDetails,
@@ -13,12 +11,13 @@ import {
   outline,
   type Point,
   roundedPolygon,
-  SHADOW_DX,
-  SHADOW_DY,
+  SHADOW,
   SHADOW_FILL,
+  softDetail,
   splitSpan,
   strokeFor,
-} from './symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 /** Corner sofa with the chaise on the right; `mirrored` moves the chaise to the left. */
 function SofaLSymbol({ w, d, color, mirrored, ctx }: SymbolProps): ReactElement {
@@ -60,7 +59,7 @@ function SofaLSymbol({ w, d, color, mirrored, ctx }: SymbolProps): ReactElement 
   return (
     <g>
       {hasShadow(ctx) && (
-        <path d={roundedPolygon(shape, r, SHADOW_DX, SHADOW_DY)} {...SHADOW_FILL} />
+        <path d={roundedPolygon(shape, r, SHADOW.dx, SHADOW.dy)} {...SHADOW_FILL} />
       )}
       <path d={roundedPolygon(shape, r)} fill={color} stroke={stroke} {...outline(ctx)} />
       {hasDetails(ctx) && (
@@ -71,7 +70,7 @@ function SofaLSymbol({ w, d, color, mirrored, ctx }: SymbolProps): ReactElement 
             height={back}
             fill={mix(color, stroke, 0.2)}
             stroke={stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           <rect
             {...span(x0, x0 + arm)}
@@ -80,7 +79,7 @@ function SofaLSymbol({ w, d, color, mirrored, ctx }: SymbolProps): ReactElement 
             rx={r}
             fill={armFill}
             stroke={stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           <rect
             {...span(x1 - arm, x1)}
@@ -89,7 +88,7 @@ function SofaLSymbol({ w, d, color, mirrored, ctx }: SymbolProps): ReactElement 
             rx={r}
             fill={armFill}
             stroke={stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           {splitSpan(x0 + arm + inset * 0.5, chaiseLeft - inset * 0.3, seats, inset * 0.6).map(
             ([a, b]) => (
@@ -101,7 +100,7 @@ function SofaLSymbol({ w, d, color, mirrored, ctx }: SymbolProps): ReactElement 
                 rx={corner(b - a, mainBottom - cushionTop, 40)}
                 fill={cushionFill}
                 stroke={lineColor}
-                {...detail(ctx)}
+                {...softDetail(ctx)}
               />
             ),
           )}
@@ -112,7 +111,7 @@ function SofaLSymbol({ w, d, color, mirrored, ctx }: SymbolProps): ReactElement 
             rx={corner(chaise - arm, y1 - cushionTop, 40)}
             fill={cushionFill}
             stroke={lineColor}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
         </>
       )}

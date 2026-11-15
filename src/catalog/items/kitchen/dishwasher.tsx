@@ -1,20 +1,20 @@
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   APPLIANCE,
   APPLIANCE_COLORS,
   clamp,
   corner,
-  detail,
+  detailPen,
   ellipse,
   hasDetails,
-  ink,
   line,
-  outline,
+  mono,
+  outlinePen,
   paint,
   rrect,
   shadow,
   WATER,
-} from '../bathroom/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 function Dishwasher({ w, d, color, ctx }: SymbolProps) {
   const p = paint(ctx, color, APPLIANCE);
@@ -22,7 +22,7 @@ function Dishwasher({ w, d, color, ctx }: SymbolProps) {
   const hd = d / 2;
   const body = rrect(0, 0, w, d, corner(w, d));
   const sh = shadow(ctx);
-  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />;
+  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />;
   const panel = clamp(d * 0.13, 55, 90);
   const rackTop = -hd + 50;
   const rackBottom = hd - panel - 40;
@@ -43,17 +43,17 @@ function Dishwasher({ w, d, color, ctx }: SymbolProps) {
   return (
     <g>
       {sh && <path d={body} {...sh} />}
-      <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />
+      <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
       <path
         d={rrect(0, (rackTop + rackBottom) / 2, w - 70, rackH + 10, 25)}
-        fill={ink(ctx, WATER)}
-        {...detail(ctx, p.detail)}
+        fill={mono(ctx, WATER)}
+        {...detailPen(ctx, p.detail)}
       />
-      <path d={tines} fill="none" {...detail(ctx, p.stroke)} />
+      <path d={tines} fill="none" {...detailPen(ctx, p.stroke)} />
       <path
         d={rrect(0, panelY, w - 20, panel - 14, 15)}
         fill={p.detail}
-        {...detail(ctx, p.stroke)}
+        {...detailPen(ctx, p.stroke)}
       />
       <path d={ellipse(hw - 70, panelY, 14) + ellipse(hw - 120, panelY, 14)} fill={p.fill} />
     </g>

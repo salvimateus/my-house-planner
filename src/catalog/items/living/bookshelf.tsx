@@ -1,21 +1,20 @@
 import type { ReactElement } from 'react';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   clamp,
   corner,
   darken,
-  detail,
   hasDetails,
   hasShadow,
+  line,
+  n,
   outline,
-  rectPath,
-  SHADOW_DX,
-  SHADOW_DY,
+  SHADOW,
   SHADOW_FILL,
-  segPath,
+  softDetail,
   strokeFor,
   WOOD,
-} from './symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 const BOOK_COLORS = ['#C97B63', '#7E9CC0', '#9DBB84'] as const;
 // Fixed book widths and depth ratios give a natural, stable look on every render.
@@ -23,6 +22,10 @@ const BOOK_WIDTHS = [32, 24, 40, 28, 22, 36, 30, 26, 44, 24];
 const BOOK_DEPTHS = [0.82, 0.7, 0.9, 0.76, 0.66, 0.86, 0.74, 0.8];
 
 /** Open shelf seen from above: side panels, module dividers and rows of books. */
+/** Sub-path of a plain rectangle, to merge many small rectangles into one node. */
+const rectPath = (x: number, y: number, w: number, h: number): string =>
+  `M${n(x)} ${n(y)}h${n(w)}v${n(h)}h${n(-w)}Z`;
+
 function BookshelfSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   const stroke = strokeFor(color, WOOD);
   const r = corner(w, d, 30);
@@ -34,14 +37,14 @@ function BookshelfSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   const innerTop = y0 + board;
   const innerDepth = d - 2 * board;
 
-  let dividers = segPath(x0 + board, innerTop, x0 + board, y0 + d - board);
-  dividers += segPath(-x0 - board, innerTop, -x0 - board, y0 + d - board);
+  let dividers = line(x0 + board, innerTop, x0 + board, y0 + d - board);
+  dividers += line(-x0 - board, innerTop, -x0 - board, y0 + d - board);
   const books = ['', '', ''];
   let k = 0;
   for (let m = 0; m < modules; m++) {
     const left = x0 + board + m * moduleW;
     const right = left + moduleW;
-    if (m > 0) dividers += segPath(left, innerTop, left, y0 + d - board);
+    if (m > 0) dividers += line(left, innerTop, left, y0 + d - board);
     let x = left + 8;
     while (true) {
       const bw = BOOK_WIDTHS[k % BOOK_WIDTHS.length]!;
@@ -58,7 +61,7 @@ function BookshelfSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   return (
     <g>
       {hasShadow(ctx) && (
-        <rect x={x0 + SHADOW_DX} y={y0 + SHADOW_DY} width={w} height={d} rx={r} {...SHADOW_FILL} />
+        <rect x={x0 + SHADOW.dx} y={y0 + SHADOW.dy} width={w} height={d} rx={r} {...SHADOW_FILL} />
       )}
       <rect
         x={x0}
@@ -74,10 +77,10 @@ function BookshelfSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
         <>
           {BOOK_COLORS.map((c, i) =>
             books[i] ? (
-              <path key={c} d={books[i]} fill={c} stroke={darken(c, 0.22)} {...detail(ctx)} />
+              <path key={c} d={books[i]} fill={c} stroke={darken(c, 0.22)} {...softDetail(ctx)} />
             ) : null,
           )}
-          <path d={dividers} fill="none" stroke={stroke} {...detail(ctx)} />
+          <path d={dividers} fill="none" stroke={stroke} {...softDetail(ctx)} />
         </>
       )}
     </g>

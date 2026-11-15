@@ -1,21 +1,20 @@
 import type { ReactElement } from 'react';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   clamp,
   corner,
   darken,
-  detail,
   detailColor,
   hasDetails,
   hasShadow,
+  line,
   outline,
-  SHADOW_DX,
-  SHADOW_DY,
+  SHADOW,
   SHADOW_FILL,
-  segPath,
+  softDetail,
   strokeFor,
   WOOD,
-} from '../living/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 /** Wardrobe in plan: doors on the front edge, the hanging rod and hangers inside. */
 function WardrobeSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
@@ -35,20 +34,20 @@ function WardrobeSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   const hangers = Math.max(1, Math.floor((right - left) / 110));
   const hangerStep = (right - left) / hangers;
 
-  let doorPath = segPath(x0 + board, doorLine, -x0 - board, doorLine);
+  let doorPath = line(x0 + board, doorLine, -x0 - board, doorLine);
   for (let i = 1; i < doors; i++) {
     const x = x0 + (w * i) / doors;
-    doorPath += segPath(x, doorLine, x, y1);
+    doorPath += line(x, doorLine, x, y1);
   }
   let hangerPath = '';
   for (let i = 0; i <= hangers; i++) {
     const x = left + i * hangerStep;
-    hangerPath += segPath(x, rodY - hangerHalf, x + 8, rodY + hangerHalf);
+    hangerPath += line(x, rodY - hangerHalf, x + 8, rodY + hangerHalf);
   }
   return (
     <g>
       {hasShadow(ctx) && (
-        <rect x={x0 + SHADOW_DX} y={y0 + SHADOW_DY} width={w} height={d} rx={r} {...SHADOW_FILL} />
+        <rect x={x0 + SHADOW.dx} y={y0 + SHADOW.dy} width={w} height={d} rx={r} {...SHADOW_FILL} />
       )}
       <rect
         x={x0}
@@ -67,16 +66,16 @@ function WardrobeSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             fill="none"
             stroke={detailColor(color, stroke)}
             strokeLinecap="round"
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           <path
-            d={segPath(left - 30, rodY, right + 30, rodY)}
+            d={line(left - 30, rodY, right + 30, rodY)}
             fill="none"
             stroke={darken(stroke, 0.1)}
             strokeLinecap="round"
             {...outline(ctx)}
           />
-          <path d={doorPath} fill="none" stroke={stroke} {...detail(ctx)} />
+          <path d={doorPath} fill="none" stroke={stroke} {...softDetail(ctx)} />
         </>
       )}
     </g>

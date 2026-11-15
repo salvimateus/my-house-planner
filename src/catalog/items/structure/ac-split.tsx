@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
+import { clamp, corner, edge, n, pen, SHADOW } from '../../symbolKit.ts';
 import { defineItem, type SymbolProps } from '../../types.ts';
-import { clamp, corner, edge, n, pen, SHADOW } from '../outdoor/kit.ts';
 
 function AcSplitSymbol({ w, d, color, mirrored, ctx }: SymbolProps): ReactElement {
   const p = pen(ctx);

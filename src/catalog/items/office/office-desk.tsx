@@ -1,22 +1,21 @@
 import type { ReactElement } from 'react';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   APPLIANCE,
   clamp,
   corner,
-  detail,
   hasDetails,
   hasShadow,
   outline,
   type Point,
   roundedPolygon,
   SCREEN,
-  SHADOW_DX,
-  SHADOW_DY,
+  SHADOW,
   SHADOW_FILL,
+  softDetail,
   strokeFor,
   WOOD,
-} from '../living/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 /** Desks this deep in both directions draw as an L. */
 const L_MIN = 1100;
@@ -68,7 +67,7 @@ function OfficeDeskSymbol({ w, d, color, mirrored, ctx }: SymbolProps): ReactEle
   return (
     <g>
       {hasShadow(ctx) && (
-        <path d={roundedPolygon(shape, r, SHADOW_DX, SHADOW_DY)} {...SHADOW_FILL} />
+        <path d={roundedPolygon(shape, r, SHADOW.dx, SHADOW.dy)} {...SHADOW_FILL} />
       )}
       <path d={roundedPolygon(shape, r)} fill={color} stroke={stroke} {...outline(ctx)} />
       {hasDetails(ctx) && (
@@ -81,7 +80,7 @@ function OfficeDeskSymbol({ w, d, color, mirrored, ctx }: SymbolProps): ReactEle
             rx={corner(standW, standD, 30)}
             fill={APPLIANCE.fill}
             stroke={APPLIANCE.stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           <rect
             x={cx - monW / 2}
@@ -101,7 +100,7 @@ function OfficeDeskSymbol({ w, d, color, mirrored, ctx }: SymbolProps): ReactEle
             rx={corner(keyW, keyD, 20)}
             fill={APPLIANCE.fill}
             stroke={APPLIANCE.stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           <ellipse
             cx={mouseX}
@@ -110,7 +109,7 @@ function OfficeDeskSymbol({ w, d, color, mirrored, ctx }: SymbolProps): ReactEle
             ry={keyD * 0.38}
             fill={APPLIANCE.fill}
             stroke={APPLIANCE.stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
         </>
       )}

@@ -1,17 +1,17 @@
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   corner,
-  detail,
+  detailPen,
   FABRIC,
   fixed,
   hasDetails,
-  outline,
+  outlinePen,
   paint,
   rrect,
   shadow,
   WOOD,
   WOOD_COLORS,
-} from '../bathroom/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 import { addChair, type ChairPaths } from './chairs.ts';
 
 const SEAT_PITCH = 550;
@@ -22,7 +22,7 @@ function DiningTable({ w, d, color, ctx }: SymbolProps) {
   const hw = w / 2;
   const hd = d / 2;
   const top = rrect(0, 0, w, d, corner(w, d, 40));
-  if (!hasDetails(ctx)) return <path d={top} fill={p.fill} {...outline(ctx, p.stroke)} />;
+  if (!hasDetails(ctx)) return <path d={top} fill={p.fill} {...outlinePen(ctx, p.stroke)} />;
   // Chairs sit outside the table box, tucked under its edge.
   const perSide = Math.max(1, Math.floor(w / SEAT_PITCH));
   const chairs: ChairPaths = { seats: '', backs: '' };
@@ -39,13 +39,13 @@ function DiningTable({ w, d, color, ctx }: SymbolProps) {
   return (
     <g>
       {sh && <path d={chairs.seats + top} {...sh} />}
-      <path d={chairs.seats} fill={c.fill} {...outline(ctx, c.stroke)} />
-      <path d={chairs.backs} fill={c.stroke} {...detail(ctx, c.stroke)} />
-      <path d={top} fill={p.fill} {...outline(ctx, p.stroke)} />
+      <path d={chairs.seats} fill={c.fill} {...outlinePen(ctx, c.stroke)} />
+      <path d={chairs.backs} fill={c.stroke} {...detailPen(ctx, c.stroke)} />
+      <path d={top} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
       <path
         d={rrect(0, 0, w - 70, d - 70, corner(w, d, 25))}
         fill="none"
-        {...detail(ctx, p.detail)}
+        {...detailPen(ctx, p.detail)}
       />
     </g>
   );

@@ -1,22 +1,22 @@
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   CERAMIC,
   CERAMIC_COLORS,
   clamp,
   corner,
-  detail,
+  detailPen,
   ellipse,
   fixed,
   hasDetails,
-  ink,
   mirror,
-  outline,
+  mono,
+  outlinePen,
   paint,
   rrect,
   STEEL,
   shadow,
   WATER,
-} from './symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 function Bathtub({ w, d, color, mirrored, ctx }: SymbolProps) {
   const p = paint(ctx, color, CERAMIC);
@@ -24,7 +24,7 @@ function Bathtub({ w, d, color, mirrored, ctx }: SymbolProps) {
   const hw = w / 2;
   const body = rrect(0, 0, w, d, corner(w, d, 40));
   const sh = shadow(ctx);
-  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />;
+  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />;
   const rim = clamp(d * 0.1, 50, 90);
   const deck = clamp(w * 0.08, 70, 160);
   const iw = w - rim - deck;
@@ -34,18 +34,18 @@ function Bathtub({ w, d, color, mirrored, ctx }: SymbolProps) {
   return (
     <g>
       {sh && <path d={body} {...sh} />}
-      <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />
+      <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
       <g transform={mirror(mirrored)}>
         <path
           d={rrect(icx, 0, iw, ih, Math.min(ih / 2, 260))}
-          fill={ink(ctx, WATER)}
-          {...detail(ctx, p.stroke)}
+          fill={mono(ctx, WATER)}
+          {...detailPen(ctx, p.stroke)}
         />
-        <path d={ellipse(drainX, 0, 22)} fill={s.fill} {...detail(ctx, s.stroke)} />
+        <path d={ellipse(drainX, 0, 22)} fill={s.fill} {...detailPen(ctx, s.stroke)} />
         <path
           d={rrect(-hw + deck / 2, 0, clamp(deck * 0.4, 30, 50), 110, 12)}
           fill={s.fill}
-          {...detail(ctx, s.stroke)}
+          {...detailPen(ctx, s.stroke)}
         />
         <path
           d={ellipse(-hw + deck / 2, -ih * 0.32, 16) + ellipse(-hw + deck / 2, ih * 0.32, 16)}

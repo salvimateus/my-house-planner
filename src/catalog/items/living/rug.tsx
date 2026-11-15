@@ -1,15 +1,15 @@
 import type { ReactElement } from 'react';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   clamp,
-  detail,
   detailColor,
   hasDetails,
+  line,
   mix,
   outline,
-  segPath,
+  softDetail,
   strokeFor,
-} from './symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 const RUG = { fill: '#DCCBB4', stroke: '#A8916F' };
 
@@ -29,18 +29,24 @@ function RugSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   let fringes = '';
   for (let i = 0; i < count; i++) {
     const t = -wid / 2 + 20 + i * step;
-    fringes += segPath(-len / 2, t, -len / 2 + fringe, t);
-    fringes += segPath(len / 2 - fringe, t, len / 2, t);
+    fringes += line(-len / 2, t, -len / 2 + fringe, t);
+    fringes += line(len / 2 - fringe, t, len / 2, t);
   }
   const mw = bodyLen / 2 - border * 2;
   const mh = wid / 2 - border * 2;
   const medallion = mw > 0 && mh > 0 ? `M${-mw} 0L0 ${-mh}L${mw} 0L0 ${mh}Z` : '';
-  const line = detailColor(color, stroke);
+  const lineColor = detailColor(color, stroke);
   const transform = vertical ? 'rotate(90)' : undefined;
   return (
     <g transform={transform}>
       {hasDetails(ctx) && (
-        <path d={fringes} fill="none" stroke={line} strokeLinecap="round" {...detail(ctx)} />
+        <path
+          d={fringes}
+          fill="none"
+          stroke={lineColor}
+          strokeLinecap="round"
+          {...softDetail(ctx)}
+        />
       )}
       <rect
         x={-bodyLen / 2}
@@ -60,11 +66,16 @@ function RugSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             width={bodyLen - 2 * border}
             height={wid - 2 * border}
             fill={mix(color, '#FFFFFF', 0.25)}
-            stroke={line}
-            {...detail(ctx)}
+            stroke={lineColor}
+            {...softDetail(ctx)}
           />
           {medallion && (
-            <path d={medallion} fill={mix(color, stroke, 0.2)} stroke={line} {...detail(ctx)} />
+            <path
+              d={medallion}
+              fill={mix(color, stroke, 0.2)}
+              stroke={lineColor}
+              {...softDetail(ctx)}
+            />
           )}
         </>
       )}

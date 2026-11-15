@@ -1,17 +1,17 @@
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   clamp,
   corner,
-  detail,
+  detailPen,
   FABRIC,
   fixed,
   hasDetails,
   line,
-  outline,
+  outlinePen,
   paint,
   rrect,
   STEEL,
-} from '../bathroom/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 function Clothesline({ w, d, color, ctx }: SymbolProps) {
   const p = paint(ctx, color, STEEL);
@@ -21,7 +21,7 @@ function Clothesline({ w, d, color, ctx }: SymbolProps) {
   const frame = rrect(0, 0, w, d, corner(w, d, 30));
   // The floor stays visible under a hanging clothesline, so the frame fill is faint.
   if (!hasDetails(ctx))
-    return <path d={frame} fill={p.fill} fillOpacity={0.35} {...outline(ctx, p.stroke)} />;
+    return <path d={frame} fill={p.fill} fillOpacity={0.35} {...outlinePen(ctx, p.stroke)} />;
   const end = clamp(w * 0.04, 40, 70);
   const lines = Math.max(2, Math.floor((d - 60) / 110));
   const pitch = (d - 60) / (lines - 1 || 1);
@@ -41,17 +41,17 @@ function Clothesline({ w, d, color, ctx }: SymbolProps) {
   }
   return (
     <g>
-      <path d={frame} fill={p.fill} fillOpacity={0.35} {...outline(ctx, p.stroke)} />
+      <path d={frame} fill={p.fill} fillOpacity={0.35} {...outlinePen(ctx, p.stroke)} />
       <path
         d={
           rrect(-hw + end / 2, 0, end - 14, d - 30, 10) +
           rrect(hw - end / 2, 0, end - 14, d - 30, 10)
         }
         fill={p.fill}
-        {...detail(ctx, p.stroke)}
+        {...detailPen(ctx, p.stroke)}
       />
-      <path d={wires} fill="none" {...detail(ctx, p.stroke)} />
-      {clothes && <path d={clothes} fill={f.fill} {...detail(ctx, f.stroke)} />}
+      <path d={wires} fill="none" {...detailPen(ctx, p.stroke)} />
+      {clothes && <path d={clothes} fill={f.fill} {...detailPen(ctx, f.stroke)} />}
     </g>
   );
 }

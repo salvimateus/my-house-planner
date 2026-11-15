@@ -1,10 +1,8 @@
 import type { ReactElement } from 'react';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   CERAMIC,
   clamp,
   corner,
-  detail,
   detailColor,
   FABRIC,
   hasDetails,
@@ -12,13 +10,14 @@ import {
   lighten,
   mix,
   outline,
-  SHADOW_DX,
-  SHADOW_DY,
+  SHADOW,
   SHADOW_FILL,
+  softDetail,
   splitSpan,
   strokeFor,
   WOOD,
-} from '../living/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 const PILLOW_STROKE = '#B3BBC6';
 
@@ -44,7 +43,7 @@ export function BedSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   return (
     <g>
       {hasShadow(ctx) && (
-        <rect x={x0 + SHADOW_DX} y={y0 + SHADOW_DY} width={w} height={d} rx={r} {...SHADOW_FILL} />
+        <rect x={x0 + SHADOW.dx} y={y0 + SHADOW.dy} width={w} height={d} rx={r} {...SHADOW_FILL} />
       )}
       <rect
         x={x0}
@@ -74,7 +73,7 @@ export function BedSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
         rx={corner(mW, mH, 40)}
         fill={CERAMIC.fill}
         stroke={CERAMIC.stroke}
-        {...detail(ctx)}
+        {...softDetail(ctx)}
       />
       {hasDetails(ctx) &&
         splitSpan(x0 + side + pillowGap, -x0 - side - pillowGap, pillows, pillowGap).map(
@@ -88,7 +87,7 @@ export function BedSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
               rx={Math.min(70, pillowH / 3)}
               fill={CERAMIC.fill}
               stroke={PILLOW_STROKE}
-              {...detail(ctx)}
+              {...softDetail(ctx)}
             />
           ),
         )}
@@ -112,14 +111,14 @@ export function BedSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             rx={corner(w, fold, 40)}
             fill={lighten(color, 0.5)}
             stroke={blanketLine}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           <path
             d={`M${x0 + side * 0.4 + w * 0.12} ${blanketTop + fold + blanketH * 0.12}Q0 ${blanketTop + fold + blanketH * 0.2} ${-x0 - side * 0.4 - w * 0.12} ${blanketTop + fold + blanketH * 0.1}`}
             fill="none"
             stroke={blanketLine}
             strokeLinecap="round"
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
         </>
       )}

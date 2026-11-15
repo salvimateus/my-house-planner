@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
+import { cornerRect, edge, oval, pen, SHADOW } from '../../symbolKit.ts';
 import { defineItem, type SymbolProps } from '../../types.ts';
-import { edge, oval, pen, rrect, SHADOW } from '../outdoor/kit.ts';
 
 const TIRE = '#2B2E33';
 const DARK = '#2E3136';
@@ -9,7 +9,7 @@ function BicycleSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   const p = pen(ctx);
   // Front at +x; u runs along the length, v across, both from -0.5 to 0.5.
   const box = (u0: number, u1: number, v0: number, v1: number, r: number): string =>
-    rrect(u0 * w, v0 * d, (u1 - u0) * w, (v1 - v0) * d, r * d);
+    cornerRect(u0 * w, v0 * d, (u1 - u0) * w, (v1 - v0) * d, r * d);
   const tires = box(-0.5, -0.1, -0.035, 0.035, 0.035) + box(0.1, 0.5, -0.035, 0.035, 0.035);
   const handlebar =
     box(0.22, 0.245, -0.42, 0.42, 0.012) +

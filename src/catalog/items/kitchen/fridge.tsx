@@ -1,20 +1,20 @@
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   APPLIANCE,
   APPLIANCE_COLORS,
   clamp,
   corner,
-  detail,
+  detailPen,
   FROST,
   hasDetails,
-  ink,
   line,
   mirror,
-  outline,
+  mono,
+  outlinePen,
   paint,
   rrect,
   shadow,
-} from '../bathroom/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 function snowflake(r: number): string {
   let s = '';
@@ -33,7 +33,7 @@ function Fridge({ w, d, color, mirrored, ctx }: SymbolProps) {
   const hd = d / 2;
   const body = rrect(0, 0, w, d, corner(w, d));
   const sh = shadow(ctx);
-  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />;
+  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />;
   const door = clamp(d * 0.09, 45, 80);
   const doorY = hd - door / 2;
   const twoDoors = w >= 850;
@@ -45,19 +45,19 @@ function Fridge({ w, d, color, mirrored, ctx }: SymbolProps) {
   return (
     <g>
       {sh && <path d={body} {...sh} />}
-      <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />
-      <path d={line(-hw + 40, coilY, hw - 40, coilY)} fill="none" {...detail(ctx, p.detail)} />
-      <path d={rrect(0, doorY, w - 16, door - 8, 20)} fill={p.fill} {...detail(ctx, p.stroke)} />
+      <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
+      <path d={line(-hw + 40, coilY, hw - 40, coilY)} fill="none" {...detailPen(ctx, p.detail)} />
+      <path d={rrect(0, doorY, w - 16, door - 8, 20)} fill={p.fill} {...detailPen(ctx, p.stroke)} />
       {twoDoors && (
-        <path d={line(0, hd - door + 4, 0, hd - 4)} fill="none" {...detail(ctx, p.stroke)} />
+        <path d={line(0, hd - door + 4, 0, hd - 4)} fill="none" {...detailPen(ctx, p.stroke)} />
       )}
       <g transform={mirror(mirrored && !twoDoors)}>
-        <path d={handles} fill={p.detail} {...detail(ctx, p.stroke)} />
+        <path d={handles} fill={p.detail} {...detailPen(ctx, p.stroke)} />
       </g>
       <path
         d={snowflake(clamp(Math.min(w, d) * 0.13, 50, 110))}
         fill="none"
-        {...detail(ctx, ink(ctx, FROST))}
+        {...detailPen(ctx, mono(ctx, FROST))}
       />
     </g>
   );

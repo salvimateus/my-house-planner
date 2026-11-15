@@ -1,17 +1,16 @@
 import type { ReactElement } from 'react';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   corner,
-  detail,
   hasDetails,
   hasShadow,
   outline,
-  SHADOW_DX,
-  SHADOW_DY,
+  SHADOW,
   SHADOW_FILL,
+  softDetail,
   strokeFor,
   WOOD,
-} from './symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 export const LAMP = { fill: '#FBF3DC', stroke: '#C9B27C', bulb: '#EFDDA6' };
 
@@ -25,7 +24,7 @@ export function SideTableSymbol({ w, d, color, ctx }: SymbolProps): ReactElement
   return (
     <g>
       {hasShadow(ctx) && (
-        <rect x={x0 + SHADOW_DX} y={y0 + SHADOW_DY} width={w} height={d} rx={r} {...SHADOW_FILL} />
+        <rect x={x0 + SHADOW.dx} y={y0 + SHADOW.dy} width={w} height={d} rx={r} {...SHADOW_FILL} />
       )}
       <rect
         x={x0}
@@ -39,8 +38,8 @@ export function SideTableSymbol({ w, d, color, ctx }: SymbolProps): ReactElement
       />
       {hasDetails(ctx) && (
         <>
-          <circle r={shade} fill={LAMP.fill} stroke={LAMP.stroke} {...detail(ctx)} />
-          <circle r={shade * 0.3} fill={LAMP.bulb} stroke={LAMP.stroke} {...detail(ctx)} />
+          <circle r={shade} fill={LAMP.fill} stroke={LAMP.stroke} {...softDetail(ctx)} />
+          <circle r={shade * 0.3} fill={LAMP.bulb} stroke={LAMP.stroke} {...softDetail(ctx)} />
         </>
       )}
     </g>

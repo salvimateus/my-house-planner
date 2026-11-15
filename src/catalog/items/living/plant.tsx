@@ -1,17 +1,16 @@
 import type { ReactElement } from 'react';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
-  detail,
   hasDetails,
   hasShadow,
   lighten,
   outline,
   PLANT,
-  SHADOW_DX,
-  SHADOW_DY,
+  SHADOW,
   SHADOW_FILL,
+  softDetail,
   strokeFor,
-} from './symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 const POT = { fill: '#D39A7A', stroke: '#A56A4C' };
 const OUTER_LEAVES = [0, 51, 103, 154, 206, 257, 309];
@@ -27,7 +26,7 @@ function PlantSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   const innerFill = lighten(color, 0.22);
   return (
     <g transform={rx === ry ? undefined : `scale(${rx / s} ${ry / s})`}>
-      {hasShadow(ctx) && <circle cx={SHADOW_DX} cy={SHADOW_DY} r={s * 0.96} {...SHADOW_FILL} />}
+      {hasShadow(ctx) && <circle cx={SHADOW.dx} cy={SHADOW.dy} r={s * 0.96} {...SHADOW_FILL} />}
       <circle r={s * 0.6} fill={POT.fill} stroke={POT.stroke} {...outline(ctx)} />
       {hasDetails(ctx) ? (
         <>
@@ -40,7 +39,7 @@ function PlantSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
               transform={`rotate(${a})`}
               fill={leafFill}
               stroke={leafStroke}
-              {...detail(ctx)}
+              {...softDetail(ctx)}
             />
           ))}
           {INNER_LEAVES.map((a) => (
@@ -52,7 +51,7 @@ function PlantSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
               transform={`rotate(${a})`}
               fill={innerFill}
               stroke={leafStroke}
-              {...detail(ctx)}
+              {...softDetail(ctx)}
             />
           ))}
         </>

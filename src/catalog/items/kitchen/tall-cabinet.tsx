@@ -1,17 +1,17 @@
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   clamp,
   corner,
-  detail,
+  detailPen,
   hasDetails,
   line,
-  outline,
+  outlinePen,
   paint,
   rrect,
   shadow,
   WOOD,
   WOOD_COLORS,
-} from '../bathroom/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 function TallCabinet({ w, d, color, ctx }: SymbolProps) {
   const p = paint(ctx, color, WOOD);
@@ -19,7 +19,7 @@ function TallCabinet({ w, d, color, ctx }: SymbolProps) {
   const hd = d / 2;
   const body = rrect(0, 0, w, d, corner(w, d, 30));
   const sh = shadow(ctx);
-  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />;
+  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />;
   const door = clamp(d * 0.05, 18, 30);
   const doors = Math.max(1, Math.round(w / 500));
   let splits = '';
@@ -34,9 +34,9 @@ function TallCabinet({ w, d, color, ctx }: SymbolProps) {
   return (
     <g>
       {sh && <path d={body} {...sh} />}
-      <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />
-      <path d={cross} fill="none" {...detail(ctx, p.detail)} />
-      <path d={line(-hw + 6, cy, hw - 6, cy) + splits} fill="none" {...detail(ctx, p.stroke)} />
+      <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
+      <path d={cross} fill="none" {...detailPen(ctx, p.detail)} />
+      <path d={line(-hw + 6, cy, hw - 6, cy) + splits} fill="none" {...detailPen(ctx, p.stroke)} />
     </g>
   );
 }

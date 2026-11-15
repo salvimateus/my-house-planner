@@ -1,16 +1,16 @@
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   corner,
-  detail,
+  detailPen,
   hasDetails,
   line,
-  outline,
+  outlinePen,
   paint,
   rrect,
   STONE,
   STONE_COLORS,
   shadow,
-} from '../bathroom/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 function Counter({ w, d, color, ctx }: SymbolProps) {
   const p = paint(ctx, color, STONE);
@@ -18,7 +18,7 @@ function Counter({ w, d, color, ctx }: SymbolProps) {
   const hd = d / 2;
   const body = rrect(0, 0, w, d, corner(w, d, 30));
   const sh = shadow(ctx);
-  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />;
+  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />;
   // Short ticks on the front edge mark the base cabinet modules below the top.
   const modules = Math.max(1, Math.round(w / 600));
   const step = w / modules;
@@ -30,13 +30,13 @@ function Counter({ w, d, color, ctx }: SymbolProps) {
   return (
     <g>
       {sh && <path d={body} {...sh} />}
-      <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />
+      <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
       <path
         d={line(-hw + 20, -hd + 25, hw - 20, -hd + 25) + line(-hw + 20, hd - 30, hw - 20, hd - 30)}
         fill="none"
-        {...detail(ctx, p.detail)}
+        {...detailPen(ctx, p.detail)}
       />
-      {ticks && <path d={ticks} fill="none" {...detail(ctx, p.detail)} />}
+      {ticks && <path d={ticks} fill="none" {...detailPen(ctx, p.detail)} />}
     </g>
   );
 }

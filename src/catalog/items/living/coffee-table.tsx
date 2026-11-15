@@ -1,20 +1,19 @@
 import type { ReactElement } from 'react';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   CERAMIC,
   clamp,
   corner,
-  detail,
   detailColor,
   hasDetails,
   hasShadow,
   outline,
-  SHADOW_DX,
-  SHADOW_DY,
+  SHADOW,
   SHADOW_FILL,
+  softDetail,
   strokeFor,
   WOOD,
-} from './symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 const BOOK = { fill: '#9DB4CC', stroke: '#6F87A0' };
 
@@ -32,7 +31,7 @@ function CoffeeTableSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   return (
     <g>
       {hasShadow(ctx) && (
-        <rect x={x0 + SHADOW_DX} y={y0 + SHADOW_DY} width={w} height={d} rx={r} {...SHADOW_FILL} />
+        <rect x={x0 + SHADOW.dx} y={y0 + SHADOW.dy} width={w} height={d} rx={r} {...SHADOW_FILL} />
       )}
       <rect
         x={x0}
@@ -54,7 +53,7 @@ function CoffeeTableSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             rx={corner(w - 2 * inset, d - 2 * inset, 30)}
             fill="none"
             stroke={detailColor(color, stroke)}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           <rect
             x={-w * 0.25 - bookW / 2}
@@ -65,7 +64,7 @@ function CoffeeTableSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             transform={`rotate(-8 ${-w * 0.25} 0)`}
             fill={BOOK.fill}
             stroke={BOOK.stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           <circle
             cx={w * 0.24}
@@ -73,7 +72,7 @@ function CoffeeTableSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             r={bowlR}
             fill={CERAMIC.fill}
             stroke={CERAMIC.stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           <circle
             cx={w * 0.24}
@@ -81,7 +80,7 @@ function CoffeeTableSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             r={bowlR * 0.6}
             fill="none"
             stroke={detailColor(CERAMIC.fill, CERAMIC.stroke)}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
         </>
       )}

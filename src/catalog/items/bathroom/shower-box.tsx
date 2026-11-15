@@ -1,21 +1,21 @@
 import { strokeProps } from '../../../render/RenderContext.ts';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   CERAMIC,
   CERAMIC_COLORS,
   clamp,
   corner,
-  detail,
+  detailPen,
   ellipse,
   hasDetails,
-  ink,
   line,
-  outline,
+  mono,
+  outlinePen,
   paint,
   rrect,
   STEEL,
   shadow,
-} from './symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 function ShowerBox({ w, d, color, ctx }: SymbolProps) {
   const p = paint(ctx, color, CERAMIC);
@@ -23,7 +23,7 @@ function ShowerBox({ w, d, color, ctx }: SymbolProps) {
   const hd = d / 2;
   const tray = rrect(0, 0, w, d, corner(w, d, 30));
   const sh = shadow(ctx);
-  if (!hasDetails(ctx)) return <path d={tray} fill={p.fill} {...outline(ctx, p.stroke)} />;
+  if (!hasDetails(ctx)) return <path d={tray} fill={p.fill} {...outlinePen(ctx, p.stroke)} />;
 
   const inset = clamp(Math.min(w, d) * 0.06, 30, 60);
   const ix = hw - inset;
@@ -41,22 +41,22 @@ function ShowerBox({ w, d, color, ctx }: SymbolProps) {
     line(-drainR * 0.6, 0, drainR * 0.6, 0) +
     line(-drainR * 0.5, drainR * 0.35, drainR * 0.5, drainR * 0.35);
   const headY = -hd + clamp(d * 0.16, 110, 190);
-  const glass = ink(ctx, ctx.theme.glass);
+  const glass = mono(ctx, ctx.theme.glass);
   const gy = hd - 12;
   const overlap = w * 0.1;
-  const steel = ink(ctx, STEEL.stroke);
+  const steel = mono(ctx, STEEL.stroke);
   return (
     <g>
       {sh && <path d={tray} {...sh} />}
-      <path d={tray} fill={p.fill} {...outline(ctx, p.stroke)} />
+      <path d={tray} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
       <path
         d={rrect(0, 0, w - inset * 2, d - inset * 2, 20)}
         fill="none"
-        {...detail(ctx, p.detail)}
+        {...detailPen(ctx, p.detail)}
       />
-      <path d={slopes} fill="none" {...detail(ctx, p.detail)} />
-      <path d={ellipse(0, 0, drainR)} fill={ink(ctx, STEEL.fill)} {...detail(ctx, steel)} />
-      <path d={slots} fill="none" {...detail(ctx, steel)} />
+      <path d={slopes} fill="none" {...detailPen(ctx, p.detail)} />
+      <path d={ellipse(0, 0, drainR)} fill={mono(ctx, STEEL.fill)} {...detailPen(ctx, steel)} />
+      <path d={slots} fill="none" {...detailPen(ctx, steel)} />
       <path
         d={line(0, -hd, 0, headY)}
         fill="none"
@@ -66,8 +66,8 @@ function ShowerBox({ w, d, color, ctx }: SymbolProps) {
       />
       <path
         d={ellipse(0, headY, clamp(w * 0.08, 45, 80))}
-        fill={ink(ctx, STEEL.fill)}
-        {...outline(ctx, steel)}
+        fill={mono(ctx, STEEL.fill)}
+        {...outlinePen(ctx, steel)}
       />
       <path
         d={line(-hw + 15, gy - 14, overlap, gy - 14) + line(-overlap, gy, hw - 15, gy)}

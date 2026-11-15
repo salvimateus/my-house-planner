@@ -1,23 +1,22 @@
 import type { ReactElement } from 'react';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   CERAMIC,
   clamp,
   corner,
-  detail,
   detailColor,
   hasDetails,
   hasShadow,
+  line,
   METAL,
   outline,
-  SHADOW_DX,
-  SHADOW_DY,
+  SHADOW,
   SHADOW_FILL,
-  segPath,
+  softDetail,
   splitSpan,
   strokeFor,
   WOOD,
-} from '../living/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 /** Chest of drawers: framed top, drawer columns with handles on the front edge, a small tray. */
 function DresserSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
@@ -33,15 +32,15 @@ function DresserSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   splitSpan(x0, -x0, columns, 0).forEach(([a, b], i) => {
     const mid = (a + b) / 2;
     const half = Math.min(70, (b - a) * 0.18);
-    handles += segPath(mid - half, handleY, mid + half, handleY);
-    if (i > 0) dividers += segPath(a, d / 2 - inset, a, d / 2);
+    handles += line(mid - half, handleY, mid + half, handleY);
+    if (i > 0) dividers += line(a, d / 2 - inset, a, d / 2);
   });
   const trayW = Math.min(w * 0.22, 260);
   const trayD = Math.min(d * 0.35, 180);
   return (
     <g>
       {hasShadow(ctx) && (
-        <rect x={x0 + SHADOW_DX} y={y0 + SHADOW_DY} width={w} height={d} rx={r} {...SHADOW_FILL} />
+        <rect x={x0 + SHADOW.dx} y={y0 + SHADOW.dy} width={w} height={d} rx={r} {...SHADOW_FILL} />
       )}
       <rect
         x={x0}
@@ -63,9 +62,9 @@ function DresserSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             rx={corner(w - 2 * inset, d - 2 * inset, 25)}
             fill="none"
             stroke={detailColor(color, stroke)}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
-          {dividers && <path d={dividers} fill="none" stroke={stroke} {...detail(ctx)} />}
+          {dividers && <path d={dividers} fill="none" stroke={stroke} {...softDetail(ctx)} />}
           <path
             d={handles}
             fill="none"
@@ -81,7 +80,7 @@ function DresserSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             rx={corner(trayW, trayD, 30)}
             fill={CERAMIC.fill}
             stroke={CERAMIC.stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
         </>
       )}

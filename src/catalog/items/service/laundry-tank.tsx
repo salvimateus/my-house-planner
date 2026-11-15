@@ -1,22 +1,22 @@
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   CERAMIC,
   CERAMIC_COLORS,
   clamp,
   corner,
-  detail,
+  detailPen,
   ellipse,
   fixed,
   hasDetails,
-  ink,
   line,
-  outline,
+  mono,
+  outlinePen,
   paint,
   rrect,
   STEEL,
   shadow,
   WATER,
-} from '../bathroom/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 function LaundryTank({ w, d, color, ctx }: SymbolProps) {
   const p = paint(ctx, color, CERAMIC);
@@ -25,7 +25,7 @@ function LaundryTank({ w, d, color, ctx }: SymbolProps) {
   const hd = d / 2;
   const body = rrect(0, 0, w, d, corner(w, d));
   const sh = shadow(ctx);
-  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />;
+  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />;
   const rim = clamp(w * 0.07, 35, 60);
   const basinTop = -hd + clamp(d * 0.12, 50, 80);
   const basinBottom = basinTop + (d - rim - (basinTop + hd)) * 0.58;
@@ -42,16 +42,20 @@ function LaundryTank({ w, d, color, ctx }: SymbolProps) {
   return (
     <g>
       {sh && <path d={body} {...sh} />}
-      <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />
+      <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
       <path
         d={rrect(0, (basinTop + basinBottom) / 2, w - rim * 2, basinH, 40)}
-        fill={ink(ctx, WATER)}
-        {...detail(ctx, p.stroke)}
+        fill={mono(ctx, WATER)}
+        {...detailPen(ctx, p.stroke)}
       />
-      <path d={ellipse(0, basinTop + basinH * 0.62, 22)} fill={s.fill} {...detail(ctx, s.stroke)} />
-      <path d={ribPath} fill="none" {...detail(ctx, p.detail)} />
-      <path d={rrect(0, -hd + 22, 50, 34, 12)} fill={s.fill} {...detail(ctx, s.stroke)} />
-      <path d={rrect(0, -hd + 70, 18, 80, 9)} fill={s.fill} {...detail(ctx, s.stroke)} />
+      <path
+        d={ellipse(0, basinTop + basinH * 0.62, 22)}
+        fill={s.fill}
+        {...detailPen(ctx, s.stroke)}
+      />
+      <path d={ribPath} fill="none" {...detailPen(ctx, p.detail)} />
+      <path d={rrect(0, -hd + 22, 50, 34, 12)} fill={s.fill} {...detailPen(ctx, s.stroke)} />
+      <path d={rrect(0, -hd + 70, 18, 80, 9)} fill={s.fill} {...detailPen(ctx, s.stroke)} />
     </g>
   );
 }

@@ -1,4 +1,4 @@
-import { ellipse } from '../bathroom/symbolKit.ts';
+import { ellipse } from '../../symbolKit.ts';
 
 export interface BurnerPaths {
   rings: string;

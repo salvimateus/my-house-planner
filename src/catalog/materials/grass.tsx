@@ -1,5 +1,6 @@
+import { shiftHsl } from '../color.ts';
 import { defineMaterial } from '../types.ts';
-import { blend, blobsD, highlight, lineW, shade, shiftHsl, strokesD, Tile } from './lib/kit.tsx';
+import { blend, blobsD, highlight, lineW, shade, strokesD, Tile } from './lib/kit.tsx';
 
 // Mown lawn seen from above: short blades in three tones over soft patches.
 const W = 500;

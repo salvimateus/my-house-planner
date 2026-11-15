@@ -1,22 +1,22 @@
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   CERAMIC,
   clamp,
   corner,
-  detail,
+  detailPen,
   ellipse,
   fixed,
   hasDetails,
-  ink,
   line,
-  outline,
+  mono,
+  outlinePen,
   paint,
   rrect,
   STONE,
   STONE_COLORS,
   shadow,
   WATER,
-} from './symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 function SinkCabinet({ w, d, color, ctx }: SymbolProps) {
   const p = paint(ctx, color, STONE);
@@ -25,7 +25,7 @@ function SinkCabinet({ w, d, color, ctx }: SymbolProps) {
   const hd = d / 2;
   const body = rrect(0, 0, w, d, corner(w, d));
   const sh = shadow(ctx);
-  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />;
+  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />;
 
   const count = w >= 1150 ? 2 : 1;
   const slot = w / count;
@@ -46,16 +46,16 @@ function SinkCabinet({ w, d, color, ctx }: SymbolProps) {
   return (
     <g>
       {sh && <path d={body} {...sh} />}
-      <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />
+      <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
       <path
         d={line(-hw + 20, -hd + 30, hw - 20, -hd + 30)}
         fill="none"
-        {...detail(ctx, p.detail)}
+        {...detailPen(ctx, p.detail)}
       />
-      <path d={basins} fill={c.fill} {...outline(ctx, c.stroke)} />
-      <path d={water} fill={ink(ctx, WATER)} {...detail(ctx, c.detail)} />
+      <path d={basins} fill={c.fill} {...outlinePen(ctx, c.stroke)} />
+      <path d={water} fill={mono(ctx, WATER)} {...detailPen(ctx, c.detail)} />
       <path d={drains} fill={c.detail} />
-      <path d={faucets} fill={c.fill} {...detail(ctx, c.stroke)} />
+      <path d={faucets} fill={c.fill} {...detailPen(ctx, c.stroke)} />
     </g>
   );
 }

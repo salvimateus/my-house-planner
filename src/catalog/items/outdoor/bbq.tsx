@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
+import { clamp, corner, edge, n, pen, SHADOW, shade } from '../../symbolKit.ts';
 import { defineItem, type SymbolProps } from '../../types.ts';
-import { clamp, corner, edge, n, pen, SHADOW, shade } from './kit.ts';
 
 function BbqSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   const p = pen(ctx);

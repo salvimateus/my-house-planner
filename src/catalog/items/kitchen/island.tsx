@@ -1,19 +1,19 @@
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   corner,
-  detail,
+  detailPen,
   ellipse,
   fixed,
   hasDetails,
   line,
-  outline,
+  outlinePen,
   paint,
   rrect,
   STONE,
   STONE_COLORS,
   shadow,
   WOOD,
-} from '../bathroom/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 const STOOL_BAND = 400;
 const STOOL_R = 170;
@@ -30,7 +30,7 @@ function Island({ w, d, color, ctx }: SymbolProps) {
   const topCy = -hd + topD / 2;
   const top = rrect(0, topCy, w, topD, corner(w, topD));
   const sh = shadow(ctx);
-  if (!hasDetails(ctx)) return <path d={top} fill={p.fill} {...outline(ctx, p.stroke)} />;
+  if (!hasDetails(ctx)) return <path d={top} fill={p.fill} {...outlinePen(ctx, p.stroke)} />;
   let seats = '';
   let cushions = '';
   const step = w / Math.max(1, stools);
@@ -44,18 +44,18 @@ function Island({ w, d, color, ctx }: SymbolProps) {
   return (
     <g>
       {sh && <path d={top} {...sh} />}
-      {stools > 0 && <path d={seats} fill={s.fill} {...outline(ctx, s.stroke)} />}
-      {stools > 0 && <path d={cushions} fill="none" {...detail(ctx, s.detail)} />}
-      <path d={top} fill={p.fill} {...outline(ctx, p.stroke)} />
+      {stools > 0 && <path d={seats} fill={s.fill} {...outlinePen(ctx, s.stroke)} />}
+      {stools > 0 && <path d={cushions} fill="none" {...detailPen(ctx, s.detail)} />}
+      <path d={top} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
       <path
         d={line(-hw + 30, cabinetFront, hw - 30, cabinetFront)}
         fill="none"
-        {...detail(ctx, p.detail)}
+        {...detailPen(ctx, p.detail)}
       />
       <path
         d={rrect(0, topCy, w - 60, topD - 60, corner(w, topD, 25))}
         fill="none"
-        {...detail(ctx, p.detail)}
+        {...detailPen(ctx, p.detail)}
       />
     </g>
   );

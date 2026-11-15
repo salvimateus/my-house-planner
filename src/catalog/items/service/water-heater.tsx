@@ -1,22 +1,28 @@
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   APPLIANCE,
   APPLIANCE_COLORS,
   clamp,
-  detail,
+  detailPen,
   ellipse,
   FLAME,
   fixed,
-  flame,
   hasDetails,
-  ink,
   mix,
-  outline,
+  mono,
+  n,
+  outlinePen,
   paint,
   rrect,
   STEEL,
   shadow,
-} from '../bathroom/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
+
+/** Teardrop flame of height ~1.6·s, centered at (cx, cy). */
+function flame(cx: number, cy: number, s: number): string {
+  const p = (x: number, y: number) => `${n(cx + x * s)} ${n(cy + y * s)}`;
+  return `M${p(0, -1)}C${p(0.55, -0.4)} ${p(0.62, 0.15)} ${p(0, 0.6)}C${p(-0.62, 0.15)} ${p(-0.55, -0.4)} ${p(0, -1)}Z`;
+}
 
 function WaterHeater({ w, d, color, ctx }: SymbolProps) {
   const p = paint(ctx, color, APPLIANCE);
@@ -28,9 +34,9 @@ function WaterHeater({ w, d, color, ctx }: SymbolProps) {
   const cy = pipe / 2;
   const tank = ellipse(0, cy, rx, ry);
   const sh = shadow(ctx);
-  if (!hasDetails(ctx)) return <path d={tank} fill={p.fill} {...outline(ctx, p.stroke)} />;
+  if (!hasDetails(ctx)) return <path d={tank} fill={p.fill} {...outlinePen(ctx, p.stroke)} />;
   const pipeX = clamp(w * 0.18, 40, 120);
-  const flameColor = ink(ctx, FLAME);
+  const flameColor = mono(ctx, FLAME);
   return (
     <g>
       <path
@@ -39,15 +45,15 @@ function WaterHeater({ w, d, color, ctx }: SymbolProps) {
           rrect(pipeX, -hd + pipe / 2 + 10, 34, pipe + 20, 10)
         }
         fill={s.fill}
-        {...detail(ctx, s.stroke)}
+        {...detailPen(ctx, s.stroke)}
       />
       {sh && <path d={tank} {...sh} />}
-      <path d={tank} fill={p.fill} {...outline(ctx, p.stroke)} />
-      <path d={ellipse(0, cy, rx * 0.78, ry * 0.78)} fill="none" {...detail(ctx, p.detail)} />
+      <path d={tank} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
+      <path d={ellipse(0, cy, rx * 0.78, ry * 0.78)} fill="none" {...detailPen(ctx, p.detail)} />
       <path
         d={flame(0, cy + Math.min(rx, ry) * 0.06, Math.min(rx, ry) * 0.36)}
-        fill={ink(ctx, mix(FLAME, '#FFFFFF', 0.55))}
-        {...detail(ctx, flameColor)}
+        fill={mono(ctx, mix(FLAME, '#FFFFFF', 0.55))}
+        {...detailPen(ctx, flameColor)}
       />
     </g>
   );

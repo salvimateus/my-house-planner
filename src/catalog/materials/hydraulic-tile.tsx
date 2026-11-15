@@ -1,5 +1,6 @@
+import { shiftHsl } from '../color.ts';
 import { defineMaterial } from '../types.ts';
-import { blend, circleD, gridD, highlight, lineW, r1, shade, shiftHsl, Tile } from './lib/kit.tsx';
+import { blend, circleD, gridD, highlight, lineW, r1, shade, Tile } from './lib/kit.tsx';
 
 // Classic 20 × 20 cm cement tile. Corner and edge motifs are cut by the tile edge and close
 // into full figures with the neighbours.

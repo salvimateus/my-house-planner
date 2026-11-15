@@ -1,6 +1,6 @@
+import { FABRIC } from '../../symbolKit.ts';
 import { defineItem } from '../../types.ts';
 import { SofaSymbol } from './sofa.tsx';
-import { FABRIC } from './symbolKit.ts';
 
 export default defineItem({
   type: 'armchair',

@@ -1,24 +1,27 @@
 import type { ReactElement } from 'react';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
-  circlePath,
   corner,
-  detail,
   hasDetails,
   hasShadow,
   METAL,
   mix,
+  n,
   outline,
-  SHADOW_DX,
-  SHADOW_DY,
+  SHADOW,
   SHADOW_FILL,
+  softDetail,
   strokeFor,
-} from '../living/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 const CHAIR = { fill: '#5E6878', stroke: '#3F4753' };
 const CASTER = '#2F343B';
 
 /** Swivel chair: five-star base with casters, seat, backrest at the back, two armrests. */
+/** Sub-path of a full circle, drawn with relative arcs. */
+const circlePath = (cx: number, cy: number, r: number): string =>
+  `M${n(cx - r)} ${n(cy)}a${n(r)} ${n(r)} 0 1 0 ${n(2 * r)} 0a${n(r)} ${n(r)} 0 1 0 ${n(-2 * r)} 0Z`;
+
 function OfficeChairSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   const stroke = strokeFor(color, CHAIR);
   const s = Math.min(w, d) / 2;
@@ -55,8 +58,8 @@ function OfficeChairSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
     <g>
       {hasShadow(ctx) && (
         <rect
-          x={-seatW / 2 + SHADOW_DX}
-          y={seatY + SHADOW_DY}
+          x={-seatW / 2 + SHADOW.dx}
+          y={seatY + SHADOW.dy}
           width={seatW}
           height={seatD}
           rx={seatR}
@@ -65,8 +68,8 @@ function OfficeChairSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
       )}
       {hasDetails(ctx) && (
         <>
-          <path d={legs} fill={METAL.fill} stroke={METAL.stroke} {...detail(ctx)} />
-          <path d={casters} fill={CASTER} stroke={CASTER} {...detail(ctx)} />
+          <path d={legs} fill={METAL.fill} stroke={METAL.stroke} {...softDetail(ctx)} />
+          <path d={casters} fill={CASTER} stroke={CASTER} {...softDetail(ctx)} />
         </>
       )}
       <rect
@@ -100,7 +103,7 @@ function OfficeChairSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             rx={corner(armW, armD, 30)}
             fill={METAL.fill}
             stroke={METAL.stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
         ))}
     </g>

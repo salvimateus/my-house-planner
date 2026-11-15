@@ -1,9 +1,7 @@
 import type { ReactElement } from 'react';
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   clamp,
   corner,
-  detail,
   detailColor,
   FABRIC,
   hasDetails,
@@ -11,12 +9,13 @@ import {
   lighten,
   mix,
   outline,
-  SHADOW_DX,
-  SHADOW_DY,
+  SHADOW,
   SHADOW_FILL,
+  softDetail,
   splitSpan,
   strokeFor,
-} from './symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 
 /** Straight sofa: arms on both ends, backrest at the back, one seat cushion per ~60 cm. */
 export function SofaSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
@@ -36,7 +35,7 @@ export function SofaSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   return (
     <g>
       {hasShadow(ctx) && (
-        <rect x={x0 + SHADOW_DX} y={y0 + SHADOW_DY} width={w} height={d} rx={r} {...SHADOW_FILL} />
+        <rect x={x0 + SHADOW.dx} y={y0 + SHADOW.dy} width={w} height={d} rx={r} {...SHADOW_FILL} />
       )}
       <rect
         x={x0}
@@ -57,7 +56,7 @@ export function SofaSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             height={back}
             fill={mix(color, stroke, 0.2)}
             stroke={stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           <rect
             x={x0}
@@ -67,7 +66,7 @@ export function SofaSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             rx={r}
             fill={mix(color, stroke, 0.12)}
             stroke={stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           <rect
             x={seatR}
@@ -77,7 +76,7 @@ export function SofaSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
             rx={r}
             fill={mix(color, stroke, 0.12)}
             stroke={stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
           {splitSpan(seatL + inset * 0.5, seatR - inset * 0.5, seats, inset * 0.6).map(([a, b]) => (
             <rect
@@ -89,7 +88,7 @@ export function SofaSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
               rx={corner(b - a, cushionH, 40)}
               fill={lighten(color, 0.22)}
               stroke={lineColor}
-              {...detail(ctx)}
+              {...softDetail(ctx)}
             />
           ))}
         </>

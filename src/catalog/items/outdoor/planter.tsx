@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
+import { blob, clamp, corner, edge, n, pen, SHADOW } from '../../symbolKit.ts';
 import { defineItem, type SymbolProps } from '../../types.ts';
-import { blob, clamp, corner, edge, n, pen, SHADOW } from './kit.ts';
 
 const LEAF = '#7BB661';
 

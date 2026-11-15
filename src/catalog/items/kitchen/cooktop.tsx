@@ -1,17 +1,17 @@
-import { defineItem, type SymbolProps } from '../../types.ts';
 import {
   clamp,
   corner,
-  detail,
+  detailPen,
   ellipse,
   GLASS_TOP,
   hasDetails,
   mix,
-  outline,
+  outlinePen,
   paint,
   rrect,
   shadow,
-} from '../bathroom/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
 import { burnerCount, burnerPaths } from './burners.ts';
 
 function Cooktop({ w, d, color, ctx }: SymbolProps) {
@@ -20,7 +20,7 @@ function Cooktop({ w, d, color, ctx }: SymbolProps) {
   const hd = d / 2;
   const body = rrect(0, 0, w, d, corner(w, d, 30));
   const sh = shadow(ctx);
-  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />;
+  if (!hasDetails(ctx)) return <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />;
   const strip = clamp(d * 0.14, 50, 80);
   const b = burnerPaths(-hw + 25, -hd + 25, w - 50, d - strip - 40);
   const n = burnerCount(w - 50);
@@ -34,8 +34,8 @@ function Cooktop({ w, d, color, ctx }: SymbolProps) {
   return (
     <g>
       {sh && <path d={body} {...sh} />}
-      <path d={body} fill={p.fill} {...outline(ctx, p.stroke)} />
-      <path d={b.rings} fill="none" {...detail(ctx, ring)} />
+      <path d={body} fill={p.fill} {...outlinePen(ctx, p.stroke)} />
+      <path d={b.rings} fill="none" {...detailPen(ctx, ring)} />
       <path d={b.caps} fill={cap} />
       <path d={dots} fill={ring} />
     </g>

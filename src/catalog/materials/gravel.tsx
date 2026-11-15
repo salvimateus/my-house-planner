@@ -1,3 +1,4 @@
+import { shiftHsl } from '../color.ts';
 import { defineMaterial } from '../types.ts';
 import {
   blend,
@@ -7,7 +8,6 @@ import {
   type Pt,
   rng,
   shade,
-  shiftHsl,
   smoothD,
   Tile,
   wrapped,

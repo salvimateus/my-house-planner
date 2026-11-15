@@ -1,21 +1,20 @@
 import type { ReactElement } from 'react';
-import { defineItem, type SymbolProps } from '../../types.ts';
-import { LAMP } from '../living/side-table.tsx';
 import {
   clamp,
   corner,
-  detail,
   detailColor,
   hasDetails,
   hasShadow,
+  line,
   outline,
-  SHADOW_DX,
-  SHADOW_DY,
+  SHADOW,
   SHADOW_FILL,
-  segPath,
+  softDetail,
   strokeFor,
   WOOD,
-} from '../living/symbolKit.ts';
+} from '../../symbolKit.ts';
+import { defineItem, type SymbolProps } from '../../types.ts';
+import { LAMP } from '../living/side-table.tsx';
 
 /** Bedside table: drawer front at the front edge and a lamp toward the back. */
 function NightstandSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
@@ -29,7 +28,7 @@ function NightstandSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
   return (
     <g>
       {hasShadow(ctx) && (
-        <rect x={x0 + SHADOW_DX} y={y0 + SHADOW_DY} width={w} height={d} rx={r} {...SHADOW_FILL} />
+        <rect x={x0 + SHADOW.dx} y={y0 + SHADOW.dy} width={w} height={d} rx={r} {...SHADOW_FILL} />
       )}
       <rect
         x={x0}
@@ -44,18 +43,18 @@ function NightstandSymbol({ w, d, color, ctx }: SymbolProps): ReactElement {
       {hasDetails(ctx) && (
         <>
           <path
-            d={segPath(x0 + r, d / 2 - front, -x0 - r, d / 2 - front)}
+            d={line(x0 + r, d / 2 - front, -x0 - r, d / 2 - front)}
             fill="none"
             stroke={detailColor(color, stroke)}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
-          <circle cy={lampY} r={shade} fill={LAMP.fill} stroke={LAMP.stroke} {...detail(ctx)} />
+          <circle cy={lampY} r={shade} fill={LAMP.fill} stroke={LAMP.stroke} {...softDetail(ctx)} />
           <circle
             cy={lampY}
             r={shade * 0.3}
             fill={LAMP.bulb}
             stroke={LAMP.stroke}
-            {...detail(ctx)}
+            {...softDetail(ctx)}
           />
         </>
       )}
