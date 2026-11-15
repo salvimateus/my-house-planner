@@ -1,0 +1,40 @@
+@layer components {
+  .ruler-inspector {
+    display: grid;
+    gap: 0.875rem;
+    min-width: 0;
+  }
+
+  .ruler-readout {
+    display: grid;
+    gap: 0.125rem;
+  }
+
+  .ruler-length {
+    color: var(--measure);
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.1;
+
+    &[data-invalid="true"] {
+      color: var(--danger);
+    }
+  }
+
+  .ruler-kind {
+    color: var(--ink-2);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .ruler-note {
+    color: var(--ink-2);
+    font-size: 0.9375rem;
+  }
+
+  .ruler-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    gap: 0.5rem;
+  }
+}

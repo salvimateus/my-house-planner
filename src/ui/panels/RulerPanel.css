@@ -1,0 +1,56 @@
+@layer components {
+  .ruler-panel {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .ruler-panel-list {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .ruler-panel-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 0.75rem;
+  }
+
+  .ruler-panel-icon {
+    width: 22px;
+    height: 22px;
+    margin-top: 0.125rem;
+    color: var(--measure);
+  }
+
+  .ruler-panel-title {
+    font-weight: 650;
+  }
+
+  .ruler-panel-text {
+    color: var(--ink-2);
+    font-size: 0.875rem;
+  }
+
+  .ruler-panel-notice {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 0.75rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: var(--radius);
+    background: color-mix(in oklch, var(--measure) 10%, var(--surface));
+    font-size: 0.875rem;
+  }
+
+  .ruler-panel-notice-icon {
+    display: inline;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+  }
+}

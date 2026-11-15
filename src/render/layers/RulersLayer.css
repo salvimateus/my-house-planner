@@ -1,0 +1,13 @@
+/* Screen only: print and thumbnail trees size the ruler marks with attributes. */
+@layer components {
+  .canvas-svg {
+    & .ruler-fixed {
+      scale: var(--mmpp);
+    }
+
+    & .ruler-text {
+      font-size: 12px;
+      font-weight: 600;
+    }
+  }
+}
