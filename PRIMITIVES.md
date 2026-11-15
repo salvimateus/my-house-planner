@@ -104,3 +104,24 @@ Status is `confirmed` or `inferred`; `pending` marks code not yet on the integra
 - **`ExportSheet`**, `src/export/sheet.ts` (+ `layout.ts`, `types.ts`), confirmed
   The one print sheet that PDF, SVG and PNG export all render from. Contract: `renderSheet(doc, opts: ExportOptions) -> { svg, layout, dispose() }` (call `dispose()`), `layoutSheet(content, pad, paper, fixedScale) -> SheetLayout` (a null scale picks the smallest denominator of `SCALES` that fits), `exportPdf(doc, opts)`, `exportSvg(doc, opts)`, `exportPng(doc, opts, dpi)`; failures throw `ExportError` with a pt-BR `userMessage`. The sheet renders through [[PRIMITIVES#RenderContext]] in print mode; `mono` turns every hex paint gray; print text weights become 400 or 700, because svg2pdf maps only those to the Inter faces; PNG draws the self-contained SVG on a canvas; jsPDF and svg2pdf load only on the first PDF export.
   Consumers: >=1 (ExportDialog).
+- **`downloadFile`** and **`downloadUrl`**, `src/export/share.ts`, confirmed
+  Saves a file to the device through a temporary `<a download>` link. Contract: `downloadFile(file: File)` makes its own object URL and revokes it after a delay; `downloadUrl(url, name)` saves an object URL that the caller owns and revokes, and must run straight from a tap; `shareOrDownload(file, title) -> 'shared' | 'cancelled' | 'downloaded'` (same file) falls back to `downloadFile` when the browser cannot share files or the share fails. Known duplicate: `downloadProjectFile` in `src/io/projectFile.ts` has its own copy of the link code, with a shorter revoke delay, so a change to the download link goes into both until it calls `downloadFile`.
+  Consumers: 3 (shareOrDownload calls downloadFile; downloadFile and ExportDialog call downloadUrl, ExportDialog with the URL from [[PRIMITIVES#useObjectUrl]]); shareOrDownload has 2 (ExportDialog, ShareDialog).
+
+## styles
+
+- **`ThemeTokens`**, `src/styles/tokens.css`, confirmed
+  The color tokens that every component stylesheet paints with, in light and dark. Contract: light values on `:root`; dark values in two identical blocks, `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) }` for the auto theme and `:root[data-theme="dark"]` for the forced one, so every dark change goes into both blocks; `src/App.tsx` sets `data-theme` on `<html>` from `uiStore.prefs.theme` and removes it for auto. `--success-soft` (fill) and `--success-line` (border) paint a success row. `--switch-off` (track fill) and `--switch-off-line` (inset ring) paint the OFF track of a switch, and both keep 3:1 contrast against every surface.
+  Consumers: ? for the whole file; success row pair 1 (`.export-ready` in `ExportDialog.css`); switch pair 1 (`Switch.css`).
+
+## ui
+
+- **`ThemeToggle`**, `src/ui/ThemeToggle.tsx` (+ `ThemeToggle.css`), confirmed
+  The shared sun and moon button that changes the theme preference in one tap. Contract: `ThemeToggle({ variant?, className? })`, the `IconButton` props of the same name; it reads `uiStore.prefs.theme` and cycles auto, light, dark through `setPrefs({ theme })`, which persists the prefs; the icon and the pt-BR label show the current theme. SettingsDialog sets the same pref with a `Segmented` control (`THEME_OPTIONS`), so a new theme value goes into both. The pref reaches the CSS as [[PRIMITIVES#ThemeTokens]] says.
+  Consumers: 2 (TopBar, StartScreen with `start-theme`).
+- **`Logo`**, `src/ui/screens/Logo.tsx` (+ `Logo.css`), confirmed
+  The in-app Minha Casinha mark, which follows the theme. Contract: `Logo({ size = 56 })`; it is decorative (`aria-hidden`), so the app name sits next to it as text; the gradient id comes from `useId`, so several logos on one page do not clash; the colors are `--logo-*` custom properties in `Logo.css` under the same three theme blocks as [[PRIMITIVES#ThemeTokens]], so a theme selector change goes into both files; `--logo-shadow-tint` is for a drop shadow that the consumer draws. Print sheets and PWA icons keep the navy brand and do not use it: `src/export/PrintSheet.tsx` draws its own `LogoMark`.
+  Consumers: 2 (StartScreen, which draws the shadow, and AboutDialog).
+- **`useObjectUrl`**, `src/ui/dialogs/ExportDialog.tsx` (local, not exported), confirmed
+  Keeps one object URL per file for the life of the component. Contract: `useObjectUrl(file: File | null) -> string | null`; null while there is no file; the URL is revoked when the file changes and on unmount. Candidate for extraction: it is local to ExportDialog, so move it to a shared hook before a second component needs a ready object URL. It revokes at once on change, so the export preview (`usePreview`, same file) keeps its own lifecycle that revokes after the image swap.
+  Consumers: 1 (ExportDialog, for the download button through [[PRIMITIVES#downloadFile]]).
