@@ -81,7 +81,6 @@ interface StreetGroup {
   edges: Seg[];
   ramps: RampShape[];
   trees: TreeMark[];
-  label: { at: Vec; angle: 0 | -90 } | null;
 }
 interface House {
   key: string;
@@ -108,21 +107,19 @@ interface Frame {
   W: Mm;
   D: Mm;
   pt(x: Mm, y: Mm): Vec;
-  /** True when the local x axis is horizontal in the world. */
-  xIsWorldX: boolean;
 }
 
 function frameOf(lot: Lot): Frame {
   const { width: w, depth: d } = lot;
   switch (lot.frontSide) {
     case 'top':
-      return { W: w, D: d, xIsWorldX: true, pt: (x, y) => ({ x: w - x, y: d - y }) };
+      return { W: w, D: d, pt: (x, y) => ({ x: w - x, y: d - y }) };
     case 'left':
-      return { W: d, D: w, xIsWorldX: false, pt: (x, y) => ({ x: w - y, y: x }) };
+      return { W: d, D: w, pt: (x, y) => ({ x: w - y, y: x }) };
     case 'right':
-      return { W: d, D: w, xIsWorldX: false, pt: (x, y) => ({ x: y, y: d - x }) };
+      return { W: d, D: w, pt: (x, y) => ({ x: y, y: d - x }) };
     default:
-      return { W: w, D: d, xIsWorldX: true, pt: (x, y) => ({ x, y }) };
+      return { W: w, D: d, pt: (x, y) => ({ x, y }) };
   }
 }
 
@@ -235,7 +232,7 @@ export function contextGeometry(lot: Lot): ContextGeom {
   return geom;
 }
 
-type LocalGroup = StreetGroup & { alongX: boolean };
+type LocalGroup = StreetGroup;
 
 /**
  * Local layout, always with the corner street on the left (x < 0); a corner on the right mirrors it.
@@ -261,24 +258,21 @@ function buildGeometry(lot: Lot): ContextGeom {
         : null;
   const corner = cornerAt !== null;
   const toWorld = (p: Vec): Vec => f.pt(cornerAt === 'right' ? W - p.x : p.x, p.y);
-  const angleFor = (alongLocalX: boolean): 0 | -90 => (alongLocalX === f.xIsWorldX ? 0 : -90);
 
   const yc = D + s;
   const xs = -s;
   const xf = -s - STREET;
   const xb = xf - s;
 
-  const groupOf = (key: string, slide: Vec, alongX: boolean): LocalGroup => ({
+  const groupOf = (key: string, slide: Vec): LocalGroup => ({
     key,
     slide,
-    alongX,
     paints: [],
     joints: [],
     centers: [],
     edges: [],
     ramps: [],
     trees: [],
-    label: null,
   });
   const paint = (g: LocalGroup, pts: Vec[], color: PaintKey) => g.paints.push({ pts, color });
   const line = (list: Seg[], a: Vec, b: Vec) => {
@@ -430,7 +424,7 @@ function buildGeometry(lot: Lot): ContextGeom {
   };
 
   // Front street: it runs through.
-  const front = groupOf('front', { x: 0, y: SLIDE }, true);
+  const front = groupOf('front', { x: 0, y: SLIDE });
   paint(front, boxPts(B.x0, yc, B.x1, yc + STREET), 'asphalt');
   const nearA: [Mm, Mm] = [corner ? xs + Rc : B.x0, B.x1];
   const pA = run(front, true, D, 1, nearA);
@@ -441,7 +435,6 @@ function buildGeometry(lot: Lot): ContextGeom {
   line(front.centers, { x: B.x0, y: yc + STREET / 2 }, { x: B.x1, y: yc + STREET / 2 });
   line(front.edges, { x: B.x0, y: yc + STREET - EDGE }, { x: B.x1, y: yc + STREET - EDGE });
   line(front.edges, { x: nearA[0], y: yc + EDGE }, { x: B.x1, y: yc + EDGE });
-  front.label = { at: { x: W / 2, y: yc + STREET * 0.3 }, angle: 0 };
   const streets: LocalGroup[] = [front];
 
   if (corner) {
@@ -454,7 +447,7 @@ function buildGeometry(lot: Lot): ContextGeom {
     cornerPiece(front, xf, -1);
 
     // Corner street: it ends at the front curb line.
-    const side = groupOf('corner', { x: -SLIDE, y: 0 }, false);
+    const side = groupOf('corner', { x: -SLIDE, y: 0 });
     paint(side, boxPts(xf, B.y0, xs, yc + SEAM), 'asphalt');
     const along: [Mm, Mm] = [B.y0, yc - Rc];
     const pNear = run(side, false, 0, -1, along);
@@ -477,7 +470,6 @@ function buildGeometry(lot: Lot): ContextGeom {
     line(side.centers, { x: xs - STREET / 2, y: B.y0 }, { x: xs - STREET / 2, y: stop });
     line(side.edges, { x: xs - EDGE, y: B.y0 }, { x: xs - EDGE, y: stop });
     line(side.edges, { x: xf + EDGE, y: B.y0 }, { x: xf + EDGE, y: stop });
-    side.label = { at: { x: xs - STREET * 0.3, y: Math.min(D / 2, cw0 - 5000) }, angle: 0 };
     // The corner street goes under the front group, so its asphalt never covers the curb returns.
     streets.unshift(side);
   }
@@ -566,7 +558,6 @@ function buildGeometry(lot: Lot): ContextGeom {
     edges: g.edges.map(toWorldSeg),
     ramps: [],
     trees: g.trees.map((t) => ({ ...t, at: toWorld(t.at), pit: t.pit.map(toWorld) })),
-    label: g.label ? { at: toWorld(g.label.at), angle: angleFor(g.alongX) } : null,
   }));
   const groupFor = (sd: Side): StreetGroup | undefined =>
     sd === lot.frontSide
@@ -794,14 +785,6 @@ function ContextBody({
         paint: pal.paint,
       };
   const lineProps = screen ? { className: 'ctx-boundary' } : { strokeWidth: printSize(ctx, 0.1) };
-  const labelProps = screen
-    ? { className: 'scene-text ctx-street-label' }
-    : {
-        fontSize: printSize(ctx, 2.6),
-        fontFamily: 'Inter, sans-serif',
-        fontWeight: 'bold',
-        letterSpacing: printSize(ctx, 1),
-      };
   const joint = lineW(ctx, 25);
 
   return (
@@ -880,22 +863,6 @@ function ContextBody({
                 strokeWidth={120}
                 strokeDasharray="2000 2500"
               />
-              {g.label ? (
-                <text
-                  x={g.label.at.x}
-                  y={g.label.at.y}
-                  transform={
-                    g.label.angle ? `rotate(-90 ${g.label.at.x} ${g.label.at.y})` : undefined
-                  }
-                  textAnchor="middle"
-                  dy="0.35em"
-                  fill={pal.paint}
-                  fillOpacity={0.9}
-                  {...labelProps}
-                >
-                  RUA
-                </text>
-              ) : null}
             </>
           )}
         </g>
