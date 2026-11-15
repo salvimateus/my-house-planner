@@ -1,0 +1,123 @@
+@layer components {
+  .door-swing {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .door-swing-art {
+    display: block;
+    inline-size: 100%;
+    max-inline-size: 22rem;
+    margin-inline: auto;
+    block-size: auto;
+    border-radius: 12px;
+  }
+
+  .door-swing-leaf {
+    transform-box: view-box;
+    animation: door-swing-leaf var(--swing-ms, 2000ms) var(--ease-state) infinite;
+  }
+
+  .door-swing-arc {
+    animation: door-swing-arc var(--swing-ms, 2000ms) var(--ease-state) infinite;
+  }
+
+  .door-swing-room {
+    font-size: 13px;
+    font-weight: 650;
+  }
+
+  .door-swing-out {
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .door-swing-tips {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .door-swing-tip {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 0.625rem;
+  }
+
+  .door-swing-tip-icon {
+    display: grid;
+    place-items: center;
+    inline-size: 2rem;
+    block-size: 2rem;
+    border-radius: 10px;
+    background: color-mix(in oklch, var(--select) 12%, var(--surface));
+    color: var(--select);
+
+    & svg {
+      inline-size: 1.125rem;
+      block-size: 1.125rem;
+    }
+  }
+
+  .door-swing-tip-text {
+    min-width: 0;
+    color: var(--ink-2);
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    text-wrap: pretty;
+
+    & strong {
+      color: var(--ink);
+      font-weight: 650;
+    }
+  }
+
+  .door-swing-note {
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+  }
+
+  /* Closed along the wall, swings open into the room, holds, closes. */
+  @keyframes door-swing-leaf {
+    0%,
+    12% {
+      transform: rotate(-90deg);
+    }
+    42%,
+    80% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(-90deg);
+    }
+  }
+
+  @keyframes door-swing-arc {
+    0%,
+    18% {
+      opacity: 0;
+    }
+    42%,
+    80% {
+      opacity: 1;
+    }
+    96%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  :root[data-motion="reduced"] :is(.door-swing-leaf, .door-swing-arc) {
+    animation: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root:not([data-motion="full"]) :is(.door-swing-leaf, .door-swing-arc) {
+      animation: none;
+    }
+  }
+}

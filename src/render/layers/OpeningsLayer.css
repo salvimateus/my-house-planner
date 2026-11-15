@@ -1,0 +1,59 @@
+/* Screen only: print and thumbnail trees size the opening marks with attributes. */
+@layer components {
+  .canvas-svg {
+    & .opening-fixed {
+      scale: var(--mmpp);
+    }
+
+    /* Size labels fade out when the opening is under `--min` px on screen. */
+    & .opening-label {
+      opacity: clamp(0, (var(--w) / var(--mmpp) - var(--min)) / 6, 1);
+    }
+
+    & .opening-body {
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    & .magnet-run {
+      fill: var(--select);
+      fill-opacity: 0.16;
+      stroke: var(--select);
+      stroke-opacity: 0.45;
+      stroke-width: 2px;
+      vector-effect: non-scaling-stroke;
+      animation: magnet-in 160ms var(--ease-enter);
+
+      &[data-on="true"] {
+        fill-opacity: 0.3;
+        stroke-opacity: 0.9;
+      }
+    }
+
+    & .magnet-target {
+      fill: var(--select);
+      fill-opacity: 0.28;
+      stroke: var(--select);
+      stroke-width: 2.5px;
+      vector-effect: non-scaling-stroke;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+  }
+
+  @keyframes magnet-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  :root[data-motion="reduced"] .canvas-svg .magnet-run {
+    animation: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root:not([data-motion="full"]) .canvas-svg .magnet-run {
+      animation: none;
+    }
+  }
+}
