@@ -6,7 +6,7 @@
 
 <p align="center"><strong>Draw the floor plan of your house. You do not have to be an architect.</strong></p>
 
-<p align="center">Live demo: <a href="https://LIVE-DEMO-URL">https://LIVE-DEMO-URL</a></p>
+<p align="center">Live demo: <a href="https://minha-casinha.vercel.app">https://minha-casinha.vercel.app</a></p>
 
 > **Em português.** O app Minha Casinha é um editor de planta baixa para quem não é arquiteto. Você desenha o terreno, os cômodos, as portas, as janelas e os móveis em escala real, no celular ou no computador. O app mostra a área útil de cada cômodo, simula o sol de São Paulo e exporta a planta em PDF, SVG ou PNG para você mandar ao seu arquiteto ou engenheiro. Tudo fica no seu navegador: não tem cadastro e nada vai para a internet sem você mandar.
 
