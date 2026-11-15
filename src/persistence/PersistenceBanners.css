@@ -1,0 +1,142 @@
+@layer components {
+  .pbanners {
+    position: fixed;
+    inset: calc(env(safe-area-inset-top) + 8px) 0 auto;
+    z-index: 40;
+    display: grid;
+    gap: 8px;
+    width: min(560px, calc(100% - 16px));
+    margin: 0 auto;
+    pointer-events: none;
+
+    &[data-screen="editor"] {
+      inset-block-start: calc(env(safe-area-inset-top) + 56px);
+    }
+
+    &:empty {
+      display: none;
+    }
+  }
+
+  .pbanner {
+    --pb-accent: var(--ink-2);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 8px 6px 8px 12px;
+    border: 1px solid color-mix(in oklch, var(--pb-accent) 30%, var(--line));
+    border-radius: 14px;
+    background: color-mix(in oklch, var(--pb-accent) 7%, var(--surface));
+    color: var(--ink);
+    box-shadow: var(--shadow);
+    font-size: 0.875rem;
+    line-height: 1.35;
+    pointer-events: auto;
+    transition:
+      opacity var(--dur-pop, 200ms) var(--ease-enter),
+      translate var(--dur-pop, 200ms) var(--ease-enter);
+
+    @starting-style {
+      opacity: 0;
+      translate: 0 -6px;
+    }
+  }
+
+  .pbanner-warn {
+    --pb-accent: var(--brand);
+  }
+
+  .pbanner-error {
+    --pb-accent: var(--danger);
+  }
+
+  .pbanner-icon {
+    display: inline-flex;
+    flex: none;
+    color: var(--pb-accent);
+
+    & svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .pbanner-text {
+    flex: 1 1 180px;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .pbanner-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .pbanner-close {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    margin-inline-start: auto;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-2);
+    cursor: pointer;
+
+    & svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    @media (hover: hover) {
+      &:hover {
+        background: color-mix(in oklch, var(--ink) 8%, transparent);
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--select);
+      outline-offset: 2px;
+    }
+  }
+
+  .pdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: color-mix(in oklch, var(--paper) 70%, transparent);
+    backdrop-filter: blur(2px);
+    pointer-events: none;
+  }
+
+  .pdrop-card {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    padding: 28px 32px;
+    border: 2px dashed var(--brand);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--shadow);
+    font-weight: 600;
+    text-align: center;
+
+    & p {
+      margin: 0;
+    }
+  }
+
+  .pdrop-icon {
+    width: 36px;
+    height: 36px;
+    color: var(--brand);
+  }
+}
