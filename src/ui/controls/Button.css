@@ -60,7 +60,6 @@
     --btn-fg: var(--on-primary);
     --btn-border: transparent;
     --btn-hover: var(--primary-hover);
-    box-shadow: var(--primary-glow);
 
     &:active:not(:disabled) {
       background: var(--primary-active);

@@ -1,10 +1,17 @@
-import { Download, LoaderCircle, Share2, TriangleAlert } from 'lucide-react';
+import {
+  CircleCheck,
+  Download,
+  LoaderCircle,
+  RefreshCw,
+  Share2,
+  TriangleAlert,
+} from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { SCALES } from '../../export/layout.ts';
 import { exportPdf } from '../../export/pdfExport.ts';
 import { exportPng, type PngDpi, type PngSize } from '../../export/pngExport.ts';
-import { downloadFile, shareOrDownload } from '../../export/share.ts';
+import { canShareFile, downloadUrl, shareOrDownload } from '../../export/share.ts';
 import { sheetLayoutFor } from '../../export/sheet.ts';
 import { exportSvg, sheetSvgMarkup } from '../../export/svgExport.ts';
 import {
@@ -13,6 +20,7 @@ import {
   type ExportOptions,
 } from '../../export/types.ts';
 import { emit } from '../../juice/events.ts';
+import { feedback } from '../../juice/feedback.ts';
 import type { ProjectDoc } from '../../model/types.ts';
 import { userMessageOf } from '../../persistence/db.ts';
 import { useDoc } from '../../store/docStore.ts';
@@ -60,12 +68,14 @@ type Phase =
   | { kind: 'idle' }
   | { kind: 'busy' }
   | { kind: 'ready'; file: File; png: PngSize | null }
+  /** The options changed after the file was made: it no longer matches them. */
+  | { kind: 'stale' }
   | { kind: 'error'; message: string };
 
 const ACTION_LABEL: Record<ExportFormat, string> = {
-  pdf: 'Criar PDF',
-  svg: 'Criar SVG',
-  png: 'Criar PNG',
+  pdf: 'Gerar PDF',
+  svg: 'Gerar SVG',
+  png: 'Gerar imagem',
 };
 
 const sizeFormat = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
@@ -85,6 +95,21 @@ async function createFile(
   if (format === 'svg') return { file: await exportSvg(doc, opts), png: null };
   const r = await exportPng(doc, opts, dpi);
   return { file: r.file, png: r.size };
+}
+
+/** One object URL for the file, revoked when the file changes and on unmount. */
+function useObjectUrl(file: File | null): string | null {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!file) {
+      setUrl(null);
+      return;
+    }
+    const made = URL.createObjectURL(file);
+    setUrl(made);
+    return () => URL.revokeObjectURL(made);
+  }, [file]);
+  return url;
 }
 
 /** Live preview: the same self-contained SVG that the export writes, in an `<img>`. */
@@ -136,13 +161,29 @@ export function ExportDialog(): ReactElement {
   const preview = usePreview(doc, opts, open);
   const layout = doc ? sheetLayoutFor(doc, opts) : null;
   const busy = phase.kind === 'busy';
+  const fileUrl = useObjectUrl(phase.kind === 'ready' ? phase.file : null);
+  const downloadRef = useRef<HTMLButtonElement>(null);
 
-  // A new file is needed after any change, and when the dialog opens again.
+  // A new file is needed after any change. A file made for other options becomes stale.
   // biome-ignore lint/correctness/useExhaustiveDependencies: the dependencies are the triggers
   useEffect(() => {
     run.current += 1;
+    setPhase((p) =>
+      p.kind === 'ready' || p.kind === 'stale' ? { kind: 'stale' } : { kind: 'idle' },
+    );
+  }, [format, opts, dpi, doc]);
+
+  // Each opening starts clean.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the dependency is the trigger
+  useEffect(() => {
+    run.current += 1;
     setPhase({ kind: 'idle' });
-  }, [format, opts, dpi, doc, open]);
+  }, [open]);
+
+  // The URL arrives once per new file: move focus to its download.
+  useEffect(() => {
+    if (fileUrl) downloadRef.current?.focus();
+  }, [fileUrl]);
 
   const set = <K extends keyof ExportOptions>(key: K, value: ExportOptions[K]) =>
     setOpts((o) => ({ ...o, [key]: value }));
@@ -157,6 +198,7 @@ export function ExportDialog(): ReactElement {
       const r = await createFile(doc, format, opts, dpi);
       if (id !== run.current) return;
       setPhase({ kind: 'ready', file: r.file, png: r.png });
+      feedback.success();
       emit({ type: 'export-done', format });
     } catch (err) {
       if (id !== run.current) return;
@@ -168,7 +210,8 @@ export function ExportDialog(): ReactElement {
   };
 
   const download = (file: File) => {
-    downloadFile(file);
+    if (!fileUrl) return;
+    downloadUrl(fileUrl, file.name);
     toast(`Arquivo “${file.name}” salvo.`, { tone: 'success' });
   };
 
@@ -187,51 +230,75 @@ export function ExportDialog(): ReactElement {
   const scaleValue = opts.scale === null ? 'auto' : String(opts.scale);
   const orientationLabel = layout?.orientation === 'portrait' ? 'em pé' : 'deitada';
 
-  const footer =
-    phase.kind === 'ready' ? (
-      <div className="export-foot">
-        <p className="export-ready" role="status">
-          Pronto: {phase.file.name} ({fileSize(phase.file.size)})
-          {phase.png ? (
-            <>
-              {' · '}
-              {phase.png.width} × {phase.png.height} px, {phase.png.dpi} DPI
-              {phase.png.dpi < dpi ? ' (limite deste aparelho)' : ''}
-            </>
-          ) : null}
+  const footer = (
+    <div className="export-foot">
+      {phase.kind === 'error' ? (
+        <p className="export-error" role="alert">
+          {phase.message}
         </p>
-        <div className="export-actions">
-          <Button variant="secondary" icon={<Share2 />} onClick={() => void share(phase.file)}>
-            Compartilhar
-          </Button>
-          <Button variant="primary" icon={<Download />} onClick={() => download(phase.file)}>
+      ) : null}
+      <div className="export-actions">
+        <Button variant="ghost" onClick={close}>
+          {phase.kind === 'ready' ? 'Fechar' : 'Cancelar'}
+        </Button>
+        <Button
+          variant={phase.kind === 'ready' ? 'secondary' : 'primary'}
+          disabled={!doc || busy}
+          aria-busy={busy}
+          icon={busy ? <LoaderCircle className="export-spin" /> : undefined}
+          onClick={() => void create()}
+        >
+          {busy ? 'Gerando…' : phase.kind === 'ready' ? 'Gerar de novo' : ACTION_LABEL[format]}
+        </Button>
+      </div>
+    </div>
+  );
+
+  const readyRow =
+    phase.kind === 'ready' ? (
+      <section className="export-ready" aria-label="Arquivo pronto">
+        <CircleCheck className="export-ready-check" aria-hidden="true" />
+        <p className="export-ready-text">
+          <span className="export-ready-title">Arquivo pronto</span>
+          <span className="export-ready-file">
+            {phase.file.name} ({fileSize(phase.file.size)})
+            {phase.png ? (
+              <>
+                {' · '}
+                {phase.png.width} × {phase.png.height} px, {phase.png.dpi} DPI
+                {phase.png.dpi < dpi ? ' (limite deste aparelho)' : ''}
+              </>
+            ) : null}
+          </span>
+        </p>
+        <div className="export-ready-actions">
+          <Button
+            ref={downloadRef}
+            variant="primary"
+            className="export-download"
+            icon={<Download />}
+            onClick={() => download(phase.file)}
+          >
             Baixar
           </Button>
+          {canShareFile(phase.file) ? (
+            <Button variant="secondary" icon={<Share2 />} onClick={() => void share(phase.file)}>
+              Compartilhar
+            </Button>
+          ) : null}
         </div>
-      </div>
-    ) : (
-      <div className="export-foot">
-        {phase.kind === 'error' ? (
-          <p className="export-error" role="alert">
-            {phase.message}
-          </p>
-        ) : null}
-        <div className="export-actions">
-          <Button variant="ghost" onClick={close}>
-            Cancelar
-          </Button>
-          <Button
-            variant="primary"
-            disabled={!doc || busy}
-            aria-busy={busy}
-            icon={busy ? <LoaderCircle className="export-spin" /> : undefined}
-            onClick={() => void create()}
-          >
-            {busy ? 'Criando…' : ACTION_LABEL[format]}
-          </Button>
-        </div>
-      </div>
-    );
+      </section>
+    ) : phase.kind === 'stale' ? (
+      <section className="export-ready export-ready-stale" aria-label="Arquivo desatualizado">
+        <RefreshCw className="export-ready-check" aria-hidden="true" />
+        <p className="export-ready-text">
+          <span className="export-ready-title">As opções mudaram</span>
+          <span className="export-ready-file">
+            Gere o arquivo de novo para baixar com as opções atuais.
+          </span>
+        </p>
+      </section>
+    ) : null;
 
   return (
     <Dialog
@@ -242,6 +309,9 @@ export function ExportDialog(): ReactElement {
       size="lg"
       footer={footer}
     >
+      <p className="sr-only" aria-live="polite">
+        {phase.kind === 'ready' ? `Arquivo pronto: ${phase.file.name}` : ''}
+      </p>
       {doc ? (
         <div className="export">
           <figure className="export-preview">
@@ -356,6 +426,7 @@ export function ExportDialog(): ReactElement {
               <Switch label="Grade de 1 m" checked={opts.grid} onChange={(v) => set('grid', v)} />
             </div>
           </fieldset>
+          {readyRow}
         </div>
       ) : (
         <p className="export-note">Abra uma planta para exportar.</p>

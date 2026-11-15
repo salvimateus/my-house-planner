@@ -126,11 +126,177 @@
     gap: 0.5rem;
   }
 
+  /* Sticks to the bottom of the scrolling body, so it stays next to the footer. */
   .export-ready {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.5rem 0.75rem;
+    align-items: center;
+    padding: 0.75rem 0.875rem;
+    border: 1px solid var(--success-line);
+    border-radius: calc(var(--radius) * 0.75);
+    background: var(--success-soft);
+    /* The second shadow fills the body's bottom padding, so nothing scrolls into view below the row. */
+    box-shadow:
+      0 -8px 16px -8px color-mix(in oklch, var(--shadow-ink) 18%, transparent),
+      0 calc(1.25rem + 1px) 0 0 var(--raised);
+    animation: export-ready-in 260ms var(--ease-enter) both;
+
+    @media (min-width: 720px) {
+      grid-column: 1 / -1;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+  }
+
+  .export-ready-stale {
+    border-color: var(--line);
+    background: var(--sunken);
+  }
+
+  @keyframes export-ready-in {
+    from {
+      opacity: 0;
+      translate: 0 12px;
+    }
+  }
+
+  .export-ready-check {
+    width: 2rem;
+    height: 2rem;
+    color: var(--success-text);
+
+    & :is(circle, path) {
+      stroke-dasharray: 64;
+      animation: export-draw 420ms var(--ease-enter) 80ms both;
+    }
+
+    & path {
+      stroke-dasharray: 10;
+      animation-name: export-draw-tick;
+      animation-delay: 300ms;
+      animation-duration: 260ms;
+    }
+
+    .export-ready-stale & {
+      color: var(--ink-2);
+      width: 1.5rem;
+      height: 1.5rem;
+
+      & :is(circle, path) {
+        animation: none;
+      }
+    }
+  }
+
+  @keyframes export-draw {
+    from {
+      stroke-dashoffset: 64;
+    }
+  }
+
+  @keyframes export-draw-tick {
+    from {
+      stroke-dashoffset: 10;
+    }
+  }
+
+  .export-ready-text {
+    display: grid;
+    gap: 0.125rem;
+    min-width: 0;
+  }
+
+  .export-ready-title {
+    color: var(--success-text);
+    font-size: 1rem;
+    font-weight: 700;
+
+    .export-ready-stale & {
+      color: var(--ink);
+    }
+  }
+
+  .export-ready-file {
     color: var(--ink-2);
     font-size: 0.8125rem;
     font-variant-numeric: tabular-nums;
     overflow-wrap: anywhere;
+  }
+
+  .export-ready-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    grid-column: 1 / -1;
+
+    & .btn {
+      flex: 1 1 auto;
+    }
+
+    @media (min-width: 720px) {
+      grid-column: auto;
+
+      & .btn {
+        flex: none;
+      }
+    }
+  }
+
+  /* One short ring pulse that points the eye to the download. */
+  .export-download {
+    position: relative;
+    animation: export-nudge 520ms var(--ease-state) 420ms both;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      border: 2px solid var(--success);
+      border-radius: inherit;
+      opacity: 0;
+      pointer-events: none;
+      animation: export-ring 760ms var(--ease-exit) 420ms both;
+    }
+  }
+
+  @keyframes export-nudge {
+    40% {
+      scale: 1.05;
+    }
+  }
+
+  @keyframes export-ring {
+    from {
+      opacity: 0.9;
+      scale: 1;
+    }
+    to {
+      opacity: 0;
+      scale: 1.25;
+    }
+  }
+
+  :root[data-motion="reduced"] :is(.export-ready, .export-download),
+  :root[data-motion="reduced"] .export-download::after {
+    animation: none;
+  }
+
+  :root[data-motion="reduced"] .export-ready-check :is(circle, path) {
+    animation: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root:not([data-motion="full"]) :is(.export-ready, .export-download),
+    :root:not([data-motion="full"]) .export-download::after {
+      animation: none;
+    }
+
+    :root:not([data-motion="full"]) .export-ready-check :is(circle, path) {
+      animation: none;
+    }
   }
 
   .export-error {

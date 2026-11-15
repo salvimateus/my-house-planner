@@ -1,15 +1,20 @@
 /** Saves a file through a temporary link. */
 export function downloadFile(file: File): void {
   const url = URL.createObjectURL(file);
+  downloadUrl(url, file.name);
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+/** Saves an object URL that the caller owns and revokes. Call it straight from a tap. */
+export function downloadUrl(url: string, name: string): void {
   const a = document.createElement('a');
   a.href = url;
-  a.download = file.name;
+  a.download = name;
   a.rel = 'noopener';
   a.style.display = 'none';
   document.body.appendChild(a);
   a.click();
   a.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 export function canShareFile(file: File): boolean {

@@ -34,7 +34,6 @@
     --primary-hover: color-mix(in oklch, var(--navy) 86%, black);
     --primary-active: color-mix(in oklch, var(--navy) 76%, black);
     --on-primary: oklch(1 0 0);
-    --primary-glow: 0 6px 16px color-mix(in oklch, var(--navy) 26%, transparent);
     --accent: var(--amber);
     --on-accent: var(--navy);
     --link: var(--navy);
@@ -50,6 +49,12 @@
     --measure-soft: color-mix(in oklch, var(--measure) 10%, var(--surface));
     --success: oklch(0.62 0.13 150);
     --success-text: oklch(0.42 0.11 150);
+    --success-soft: oklch(0.95 0.035 150);
+    --success-line: oklch(0.8 0.08 150);
+
+    /* Switch OFF track: fill and ring both keep 3:1 against every surface. */
+    --switch-off: var(--blue-grey);
+    --switch-off-line: var(--ink-2);
     --danger: oklch(0.43 0.18 25);
     --danger-strong: oklch(0.4 0.17 25);
     --on-danger: oklch(1 0 0);
@@ -128,12 +133,9 @@
       --brand-soft: color-mix(in oklch, var(--coral) 12%, var(--surface));
       --brand-tint: color-mix(in oklch, var(--coral) 8%, var(--paper));
       --primary: oklch(0.5 0.2 22);
-      --primary-hover: oklch(0.51 0.2 22);
-      --primary-active: oklch(0.45 0.19 22);
+      --primary-hover: oklch(0.45 0.19 22);
+      --primary-active: oklch(0.41 0.17 22);
       --on-primary: oklch(1 0 0);
-      --primary-glow:
-        0 0 0 1px color-mix(in oklch, var(--coral) 35%, transparent),
-        0 6px 20px color-mix(in oklch, var(--coral) 32%, transparent);
       --accent: oklch(0.45 0.19 22);
       --on-accent: oklch(1 0 0);
       --link: var(--coral-light);
@@ -147,6 +149,10 @@
       --measure: oklch(0.84 0.08 200);
       --success: oklch(0.72 0.14 150);
       --success-text: oklch(0.86 0.12 150);
+      --success-soft: oklch(0.34 0.045 160);
+      --success-line: oklch(0.5 0.08 155);
+      --switch-off: var(--line-strong);
+      --switch-off-line: var(--ink-2);
       --danger: oklch(0.86 0.11 45);
       --danger-strong: oklch(0.86 0.11 45);
       --on-danger: oklch(0.2 0.02 30);
@@ -190,12 +196,9 @@
     --brand-soft: color-mix(in oklch, var(--coral) 12%, var(--surface));
     --brand-tint: color-mix(in oklch, var(--coral) 8%, var(--paper));
     --primary: oklch(0.5 0.2 22);
-    --primary-hover: oklch(0.51 0.2 22);
-    --primary-active: oklch(0.45 0.19 22);
+    --primary-hover: oklch(0.45 0.19 22);
+    --primary-active: oklch(0.41 0.17 22);
     --on-primary: oklch(1 0 0);
-    --primary-glow:
-      0 0 0 1px color-mix(in oklch, var(--coral) 35%, transparent),
-      0 6px 20px color-mix(in oklch, var(--coral) 32%, transparent);
     --accent: oklch(0.45 0.19 22);
     --on-accent: oklch(1 0 0);
     --link: var(--coral-light);
@@ -209,6 +212,10 @@
     --measure: oklch(0.84 0.08 200);
     --success: oklch(0.72 0.14 150);
     --success-text: oklch(0.86 0.12 150);
+    --success-soft: oklch(0.34 0.045 160);
+    --success-line: oklch(0.5 0.08 155);
+    --switch-off: var(--line-strong);
+    --switch-off-line: var(--ink-2);
     --danger: oklch(0.86 0.11 45);
     --danger-strong: oklch(0.86 0.11 45);
     --on-danger: oklch(0.2 0.02 30);

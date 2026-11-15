@@ -1,10 +1,11 @@
-import type { ButtonHTMLAttributes, ReactElement, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactElement, ReactNode, Ref } from 'react';
 import { cx } from './cx.ts';
 import './Button.css';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  ref?: Ref<HTMLButtonElement>;
   variant?: ButtonVariant;
   size?: 'sm' | 'md' | 'lg';
   icon?: ReactNode;
