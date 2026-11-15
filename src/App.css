@@ -4,16 +4,12 @@
     --tap: 44px;
     --radius-sm: 10px;
     --radius-lg: 22px;
-    --brand-soft: color-mix(in oklch, var(--brand) 14%, var(--surface));
-    --brand-tint: color-mix(in oklch, var(--brand) 7%, var(--paper));
-    --select-strong: color-mix(in oklch, var(--select) 70%, black);
-    --select-soft: color-mix(in oklch, var(--select) 11%, var(--surface));
-    --danger-strong: color-mix(in oklch, var(--danger) 70%, black);
-    --danger-soft: color-mix(in oklch, var(--danger) 9%, var(--surface));
-    --line-strong: color-mix(in oklch, var(--line) 65%, var(--ink-2));
-    --sunken: color-mix(in oklch, var(--paper) 70%, var(--line));
-    --shadow-sm: 0 1px 2px oklch(0.2 0.02 85 / 0.08), 0 2px 8px oklch(0.2 0.02 85 / 0.06);
-    --shadow-lg: 0 18px 48px oklch(0.2 0.02 85 / 0.18), 0 2px 6px oklch(0.2 0.02 85 / 0.08);
+    --shadow-sm:
+      0 1px 2px color-mix(in oklch, var(--shadow-ink) 8%, transparent),
+      0 2px 8px color-mix(in oklch, var(--shadow-ink) 6%, transparent);
+    --shadow-lg:
+      0 18px 48px color-mix(in oklch, var(--shadow-ink) 18%, transparent),
+      0 2px 6px color-mix(in oklch, var(--shadow-ink) 8%, transparent);
     --dur-color: 80ms;
     --dur-fast: 120ms;
     --dur-pop: 200ms;

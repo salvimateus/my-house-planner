@@ -2,7 +2,8 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-const THEME_COLOR = '#f9f6f1';
+const THEME_COLOR = '#fdfaf6';
+const BACKGROUND_COLOR = '#e8e2db';
 
 export default defineConfig({
   plugins: [
@@ -17,7 +18,7 @@ export default defineConfig({
         description: 'Desenhe a planta baixa da sua casa no celular ou no computador.',
         lang: 'pt-BR',
         theme_color: THEME_COLOR,
-        background_color: THEME_COLOR,
+        background_color: BACKGROUND_COLOR,
         display: 'standalone',
         start_url: '/',
         scope: '/',

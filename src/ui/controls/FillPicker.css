@@ -23,7 +23,7 @@
     cursor: pointer;
 
     &:has(:focus-visible) {
-      outline: 2px solid var(--select);
+      outline: 2px solid var(--focus);
       outline-offset: 2px;
     }
 
@@ -55,7 +55,7 @@
       oklch(0.78 0.12 300),
       oklch(0.8 0.12 30)
     );
-    box-shadow: inset 0 0 0 1px oklch(0.2 0.02 260 / 0.16);
+    box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--ink) 16%, transparent);
     transition:
       box-shadow var(--dur-fast) var(--ease-state),
       scale var(--dur-pop) var(--ease-state);
@@ -66,7 +66,7 @@
 
     .fill-custom.is-selected & {
       box-shadow:
-        inset 0 0 0 1px oklch(0.2 0.02 260 / 0.16),
+        inset 0 0 0 1px color-mix(in oklch, var(--ink) 16%, transparent),
         0 0 0 2px var(--surface),
         0 0 0 4px var(--select-strong);
       scale: 0.9;
@@ -117,7 +117,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid var(--select);
+      outline: 2px solid var(--focus);
       outline-offset: 1px;
     }
 
@@ -136,7 +136,7 @@
     aspect-ratio: 1;
     overflow: hidden;
     border-radius: 8px;
-    box-shadow: inset 0 0 0 1px oklch(0.2 0.02 260 / 0.12);
+    box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--ink) 12%, transparent);
     transition:
       box-shadow var(--dur-fast) var(--ease-state),
       scale var(--dur-pop) var(--ease-state);
@@ -207,7 +207,7 @@
     inline-size: 100%;
     block-size: var(--tap);
     margin: 0;
-    accent-color: var(--select);
+    accent-color: var(--focus);
     cursor: pointer;
 
     &:disabled {

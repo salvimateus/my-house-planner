@@ -9,16 +9,16 @@
   }
 
   .fx-burst-dot {
-    fill: var(--ink-2);
+    fill: var(--plan-ink-2);
   }
 
   .fx-burst-dot-alt {
-    fill: var(--brand);
+    fill: var(--plan-accent);
   }
 
   .fx-burst-ring {
     fill: none;
-    stroke: var(--ink-2);
+    stroke: var(--plan-ink-2);
     stroke-width: 1.5px;
     stroke-opacity: 0.6;
   }

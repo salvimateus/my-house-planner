@@ -34,7 +34,7 @@
     text-align: center;
 
     & .logo {
-      filter: drop-shadow(0 10px 18px oklch(0.42 0.13 38 / 0.25));
+      filter: drop-shadow(0 10px 18px color-mix(in oklch, var(--primary) 25%, transparent));
       animation: logo-in 520ms var(--ease-spring) both;
     }
   }
@@ -153,8 +153,8 @@
     width: var(--tap);
     height: var(--tap);
     border-radius: 50%;
-    background: var(--brand-strong);
-    color: oklch(1 0 0);
+    background: var(--primary);
+    color: var(--on-primary);
 
     & svg {
       width: 20px;
@@ -189,7 +189,7 @@
   .plan-thumb-empty {
     width: 32px;
     height: 32px;
-    color: var(--brand);
+    color: var(--icon);
   }
 
   .plan-grid {
@@ -376,7 +376,7 @@
     width: 40px;
     height: 40px;
     margin-bottom: 0.25rem;
-    color: var(--brand);
+    color: var(--icon);
   }
 
   .start-empty-title {
@@ -476,7 +476,7 @@
   .start-foot-icon {
     width: 18px;
     height: 18px;
-    color: oklch(0.5 0.1 150);
+    color: var(--success-text);
   }
 
   .start-form {
@@ -499,7 +499,7 @@
     font-size: 1rem;
 
     &:focus-visible {
-      outline: 2px solid var(--select);
+      outline: 2px solid var(--focus);
       outline-offset: 1px;
     }
   }

@@ -89,9 +89,9 @@
     }
 
     &:focus-visible {
-      border-color: var(--select);
+      border-color: var(--focus);
       outline: none;
-      box-shadow: 0 0 0 3px color-mix(in oklch, var(--select) 22%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in oklch, var(--focus) 22%, transparent);
     }
   }
 
@@ -156,8 +156,8 @@
       box-shadow var(--dur-fast) var(--ease-state);
 
     &:focus-within {
-      border-color: var(--select);
-      box-shadow: 0 0 0 3px color-mix(in oklch, var(--select) 22%, transparent);
+      border-color: var(--focus);
+      box-shadow: 0 0 0 3px color-mix(in oklch, var(--focus) 22%, transparent);
     }
 
     &[data-invalid="true"] {

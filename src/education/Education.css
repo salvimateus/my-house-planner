@@ -105,8 +105,8 @@
     margin: 0;
     padding: 0.5rem 0.875rem;
     border-radius: 999px;
-    background: oklch(0.25 0.015 260 / 0.92);
-    color: oklch(1 0 0);
+    background: var(--plan-chip);
+    color: var(--plan-chip-fg);
     box-shadow: var(--shadow);
     font-size: 0.875rem;
     font-weight: 600;
@@ -136,8 +136,8 @@
     max-inline-size: min(19rem, calc(100vw - 24px));
     padding: 0.75rem 0.5rem 0.8125rem 0.9375rem;
     border-radius: 14px;
-    background: var(--brand);
-    color: oklch(1 0 0);
+    background: var(--accent);
+    color: var(--on-accent);
     box-shadow: var(--shadow-lg);
     pointer-events: auto;
     animation: edu-coach-in var(--dur-modal) var(--ease-enter) both;
@@ -181,7 +181,6 @@
     font-size: 0.8125rem;
     font-weight: 700;
     letter-spacing: 0.01em;
-    opacity: 0.85;
   }
 
   .edu-coach-text {
@@ -215,12 +214,12 @@
 
     @media (hover: hover) {
       &:hover {
-        background: oklch(1 0 0 / 0.16);
+        background: color-mix(in oklch, currentColor 14%, transparent);
       }
     }
 
     &:focus-visible {
-      outline: 2px solid oklch(1 0 0);
+      outline: 2px solid currentColor;
       outline-offset: 1px;
     }
   }
@@ -249,7 +248,7 @@
     padding: 0.25rem 0.625rem;
     border-radius: 999px;
     background: oklch(1 0 0 / 0.94);
-    color: var(--ink);
+    color: var(--navy);
     box-shadow: var(--shadow-sm);
     font-size: 0.8125rem;
     font-weight: 600;
@@ -259,13 +258,13 @@
   }
 
   .edu-lesson-walls {
-    background: oklch(0.3 0.01 260 / 0.88);
-    color: oklch(1 0 0);
+    background: var(--plan-chip);
+    color: var(--plan-chip-fg);
   }
 
   .edu-lesson-net {
-    background: var(--brand);
-    color: oklch(1 0 0);
+    background: var(--accent);
+    color: var(--on-accent);
     font-weight: 700;
   }
 
@@ -281,7 +280,7 @@
     border: 0;
     border-radius: 999px;
     background: oklch(1 0 0 / 0.94);
-    color: var(--select-strong);
+    color: var(--select);
     box-shadow: var(--shadow-sm);
     font-size: 0.8125rem;
     font-weight: 650;

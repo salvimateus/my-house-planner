@@ -59,8 +59,8 @@
     }
 
     &[aria-pressed="true"] {
-      background: var(--surface);
-      color: var(--ink);
+      background: var(--select-soft);
+      color: var(--select-strong);
       box-shadow: var(--shadow-sm);
     }
 

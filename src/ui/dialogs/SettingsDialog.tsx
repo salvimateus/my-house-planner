@@ -16,6 +16,12 @@ const MOTION_OPTIONS: { value: UiState['prefs']['motion']; label: string }[] = [
   { value: 'full', label: 'Completo' },
 ];
 
+const THEME_OPTIONS: { value: UiState['prefs']['theme']; label: string }[] = [
+  { value: 'auto', label: 'Automático' },
+  { value: 'light', label: 'Claro' },
+  { value: 'dark', label: 'Escuro' },
+];
+
 const SNAP_OPTIONS: { value: string; label: string }[] = [
   { value: '500', label: '0,5 m' },
   { value: '250', label: '0,25 m' },
@@ -119,6 +125,19 @@ export function SettingsDialog(): ReactElement {
             options={MOTION_OPTIONS}
             value={prefs.motion}
             onChange={(motion) => ui.setPrefs({ motion })}
+          />
+        </section>
+
+        <section className="settings-section" aria-labelledby="settings-theme">
+          <h3 id="settings-theme" className="settings-h3">
+            Aparência
+          </h3>
+          <Segmented
+            label="Tema"
+            showLabel
+            options={THEME_OPTIONS}
+            value={prefs.theme}
+            onChange={(theme) => ui.setPrefs({ theme })}
           />
         </section>
 

@@ -28,7 +28,7 @@
     aspect-ratio: 4 / 3;
     margin-bottom: 0.25rem;
     border-radius: 10px;
-    background: var(--sunken);
+    background: var(--plan-sheet);
     transition: background-color var(--dur-fast) var(--ease-state);
   }
 
@@ -63,16 +63,16 @@
     }
 
     &:focus-visible {
-      outline: 2px solid var(--select);
+      outline: 2px solid var(--focus);
       outline-offset: 2px;
     }
 
     &[aria-pressed="true"] {
-      border-color: var(--select);
-      box-shadow: 0 0 0 3px color-mix(in oklch, var(--select) 20%, transparent);
+      border-color: var(--focus);
+      box-shadow: 0 0 0 3px color-mix(in oklch, var(--focus) 20%, transparent);
 
       & .openings-thumb {
-        background: color-mix(in oklch, var(--select) 9%, var(--sunken));
+        background: color-mix(in oklch, var(--focus) 9%, var(--plan-sheet));
       }
     }
 
@@ -118,7 +118,7 @@
     inline-size: 1rem;
     block-size: 1rem;
     margin-top: 0.125rem;
-    color: var(--select);
+    color: var(--ink-2);
   }
 
   :root[data-motion="reduced"] :is(.openings-card, .openings-thumb) {

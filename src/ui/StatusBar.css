@@ -52,7 +52,7 @@
     & svg {
       width: 16px;
       height: 16px;
-      color: var(--brand);
+      color: var(--icon);
     }
 
     @media (hover: hover) {

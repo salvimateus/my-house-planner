@@ -17,8 +17,13 @@
     font-variant-numeric: tabular-nums;
   }
 
+  :where(a:any-link) {
+    color: var(--link);
+    text-underline-offset: 3px;
+  }
+
   :where(:focus-visible) {
-    outline: 2px solid var(--select);
+    outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
 

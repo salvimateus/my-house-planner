@@ -54,7 +54,12 @@ export interface UiState {
   layers: ViewPrefs['layers'];
   snapEnabled: boolean;
   snapStep: Mm;
-  prefs: { sound: boolean; haptics: boolean; motion: 'auto' | 'reduced' | 'full' };
+  prefs: {
+    sound: boolean;
+    haptics: boolean;
+    motion: 'auto' | 'reduced' | 'full';
+    theme: 'auto' | 'light' | 'dark';
+  };
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
   transient: { guides: Guide[]; ghost: Ghost | null; invalid: boolean; readout: Readout | null };
 }
@@ -80,7 +85,12 @@ export interface UiActions {
 
 const PREFS_KEY = 'casinha:prefs';
 
-export const DEFAULT_PREFS: UiState['prefs'] = { sound: true, haptics: true, motion: 'auto' };
+export const DEFAULT_PREFS: UiState['prefs'] = {
+  sound: true,
+  haptics: true,
+  motion: 'auto',
+  theme: 'auto',
+};
 
 export const DEFAULT_LAYERS: ViewPrefs['layers'] = {
   grid: { visible: true, locked: false },
@@ -110,6 +120,10 @@ function readPrefs(): UiState['prefs'] {
         p.motion === 'auto' || p.motion === 'reduced' || p.motion === 'full'
           ? p.motion
           : DEFAULT_PREFS.motion,
+      theme:
+        p.theme === 'auto' || p.theme === 'light' || p.theme === 'dark'
+          ? p.theme
+          : DEFAULT_PREFS.theme,
     };
   } catch {
     return DEFAULT_PREFS;

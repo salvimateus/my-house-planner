@@ -36,7 +36,7 @@
     font-weight: 600;
 
     &:focus-visible {
-      outline: 2px solid var(--select);
+      outline: 2px solid var(--focus);
       outline-offset: 1px;
     }
   }
@@ -93,7 +93,7 @@
     justify-content: space-between;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
-    border: 1px dashed var(--select);
+    border: 1px dashed var(--focus);
     border-radius: var(--radius);
     color: var(--ink);
     font-size: 0.9375rem;
@@ -124,12 +124,12 @@
 
     @media (hover: hover) {
       &:hover {
-        border-color: var(--select);
+        border-color: var(--focus);
       }
     }
 
     &:focus-within {
-      border-color: var(--select);
+      border-color: var(--focus);
     }
   }
 

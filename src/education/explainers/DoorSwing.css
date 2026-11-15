@@ -54,8 +54,8 @@
     inline-size: 2rem;
     block-size: 2rem;
     border-radius: 10px;
-    background: color-mix(in oklch, var(--select) 12%, var(--surface));
-    color: var(--select);
+    background: var(--brand-soft);
+    color: var(--brand-strong);
 
     & svg {
       inline-size: 1.125rem;

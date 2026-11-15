@@ -10,7 +10,7 @@
 
   .build-fx-trace {
     fill: none;
-    stroke: var(--brand);
+    stroke: var(--plan-accent);
     stroke-linejoin: round;
     stroke-linecap: round;
   }

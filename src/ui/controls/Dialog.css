@@ -8,7 +8,7 @@
     padding: 0;
     border: 0;
     border-radius: var(--radius-lg);
-    background: var(--surface);
+    background: var(--raised);
     color: var(--ink);
     box-shadow: var(--shadow-lg);
     overflow: visible;
@@ -37,7 +37,7 @@
     }
 
     &::backdrop {
-      background: oklch(0.22 0.02 260 / 0);
+      background: transparent;
       transition:
         background-color var(--dur-exit) var(--ease-exit),
         display var(--dur-exit) allow-discrete,
@@ -45,12 +45,12 @@
     }
 
     &[open]::backdrop {
-      background: oklch(0.22 0.02 260 / 0.4);
+      background: var(--scrim);
       transition-duration: var(--dur-modal);
       transition-timing-function: var(--ease-enter);
 
       @starting-style {
-        background: oklch(0.22 0.02 260 / 0);
+        background: transparent;
       }
     }
 

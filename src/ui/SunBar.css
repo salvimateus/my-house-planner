@@ -1,10 +1,9 @@
 @layer components {
   .sun-bar {
-    --sun-night: oklch(0.36 0.07 265);
     --sun-dawn: oklch(0.8 0.12 60);
     --sun-day: oklch(0.88 0.14 90);
-    --sun-gold: oklch(0.78 0.16 75);
-    --sun-gold-strong: oklch(0.5 0.12 65);
+    --sun-gold: var(--brand);
+    --sun-gold-strong: var(--select-strong);
     container: sun-bar / inline-size;
     position: absolute;
     right: calc(12px + env(safe-area-inset-right));
@@ -139,7 +138,7 @@
   .sun-play {
     padding: 0;
     background: var(--sun-gold);
-    color: oklch(0.25 0.05 60);
+    color: var(--on-brand);
 
     & svg {
       fill: currentColor;
@@ -221,7 +220,7 @@
   }
 
   .sun-compass-ring {
-    fill: color-mix(in oklch, var(--sun-day) 35%, var(--surface));
+    fill: var(--sun-ring);
     stroke: var(--line-strong);
     stroke-width: 1;
   }
@@ -304,14 +303,14 @@
 
     @media (hover: hover) {
       &:hover:not([aria-pressed="true"]) {
-        background: color-mix(in oklch, var(--ink) 5%, var(--surface));
+        background: var(--hover);
       }
     }
 
     &[aria-pressed="true"] {
       border-color: var(--sun-gold-strong);
-      background: color-mix(in oklch, var(--sun-gold) 30%, var(--surface));
-      color: oklch(0.32 0.08 60);
+      background: var(--select-soft);
+      color: var(--select-strong);
     }
   }
 
@@ -329,7 +328,7 @@
     line-height: 1.2;
 
     .sun-chip[aria-pressed="true"] & {
-      color: oklch(0.42 0.07 60);
+      color: var(--select-strong);
     }
   }
 
@@ -393,8 +392,8 @@
     margin: 8px 0 0;
     padding: 6px 8px;
     border-radius: 10px;
-    background: color-mix(in oklch, var(--sun-day) 28%, var(--surface));
-    color: oklch(0.34 0.06 70);
+    background: var(--brand-soft);
+    color: var(--brand-strong);
     line-height: 1.35;
 
     & svg {

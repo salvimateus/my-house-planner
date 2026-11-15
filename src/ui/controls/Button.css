@@ -3,7 +3,7 @@
     --btn-bg: var(--surface);
     --btn-fg: var(--ink);
     --btn-border: var(--line-strong);
-    --btn-hover: color-mix(in oklch, var(--btn-bg) 92%, var(--ink));
+    --btn-hover: var(--hover);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -56,11 +56,15 @@
   }
 
   .btn-primary {
-    --btn-bg: var(--brand-strong);
-    --btn-fg: oklch(1 0 0);
+    --btn-bg: var(--primary);
+    --btn-fg: var(--on-primary);
     --btn-border: transparent;
-    --btn-hover: color-mix(in oklch, var(--brand-strong) 86%, black);
-    box-shadow: 0 6px 16px color-mix(in oklch, var(--brand-strong) 26%, transparent);
+    --btn-hover: var(--primary-hover);
+    box-shadow: var(--primary-glow);
+
+    &:active:not(:disabled) {
+      background: var(--primary-active);
+    }
   }
 
   .btn-secondary {
@@ -74,10 +78,10 @@
   }
 
   .btn-danger {
-    --btn-bg: var(--danger-strong);
-    --btn-fg: oklch(1 0 0);
-    --btn-border: transparent;
-    --btn-hover: color-mix(in oklch, var(--danger-strong) 86%, black);
+    --btn-bg: var(--danger-btn-bg);
+    --btn-fg: var(--danger-btn-fg);
+    --btn-border: var(--danger-btn-border);
+    --btn-hover: var(--danger-btn-hover);
   }
 
   /* Small buttons keep a 44 px hit area through an invisible extension. */

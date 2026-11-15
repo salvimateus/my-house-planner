@@ -62,12 +62,12 @@
     min-width: 0;
     height: 38px;
     padding: 0 0.5rem;
-    border: 1px solid var(--select);
+    border: 1px solid var(--focus);
     border-radius: 10px;
     background: var(--surface);
     font-size: 1rem;
     font-weight: 650;
-    box-shadow: 0 0 0 3px color-mix(in oklch, var(--select) 22%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--focus) 22%, transparent);
 
     &:focus-visible {
       outline: none;
@@ -86,7 +86,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: oklch(0.62 0.13 150);
+    background: var(--success);
     transition: background-color var(--dur-pop) var(--ease-state);
 
     .save-dot[data-status="saving"] & {
@@ -146,5 +146,27 @@
     height: 24px;
     margin: 0 6px;
     background: var(--line);
+  }
+
+  .theme-toggle-icon {
+    animation: theme-icon-in var(--dur-pop) var(--ease-enter);
+  }
+
+  @keyframes theme-icon-in {
+    from {
+      opacity: 0;
+      rotate: -90deg;
+      scale: 0.6;
+    }
+  }
+
+  :root[data-motion="reduced"] .theme-toggle-icon {
+    animation: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root:not([data-motion="full"]) .theme-toggle-icon {
+      animation: none;
+    }
   }
 }

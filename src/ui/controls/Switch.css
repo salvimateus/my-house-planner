@@ -39,7 +39,7 @@
     transition: background-color var(--dur-fast) var(--ease-state);
 
     .switch[aria-checked="true"] & {
-      background: var(--select-strong);
+      background: var(--control-on);
     }
   }
 
@@ -51,7 +51,7 @@
     height: 22px;
     border-radius: 50%;
     background: oklch(1 0 0);
-    box-shadow: 0 1px 3px oklch(0.2 0.02 260 / 0.3);
+    box-shadow: 0 1px 3px color-mix(in oklch, var(--shadow-ink) 30%, transparent);
     transition: translate var(--dur-pop) var(--ease-state);
 
     .switch[aria-checked="true"] & {

@@ -75,9 +75,12 @@ function onPopState(): void {
   }
 }
 
+const THEME_BAR = { light: '#fdfaf6', dark: '#3c2c37' } as const;
+
 function MainApp(): ReactElement {
   const screen = useUi((s) => s.screen);
   const motion = useUi((s) => s.prefs.motion);
+  const theme = useUi((s) => s.prefs.theme);
 
   useEffect(() => startAutosave(), []);
 
@@ -93,6 +96,17 @@ function MainApp(): ReactElement {
   useEffect(() => {
     document.documentElement.dataset.motion = motion;
   }, [motion]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'auto') delete root.dataset.theme;
+    else root.dataset.theme = theme;
+    // The browser bar follows the chosen theme, not only the system one.
+    for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
+      const own = meta.media.includes('dark') ? THEME_BAR.dark : THEME_BAR.light;
+      meta.content = theme === 'auto' ? own : THEME_BAR[theme];
+    }
+  }, [theme]);
 
   useEffect(() => {
     window.addEventListener('popstate', onPopState);

@@ -98,8 +98,8 @@
   }
 
   .health-issue {
-    --tone: var(--select);
-    --tone-soft: var(--select-soft);
+    --tone: var(--ink-2);
+    --tone-soft: var(--hover);
     display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: center;
@@ -237,7 +237,7 @@
     padding: 0;
     border: 0;
     background: none;
-    color: var(--select-strong);
+    color: var(--link);
     font: inherit;
     font-weight: 650;
     text-decoration: underline;

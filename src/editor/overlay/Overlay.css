@@ -46,7 +46,7 @@
     --ghost: var(--select);
 
     &[data-invalid="true"] {
-      --ghost: var(--danger);
+      --ghost: var(--plan-danger);
     }
   }
 
@@ -59,18 +59,18 @@
 
   /* Overlapped parts of other rooms: hatched, so the user reads "this part changes owner". */
   .ghost-carve {
-    fill: url(#casinha-carve-hatch) var(--danger);
-    stroke: var(--danger);
+    fill: url(#casinha-carve-hatch) var(--plan-danger);
+    stroke: var(--plan-danger);
     stroke-width: 1px;
   }
 
   .overlay-hatch-bg {
-    fill: var(--danger);
+    fill: var(--plan-danger);
     fill-opacity: 0.1;
   }
 
   .overlay-hatch-line {
-    fill: var(--danger);
+    fill: var(--plan-danger);
     fill-opacity: 0.42;
   }
 
@@ -92,7 +92,7 @@
   }
 
   .overlay-guides line {
-    stroke: #ff3d7f;
+    stroke: var(--plan-guide);
     stroke-width: 1px;
     stroke-dasharray: 5 4;
   }
@@ -108,7 +108,7 @@
   .overlay-handle {
     & rect,
     & circle {
-      fill: var(--surface);
+      fill: var(--plan-surface);
       stroke: var(--select);
       stroke-width: 2px;
     }
@@ -131,8 +131,8 @@
     gap: 1px;
     padding: 0.375rem 0.625rem;
     border-radius: 10px;
-    background: oklch(0.25 0.015 260 / 0.92);
-    color: oklch(1 0 0);
+    background: var(--plan-chip);
+    color: var(--plan-chip-fg);
     box-shadow: var(--shadow);
     font-size: 0.875rem;
     font-weight: 650;
@@ -144,7 +144,7 @@
     animation: overlay-in 120ms var(--ease-enter);
 
     &[data-invalid="true"] {
-      background: var(--danger);
+      background: var(--plan-danger);
     }
   }
 

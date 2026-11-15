@@ -1,4 +1,4 @@
-import { Download, Lock, Redo2, Share2, Undo2 } from 'lucide-react';
+import { Download, Lock, Moon, Redo2, Share2, Sun, SunMoon, Undo2 } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { docStore, useDoc } from '../store/docStore.ts';
@@ -37,6 +37,26 @@ function SaveDot(): ReactElement | null {
         {SAVE_TEXT[status]}
       </span>
     </span>
+  );
+}
+
+const THEME_NEXT = { auto: 'light', light: 'dark', dark: 'auto' } as const;
+const THEME_LABEL = {
+  auto: 'Tema: automático',
+  light: 'Tema: claro',
+  dark: 'Tema: escuro',
+} as const;
+
+function ThemeToggle(): ReactElement {
+  const theme = useUi((s) => s.prefs.theme);
+  const Icon = theme === 'light' ? Sun : theme === 'dark' ? Moon : SunMoon;
+  return (
+    <IconButton
+      label={THEME_LABEL[theme]}
+      title={`${THEME_LABEL[theme]}. Toque para trocar.`}
+      icon={<Icon key={theme} className="theme-toggle-icon" />}
+      onClick={() => uiStore.getState().setPrefs({ theme: THEME_NEXT[theme] })}
+    />
   );
 }
 
@@ -113,6 +133,7 @@ export function TopBar({ wide }: { wide: boolean }): ReactElement {
         <SaveDot />
       </div>
       <div className="topbar-actions">
+        <ThemeToggle />
         <IconButton
           label="Desfazer"
           title={`Desfazer (${mod}+Z)`}

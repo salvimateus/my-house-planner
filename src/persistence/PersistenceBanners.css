@@ -51,6 +51,7 @@
 
   .pbanner-warn {
     --pb-accent: var(--brand);
+    --pb-icon: var(--brand-strong);
   }
 
   .pbanner-error {
@@ -60,7 +61,7 @@
   .pbanner-icon {
     display: inline-flex;
     flex: none;
-    color: var(--pb-accent);
+    color: var(--pb-icon, var(--pb-accent));
 
     & svg {
       width: 20px;
@@ -105,7 +106,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid var(--select);
+      outline: 2px solid var(--focus);
       outline-offset: 2px;
     }
   }
@@ -143,6 +144,6 @@
   .pdrop-icon {
     width: 36px;
     height: 36px;
-    color: var(--brand);
+    color: var(--icon);
   }
 }

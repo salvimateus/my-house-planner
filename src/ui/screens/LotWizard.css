@@ -65,7 +65,7 @@
     width: min(100%, 38dvh, 420px);
     height: auto;
     aspect-ratio: 1;
-    filter: drop-shadow(0 10px 24px oklch(0.2 0.02 85 / 0.1));
+    filter: drop-shadow(0 10px 24px color-mix(in oklch, var(--shadow-ink) 10%, transparent));
   }
 
   .lp-world {
@@ -241,7 +241,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid var(--select);
+      outline: 2px solid var(--focus);
       outline-offset: 1px;
     }
   }

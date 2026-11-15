@@ -21,7 +21,7 @@
       inset-inline-start: 50%;
       width: 2px;
       translate: -50% 0;
-      background: var(--select);
+      background: var(--focus);
       opacity: 0;
       transition: opacity var(--dur-fast) var(--ease-state);
     }
@@ -67,7 +67,7 @@
     .panel-resizer[data-dragging] & {
       opacity: 1;
       box-shadow:
-        0 0 0 2px var(--select),
+        0 0 0 2px var(--focus),
         var(--shadow-sm);
     }
 

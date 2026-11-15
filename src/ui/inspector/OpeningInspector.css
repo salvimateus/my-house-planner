@@ -54,7 +54,7 @@
     gap: 0.5rem;
     padding: 0.625rem 0.75rem;
     border-radius: 12px;
-    background: color-mix(in oklch, var(--danger) 10%, var(--surface));
+    background: var(--danger-soft);
     color: var(--danger);
     font-size: 0.875rem;
     font-weight: 600;
@@ -121,7 +121,7 @@
     min-height: 2rem;
     padding-inline: 0.25rem;
     border-radius: 8px;
-    color: var(--select);
+    color: var(--select-strong);
     font-size: 0.875rem;
     font-weight: 600;
     touch-action: manipulation;
@@ -138,7 +138,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid var(--select);
+      outline: 2px solid var(--focus);
       outline-offset: 2px;
     }
   }

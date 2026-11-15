@@ -1,18 +1,89 @@
 @layer base {
   :root {
     color-scheme: light;
-    --paper: oklch(0.975 0.008 85);
-    --surface: oklch(1 0 0);
-    --ink: oklch(0.25 0.015 260);
-    --ink-2: oklch(0.42 0.015 260);
-    --line: oklch(0.9 0.008 85);
-    --brand: oklch(0.66 0.15 40);
-    --brand-strong: oklch(0.42 0.13 38);
-    --select: oklch(0.56 0.21 265);
-    --measure: oklch(0.52 0.09 195);
-    --danger: oklch(0.56 0.2 25);
+
+    /* Source palettes. Light: navy, blue grey, amber, beige. Dark: coral, maroon, plum, charcoal. */
+    --navy: oklch(0.327 0.092 262.8);
+    --blue-grey: oklch(0.553 0.058 242.2);
+    --amber: oklch(0.828 0.133 74.1);
+    --beige: oklch(0.916 0.011 71.9);
+    --coral: oklch(0.641 0.225 20.2);
+    --maroon: oklch(0.445 0.123 2.4);
+    --plum: oklch(0.339 0.082 338.4);
+    --charcoal: oklch(0.293 0 0);
+
+    /* Surfaces and text. */
+    --paper: var(--beige);
+    --surface: oklch(0.985 0.006 75);
+    --raised: var(--surface);
+    --sunken: oklch(0.885 0.013 72);
+    --hover: oklch(0.885 0.013 72);
+    --ink: var(--navy);
+    --ink-2: oklch(0.38 0.05 245);
+    --line: oklch(0.85 0.018 240);
+    --line-strong: var(--blue-grey);
+    --icon: var(--blue-grey);
+
+    /* Brand: --brand is the highlight mark, --brand-strong the brand text, --primary the main action. */
+    --brand: var(--amber);
+    --on-brand: var(--navy);
+    --brand-strong: var(--navy);
+    --brand-soft: color-mix(in oklch, var(--amber) 38%, var(--surface));
+    --brand-tint: color-mix(in oklch, var(--amber) 14%, var(--paper));
+    --primary: var(--navy);
+    --primary-hover: color-mix(in oklch, var(--navy) 86%, black);
+    --primary-active: color-mix(in oklch, var(--navy) 76%, black);
+    --on-primary: oklch(1 0 0);
+    --primary-glow: 0 6px 16px color-mix(in oklch, var(--navy) 26%, transparent);
+    --accent: var(--amber);
+    --on-accent: var(--navy);
+    --link: var(--navy);
+    --link-hover: var(--select);
+
+    /* Interface state: focus ring and selected controls. */
+    --focus: var(--navy);
+    --control-on: var(--navy);
+    --select-strong: var(--navy);
+    --select-soft: color-mix(in oklch, var(--amber) 75%, var(--surface));
+
+    --measure: oklch(0.42 0.08 200);
+    --measure-soft: color-mix(in oklch, var(--measure) 10%, var(--surface));
+    --success: oklch(0.62 0.13 150);
+    --success-text: oklch(0.42 0.11 150);
+    --danger: oklch(0.43 0.18 25);
+    --danger-strong: oklch(0.4 0.17 25);
+    --on-danger: oklch(1 0 0);
+    --danger-soft: color-mix(in oklch, var(--danger) 9%, var(--surface));
+    --danger-btn-bg: var(--danger-strong);
+    --danger-btn-fg: var(--on-danger);
+    --danger-btn-border: transparent;
+    --danger-btn-hover: color-mix(in oklch, var(--danger-strong) 86%, black);
+
+    --sun-night: oklch(0.36 0.07 265);
+    --sun-ring: color-mix(in oklch, oklch(0.88 0.14 90) 35%, var(--surface));
+
+    --toast-bg: oklch(0.26 0.07 263);
+    --toast-fg: oklch(0.98 0.005 85);
+    --toast-accent: var(--amber);
+    --toast-muted: oklch(0.86 0.02 250);
+    --toast-success: oklch(0.85 0.13 150);
+    --toast-error: oklch(0.84 0.1 40);
+    --scrim: oklch(0.22 0.04 263 / 0.4);
+    --shadow-ink: oklch(0.2 0.03 260);
+
+    /* Plan overlay: the plan stays a light sheet in both themes, so these do not follow the theme. */
+    --select: oklch(0.48 0.16 263);
+    --plan-surface: oklch(1 0 0);
+    --plan-sheet: var(--sunken);
+    --plan-ink-2: oklch(0.42 0.05 245);
+    --plan-accent: oklch(0.7 0.15 68);
+    --plan-danger: oklch(0.56 0.2 25);
+    --plan-guide: oklch(0.66 0.24 0);
+    --plan-chip: oklch(0.327 0.092 262.8 / 0.94);
+    --plan-chip-fg: oklch(1 0 0);
+
     --radius: 14px;
-    --shadow: 0 8px 24px oklch(0.2 0.02 85 / 0.08);
+    --shadow: 0 8px 24px color-mix(in oklch, var(--shadow-ink) 8%, transparent);
     --ease-enter: cubic-bezier(0, 0, 0.2, 1);
     --ease-exit: cubic-bezier(0.4, 0, 1, 1);
     --ease-state: cubic-bezier(0.4, 0, 0.2, 1);
@@ -34,5 +105,129 @@
       1
     );
     --font-sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: var(--charcoal);
+      --surface: oklch(0.315 0.03 338);
+      --raised: oklch(0.34 0.035 338);
+      --sunken: oklch(0.26 0.012 338);
+      --hover: oklch(0.38 0.04 338);
+      --ink: oklch(0.95 0.012 30);
+      --ink-2: oklch(0.86 0.03 350);
+      --line: oklch(0.45 0.045 345);
+      --line-strong: oklch(0.64 0.06 350);
+      --icon: var(--coral-light);
+
+      --coral-light: oklch(0.9 0.09 18);
+      --brand: var(--coral);
+      --on-brand: oklch(0.18 0.04 340);
+      --brand-strong: var(--coral-light);
+      --brand-soft: color-mix(in oklch, var(--coral) 12%, var(--surface));
+      --brand-tint: color-mix(in oklch, var(--coral) 8%, var(--paper));
+      --primary: oklch(0.5 0.2 22);
+      --primary-hover: oklch(0.51 0.2 22);
+      --primary-active: oklch(0.45 0.19 22);
+      --on-primary: oklch(1 0 0);
+      --primary-glow:
+        0 0 0 1px color-mix(in oklch, var(--coral) 35%, transparent),
+        0 6px 20px color-mix(in oklch, var(--coral) 32%, transparent);
+      --accent: oklch(0.45 0.19 22);
+      --on-accent: oklch(1 0 0);
+      --link: var(--coral-light);
+      --link-hover: oklch(0.94 0.06 18);
+
+      --focus: var(--coral);
+      --control-on: var(--coral);
+      --select-strong: var(--coral-light);
+      --select-soft: color-mix(in oklch, var(--coral) 12%, var(--surface));
+
+      --measure: oklch(0.84 0.08 200);
+      --success: oklch(0.72 0.14 150);
+      --success-text: oklch(0.86 0.12 150);
+      --danger: oklch(0.86 0.11 45);
+      --danger-strong: oklch(0.86 0.11 45);
+      --on-danger: oklch(0.2 0.02 30);
+      --danger-btn-bg: transparent;
+      --danger-btn-fg: var(--danger);
+      --danger-btn-border: var(--danger);
+      --danger-btn-hover: color-mix(in oklch, var(--danger) 12%, transparent);
+
+      --sun-night: oklch(0.85 0.06 265);
+      --sun-ring: var(--sunken);
+      --plan-sheet: oklch(0.93 0.008 80);
+
+      --toast-bg: oklch(0.38 0.05 338);
+      --toast-fg: oklch(0.97 0.01 30);
+      --toast-accent: oklch(0.92 0.08 18);
+      --toast-muted: oklch(0.9 0.02 350);
+      --toast-success: oklch(0.9 0.12 150);
+      --toast-error: oklch(0.9 0.09 45);
+      --scrim: oklch(0.12 0.02 338 / 0.6);
+      --shadow-ink: oklch(0.08 0.02 338);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: var(--charcoal);
+    --surface: oklch(0.315 0.03 338);
+    --raised: oklch(0.34 0.035 338);
+    --sunken: oklch(0.26 0.012 338);
+    --hover: oklch(0.38 0.04 338);
+    --ink: oklch(0.95 0.012 30);
+    --ink-2: oklch(0.86 0.03 350);
+    --line: oklch(0.45 0.045 345);
+    --line-strong: oklch(0.64 0.06 350);
+    --icon: var(--coral-light);
+
+    --coral-light: oklch(0.9 0.09 18);
+    --brand: var(--coral);
+    --on-brand: oklch(0.18 0.04 340);
+    --brand-strong: var(--coral-light);
+    --brand-soft: color-mix(in oklch, var(--coral) 12%, var(--surface));
+    --brand-tint: color-mix(in oklch, var(--coral) 8%, var(--paper));
+    --primary: oklch(0.5 0.2 22);
+    --primary-hover: oklch(0.51 0.2 22);
+    --primary-active: oklch(0.45 0.19 22);
+    --on-primary: oklch(1 0 0);
+    --primary-glow:
+      0 0 0 1px color-mix(in oklch, var(--coral) 35%, transparent),
+      0 6px 20px color-mix(in oklch, var(--coral) 32%, transparent);
+    --accent: oklch(0.45 0.19 22);
+    --on-accent: oklch(1 0 0);
+    --link: var(--coral-light);
+    --link-hover: oklch(0.94 0.06 18);
+
+    --focus: var(--coral);
+    --control-on: var(--coral);
+    --select-strong: var(--coral-light);
+    --select-soft: color-mix(in oklch, var(--coral) 12%, var(--surface));
+
+    --measure: oklch(0.84 0.08 200);
+    --success: oklch(0.72 0.14 150);
+    --success-text: oklch(0.86 0.12 150);
+    --danger: oklch(0.86 0.11 45);
+    --danger-strong: oklch(0.86 0.11 45);
+    --on-danger: oklch(0.2 0.02 30);
+    --danger-btn-bg: transparent;
+    --danger-btn-fg: var(--danger);
+    --danger-btn-border: var(--danger);
+    --danger-btn-hover: color-mix(in oklch, var(--danger) 12%, transparent);
+
+    --sun-night: oklch(0.85 0.06 265);
+    --sun-ring: var(--sunken);
+    --plan-sheet: oklch(0.93 0.008 80);
+
+    --toast-bg: oklch(0.38 0.05 338);
+    --toast-fg: oklch(0.97 0.01 30);
+    --toast-accent: oklch(0.92 0.08 18);
+    --toast-muted: oklch(0.9 0.02 350);
+    --toast-success: oklch(0.9 0.12 150);
+    --toast-error: oklch(0.9 0.09 45);
+    --scrim: oklch(0.12 0.02 338 / 0.6);
+    --shadow-ink: oklch(0.08 0.02 338);
   }
 }

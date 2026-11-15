@@ -25,14 +25,14 @@
     gap: 0.625rem;
     padding: 0.875rem 1rem;
     border-radius: 14px;
-    background: color-mix(in oklch, oklch(0.62 0.13 150) 10%, var(--surface));
+    background: color-mix(in oklch, var(--success) 12%, var(--surface));
     font-size: 0.9375rem;
 
     & svg {
       flex: none;
       width: 20px;
       height: 20px;
-      color: oklch(0.45 0.11 150);
+      color: var(--success-text);
     }
   }
 
@@ -56,7 +56,7 @@
     list-style: disc;
 
     & li::marker {
-      color: var(--brand);
+      color: var(--icon);
     }
   }
 
@@ -105,8 +105,16 @@
     align-items: center;
     gap: 0.25rem;
     min-height: var(--tap);
-    color: var(--select-strong);
+    color: var(--link);
     font-weight: 650;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+
+    @media (hover: hover) {
+      &:hover {
+        color: var(--link-hover);
+      }
+    }
 
     & svg {
       width: 14px;
@@ -129,13 +137,19 @@
     display: inline-flex;
     align-items: center;
     min-height: var(--tap);
-    color: var(--select-strong);
+    color: var(--link);
     font-weight: 700;
     text-decoration: underline;
     text-underline-offset: 3px;
 
+    @media (hover: hover) {
+      &:hover {
+        color: var(--link-hover);
+      }
+    }
+
     &:focus-visible {
-      outline: 2px solid var(--select);
+      outline: 2px solid var(--focus);
       outline-offset: 2px;
       border-radius: 4px;
     }
