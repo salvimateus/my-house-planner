@@ -382,7 +382,7 @@ export function OpeningsLayer(): ReactElement | null {
           />
         );
       })}
-      {ctx.mode === 'thumb'
+      {!screen
         ? null
         : doc.openings.map((o) => {
             const d = scene.openings.get(o.id);

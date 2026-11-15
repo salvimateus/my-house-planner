@@ -1,16 +1,19 @@
 import type { ReactElement, ReactNode } from 'react';
 import { toGray601 } from '../catalog/color.ts';
-import { CHAR_EM } from '../geometry/labels.ts';
 import type { Rect, Scene } from '../geometry/types.ts';
-import type { AreaKind, ProjectDoc } from '../model/types.ts';
+import type { AreaKind, Id, ProjectDoc } from '../model/types.ts';
 import { formatArea, formatLengthShort } from '../model/units.ts';
 import type { RenderContext } from '../render/RenderContext.ts';
 import { SceneLayers } from '../render/SceneSvg.tsx';
 import type { SheetLayout } from './layout.ts';
+import { fitText, textWidth, wrapLines } from './measure.ts';
+import { PrintStreet } from './PrintStreet.tsx';
+import { layoutPrintLabels, PrintLabelsView } from './printLabels.tsx';
+import type { ExportOptions } from './types.ts';
 
 export const SHEET_SUBTITLE = 'Estudo preliminar de planta baixa';
 export const SHEET_DISCLAIMER =
-  'Desenho feito por leigo no app Casinha. Medidas e áreas aproximadas: valide com um(a) arquiteto(a) ou engenheiro(a).';
+  'Estudo feito no app Minha Casinha, uma ferramenta não profissional. Medidas e áreas são aproximadas: valide o projeto com um(a) arquiteto(a) ou engenheiro(a).';
 
 const BRAND = '#B8532E';
 const BRAND_LIGHT = '#FFF8EE';
@@ -18,35 +21,6 @@ const RULE = '#C9CCD2';
 const FRAME = '#8C8F86';
 
 const pctFormat = new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: 1 });
-
-/** Cuts the text with an ellipsis to fit `width` mm at `size` mm (approximate Inter widths). */
-export function fitText(text: string, width: number, size: number): string {
-  const max = Math.floor(width / (size * CHAR_EM));
-  const chars = [...text];
-  if (chars.length <= max) return text;
-  return `${chars
-    .slice(0, Math.max(1, max - 1))
-    .join('')
-    .trimEnd()}…`;
-}
-
-/** Greedy word wrap with approximate Inter widths. */
-export function wrapText(text: string, width: number, size: number): string[] {
-  const max = Math.max(8, Math.floor(width / (size * CHAR_EM)));
-  const lines: string[] = [];
-  let line = '';
-  for (const word of text.split(/\s+/)) {
-    const next = line ? `${line} ${word}` : word;
-    if (next.length > max && line) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = next;
-    }
-  }
-  if (line) lines.push(line);
-  return lines;
-}
 
 interface Colors {
   ink: string;
@@ -138,10 +112,10 @@ function Header({ doc, box, c }: { doc: ProjectDoc; box: Rect; c: Colors }): Rea
     <g>
       <LogoMark x={x0} y={y0} size={11} c={c} />
       <Txt x={tx} y={y0 + 3} size={2.6} fill={c.brand} bold>
-        Casinha
+        Minha Casinha
       </Txt>
       <Txt x={tx} y={y0 + 7.4} size={4} fill={c.ink} bold>
-        {fitText(name, x1 - tx, 4)}
+        {fitText(name, x1 - tx, 4, true)}
       </Txt>
       <Txt x={tx} y={y0 + 10.8} size={2.3} fill={c.sub}>
         {SHEET_SUBTITLE}
@@ -255,7 +229,9 @@ function ScaleAndNorth({
   );
 }
 
-type TableEntry = { kind: 'group'; label: string } | { kind: 'row'; name: string; area: string };
+type TableEntry =
+  | { kind: 'group'; label: string }
+  | { kind: 'row'; name: string; area: string; n: number | null };
 
 const GROUPS: Array<[AreaKind, string]> = [
   ['room', 'Ambientes'],
@@ -263,7 +239,7 @@ const GROUPS: Array<[AreaKind, string]> = [
   ['outdoor', 'Áreas externas'],
 ];
 
-function tableEntries(doc: ProjectDoc, scene: Scene): TableEntry[] {
+function tableEntries(doc: ProjectDoc, scene: Scene, numbered: Map<Id, number>): TableEntry[] {
   const out: TableEntry[] = [];
   for (const [kind, label] of GROUPS) {
     const areas = doc.areas.filter((a) => a.kind === kind);
@@ -271,7 +247,12 @@ function tableEntries(doc: ProjectDoc, scene: Scene): TableEntry[] {
     out.push({ kind: 'group', label });
     for (const a of areas) {
       const net = scene.areas.get(a.id)?.netArea ?? 0;
-      out.push({ kind: 'row', name: a.name.trim() || 'Sem nome', area: formatArea(net) });
+      out.push({
+        kind: 'row',
+        name: a.name.trim() || 'Sem nome',
+        area: formatArea(net),
+        n: numbered.get(a.id) ?? null,
+      });
     }
   }
   return out;
@@ -291,16 +272,32 @@ function AreaTable({
   const capacity = Math.max(0, Math.floor((box.y1 - box.y0 - 4.4) / ROW_H));
   let shown = entries;
   let hidden = 0;
-  if (entries.length > capacity) {
-    shown = entries.slice(0, Math.max(0, capacity - 1));
-    hidden = entries.slice(shown.length).filter((e) => e.kind === 'row').length;
+  // Overflow: drop the group headings first, then unnumbered rows; numbered rows always stay,
+  // because the drawing points to them.
+  if (shown.length > capacity) shown = entries.filter((e) => e.kind === 'row');
+  if (shown.length > capacity) {
+    const rows = shown;
+    const numbered = rows.filter((e) => e.kind === 'row' && e.n !== null).length;
+    let others = Math.max(0, capacity - 1 - numbered);
+    shown = rows.filter((e) => {
+      if (e.kind === 'row' && e.n !== null) return true;
+      others -= 1;
+      return others >= 0;
+    });
+    hidden = rows.length - shown.length;
   }
-  const width = box.x1 - box.x0;
+  const hasNumbers = entries.some((e) => e.kind === 'row' && e.n !== null);
+  const nameX = box.x0 + (hasNumbers ? 5 : 1.5);
   return (
     <g>
       <Txt x={box.x0} y={box.y0 + 2.6} size={2.6} fill={c.ink} bold>
         Quadro de áreas (área útil)
       </Txt>
+      {hasNumbers ? (
+        <Txt x={box.x1} y={box.y0 + 2.6} size={1.9} fill={c.sub} anchor="end">
+          Nº = número no desenho
+        </Txt>
+      ) : null}
       {shown.map((e, i) => {
         const y = box.y0 + 4.4 + (i + 1) * ROW_H - 0.9;
         return e.kind === 'group' ? (
@@ -310,8 +307,13 @@ function AreaTable({
         ) : (
           // biome-ignore lint/suspicious/noArrayIndexKey: names repeat; the list is rebuilt as a whole
           <g key={i}>
-            <Txt x={box.x0 + 1.5} y={y} size={2.2} fill={c.ink}>
-              {fitText(e.name, width - 20, 2.2)}
+            {e.n !== null ? (
+              <Txt x={box.x0 + 2} y={y} size={2.1} fill={c.ink} bold anchor="middle">
+                {e.n}
+              </Txt>
+            ) : null}
+            <Txt x={nameX} y={y} size={2.2} fill={c.ink}>
+              {fitText(e.name, box.x1 - nameX - textWidth(e.area, 2.2) - 2, 2.2)}
             </Txt>
             <Txt x={box.x1} y={y} size={2.2} fill={c.ink} anchor="end">
               {e.area}
@@ -320,12 +322,7 @@ function AreaTable({
         );
       })}
       {hidden > 0 ? (
-        <Txt
-          x={box.x0 + 1.5}
-          y={box.y0 + 4.4 + (shown.length + 1) * ROW_H - 0.9}
-          size={2.1}
-          fill={c.sub}
-        >
+        <Txt x={nameX} y={box.y0 + 4.4 + (shown.length + 1) * ROW_H - 0.9} size={2.1} fill={c.sub}>
           {hidden === 1 ? '+ 1 área não listada' : `+ ${hidden} áreas não listadas`}
         </Txt>
       ) : null}
@@ -337,17 +334,18 @@ const DISC_SIZE = 2;
 const DISC_LINE = 2.7;
 
 function disclaimerHeight(width: number): number {
-  return wrapText(SHEET_DISCLAIMER, width, DISC_SIZE).length * DISC_LINE + 2.4;
+  return wrapLines(SHEET_DISCLAIMER, width, DISC_SIZE).length * DISC_LINE + 2.4;
 }
 
 function Disclaimer({ box, c }: { box: Rect; c: Colors }): ReactElement {
-  const lines = wrapText(SHEET_DISCLAIMER, box.x1 - box.x0, DISC_SIZE);
+  const lines = wrapLines(SHEET_DISCLAIMER, box.x1 - box.x0, DISC_SIZE);
   return (
     <g>
       <Rule x0={box.x0} x1={box.x1} y={box.y0} c={c} />
       {lines.map((l, i) => (
         <Txt
-          key={l}
+          // biome-ignore lint/suspicious/noArrayIndexKey: lines are rebuilt as a whole
+          key={i}
           x={box.x0}
           y={box.y0 + 2.4 + i * DISC_LINE + 0.6}
           size={DISC_SIZE}
@@ -380,17 +378,19 @@ function Panel({
   scene,
   layout,
   date,
+  numbered,
   c,
 }: {
   doc: ProjectDoc;
   scene: Scene;
   layout: SheetLayout;
   date: string;
+  numbered: Map<Id, number>;
   c: Colors;
 }): ReactElement {
   const p = layout.panel;
   const facts = factRows(scene, doc, layout.scale, date);
-  const entries = tableEntries(doc, scene);
+  const entries = tableEntries(doc, scene, numbered);
   const factsH = facts.length * FACT_H + 1;
 
   if (layout.panelColumns === 1) {
@@ -462,18 +462,21 @@ export function PrintSheet({
   scene,
   layout,
   ctx,
+  opts,
   date,
 }: {
   doc: ProjectDoc;
   scene: Scene;
   layout: SheetLayout;
   ctx: RenderContext;
+  opts: ExportOptions;
   date: string;
 }): ReactElement {
   sheetSeq += 1;
   const clipId = `sheet-clip-${sheetSeq}`;
-  const { drawing: dr, view, scale, w, h } = layout;
+  const { drawing: dr, clip: cl, view, scale, w, h } = layout;
   const c = colorsOf(ctx);
+  const labels = layoutPrintLabels(doc, scene, layout, opts, ctx.theme);
   const tx = dr.x0 - view.x0 / scale;
   const ty = dr.y0 - view.y0 / scale;
   return (
@@ -489,21 +492,16 @@ export function PrintSheet({
       <rect x={0} y={0} width={w} height={h} fill="#FFFFFF" />
       <defs>
         <clipPath id={clipId}>
-          <rect x={dr.x0} y={dr.y0} width={dr.x1 - dr.x0} height={dr.y1 - dr.y0} />
+          <rect x={cl.x0} y={cl.y0} width={cl.x1 - cl.x0} height={cl.y1 - cl.y0} />
         </clipPath>
       </defs>
       <g clipPath={`url(#${clipId})`}>
-        <rect
-          x={dr.x0}
-          y={dr.y0}
-          width={dr.x1 - dr.x0}
-          height={dr.y1 - dr.y0}
-          fill={ctx.theme.world}
-        />
         <g transform={`translate(${tx} ${ty}) scale(${1 / scale})`}>
+          <PrintStreet lot={doc.lot} scale={scale} neighbors={opts.context} />
           <SceneLayers data={{ doc, scene, live: false }} ctx={ctx} />
         </g>
       </g>
+      <PrintLabelsView labels={labels} theme={ctx.theme} />
       <rect
         x={dr.x0}
         y={dr.y0}
@@ -513,7 +511,7 @@ export function PrintSheet({
         stroke={c.frame}
         strokeWidth={0.25}
       />
-      <Panel doc={doc} scene={scene} layout={layout} date={date} c={c} />
+      <Panel doc={doc} scene={scene} layout={layout} date={date} numbered={labels.numbered} c={c} />
     </svg>
   );
 }

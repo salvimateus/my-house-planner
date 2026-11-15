@@ -1,5 +1,6 @@
 import type { ProjectDoc } from '../model/types.ts';
 import { PDF_FONTS, pdfFontBase64 } from './fonts.ts';
+import { ensureMeasureFont } from './measure.ts';
 import { renderSheet } from './sheet.ts';
 import { exportFileName } from './svgExport.ts';
 import { ExportError, type ExportOptions } from './types.ts';
@@ -27,6 +28,7 @@ export async function exportPdf(doc: ProjectDoc, opts: ExportOptions): Promise<F
       throw new ExportError(LIB_ERROR, { cause: err });
     }),
     Promise.all(PDF_FONTS.map((f) => pdfFontBase64(f.file))),
+    ensureMeasureFont(),
   ]);
   const [{ jsPDF }, { svg2pdf }] = libs;
   const sheet = renderSheet(doc, opts);
@@ -46,7 +48,7 @@ export async function exportPdf(doc: ProjectDoc, opts: ExportOptions): Promise<F
     pdf.setProperties({
       title: doc.name || 'Planta',
       subject: 'Estudo preliminar de planta baixa',
-      creator: 'Casinha',
+      creator: 'Minha Casinha',
     });
     textStrokesToSheetSpace(sheet.svg);
     await svg2pdf(sheet.svg, pdf, { x: 0, y: 0, width: layout.w, height: layout.h });

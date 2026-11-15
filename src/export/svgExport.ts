@@ -2,6 +2,7 @@ import { projectFileSlug } from '../io/projectFile.ts';
 import type { ProjectDoc } from '../model/types.ts';
 import { interWoff2Base64 } from './fonts.ts';
 import type { SheetLayout } from './layout.ts';
+import { ensureMeasureFont } from './measure.ts';
 import { renderSheet } from './sheet.ts';
 import { ExportError, type ExportFormat, type ExportOptions } from './types.ts';
 
@@ -18,15 +19,17 @@ export function exportFileName(doc: ProjectDoc, opts: ExportOptions, format: Exp
 export async function sheetSvgMarkup(
   doc: ProjectDoc,
   opts: ExportOptions,
+  pixels?: { width: number; height: number },
 ): Promise<{ markup: string; layout: SheetLayout }> {
-  const font = await interWoff2Base64();
+  const [font] = await Promise.all([interWoff2Base64(), ensureMeasureFont()]);
   const sheet = renderSheet(doc, opts);
   try {
     const { layout } = sheet;
     // A detached copy, so the `@font-face` never registers in the app document.
     const svg = sheet.svg.cloneNode(true) as SVGSVGElement;
-    svg.setAttribute('width', `${layout.w}mm`);
-    svg.setAttribute('height', `${layout.h}mm`);
+    // A PNG rasterizes the SVG at its intrinsic size, so it gets the target pixel size.
+    svg.setAttribute('width', pixels ? String(pixels.width) : `${layout.w}mm`);
+    svg.setAttribute('height', pixels ? String(pixels.height) : `${layout.h}mm`);
     const style = document.createElementNS(SVG_NS, 'style');
     style.textContent = `@font-face{font-family:"Inter";font-style:normal;font-weight:100 900;src:url(data:font/woff2;base64,${font}) format("woff2");}`;
     svg.insertBefore(style, svg.firstChild);

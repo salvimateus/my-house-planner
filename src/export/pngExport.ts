@@ -1,5 +1,6 @@
 import type { ProjectDoc } from '../model/types.ts';
 import type { SheetLayout } from './layout.ts';
+import { sheetLayoutFor } from './sheet.ts';
 import { exportFileName, sheetSvgMarkup } from './svgExport.ts';
 import { ExportError, type ExportOptions } from './types.ts';
 
@@ -126,7 +127,9 @@ export async function exportPng(
   opts: ExportOptions,
   dpi: PngDpi,
 ): Promise<PngResult> {
-  const { markup, layout } = await sheetSvgMarkup(doc, opts);
+  const first = sheetLayoutFor(doc, opts);
+  let size = pngSize(first.w, first.h, dpi, maxCanvasPixels());
+  const { markup, layout } = await sheetSvgMarkup(doc, opts, size);
   const url = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml' }));
   try {
     const img = await loadImage(url);
@@ -137,7 +140,6 @@ export async function exportPng(
     }
     // Lets the embedded font finish before the first draw (Safari).
     await new Promise((r) => setTimeout(r, 60));
-    let size = pngSize(layout.w, layout.h, dpi, maxCanvasPixels());
     for (let attempt = 0; attempt < 3; attempt++) {
       const blob = await rasterize(img, size);
       if (blob) {

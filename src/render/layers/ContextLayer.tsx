@@ -726,7 +726,8 @@ export const ContextLayer = memo(function ContextLayer({
   const flat = useFlatTextures(ctx);
   useFrontTurn(groupRef, lot, ctx);
   const body = useMemo(() => <ContextBody geom={geom} ctx={ctx} flat={flat} />, [geom, ctx, flat]);
-  if (!ctx.layers.context) return null;
+  // The print sheet draws its own calm street (src/export/PrintStreet.tsx).
+  if (!ctx.layers.context || ctx.mode === 'print') return null;
   return (
     <g className="scene-layer layer-context" pointerEvents="none" ref={groupRef}>
       {body}
@@ -977,7 +978,7 @@ export const StreetCanopies = memo(function StreetCanopies({
       ) : null,
     );
   }, [geom, ctx]);
-  if (!ctx.layers.context || ctx.mode === 'thumb') return null;
+  if (!ctx.layers.context || ctx.mode !== 'screen') return null;
   return (
     <g className="scene-layer layer-canopies" pointerEvents="none" ref={ref}>
       {body}

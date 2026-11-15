@@ -52,8 +52,8 @@ const COLOR_OPTIONS = [
 ] as const;
 
 const DPI_OPTIONS = [
-  { value: '150', label: '150 DPI' },
   { value: '300', label: '300 DPI' },
+  { value: '150', label: 'Mais leve (150 DPI)' },
 ] as const;
 
 type Phase =
@@ -343,7 +343,13 @@ export function ExportDialog(): ReactElement {
                 onChange={(v) => set('lotSize', v)}
               />
               <Switch
-                label="Vizinhança e rua"
+                label="Medidas de portas e janelas"
+                checked={opts.openingSizes}
+                onChange={(v) => set('openingSizes', v)}
+              />
+              <Switch
+                label="Vizinhança"
+                description="Divisas dos lotes vizinhos e árvores da calçada."
                 checked={opts.context}
                 onChange={(v) => set('context', v)}
               />

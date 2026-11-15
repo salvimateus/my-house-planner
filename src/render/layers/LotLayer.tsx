@@ -30,7 +30,7 @@ export const LotLayer = memo(function LotLayer({
   // The size labels sit on a side without a street when possible.
   const widthSide: Side = streets.includes('top') ? 'bottom' : 'top';
   const depthSide: Side = streets.includes('left') ? 'right' : 'left';
-  const showSize = ctx.mode !== 'thumb' && ctx.layers.measures;
+  const showSize = screen && ctx.layers.measures;
 
   return (
     <g className="scene-layer layer-lot" pointerEvents="none">

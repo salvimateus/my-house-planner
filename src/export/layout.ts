@@ -18,6 +18,8 @@ const LOT_PAD = 9;
 const BUILDING_PAD = 2;
 /** World margin around the built footprint. */
 const BUILDING_MARGIN = 1000;
+/** World context shown around the lot in the "Terreno inteiro" frame. */
+const LOT_CONTEXT = 3000;
 
 export type Orientation = 'landscape' | 'portrait';
 
@@ -32,6 +34,8 @@ export interface SheetLayout {
   fits: boolean;
   /** Drawing box on paper (mm). */
   drawing: Rect;
+  /** Visible part of the drawing box (mm): the lot frame shows at most 3 m of context. */
+  clip: Rect;
   /** Title block and area table on paper (mm). */
   panel: Rect;
   panelColumns: 1 | 2;
@@ -73,7 +77,7 @@ export function contentOf(
   doc: ProjectDoc,
   scene: Scene,
   frame: SheetFrame,
-): { box: Rect; pad: number } {
+): { box: Rect; pad: number; context: Rect | null } {
   const built = frame === 'building' ? builtBox(doc, scene) : null;
   if (built) {
     return {
@@ -84,9 +88,15 @@ export function contentOf(
         y1: built.y1 + BUILDING_MARGIN,
       },
       pad: BUILDING_PAD,
+      context: null,
     };
   }
-  return { box: { x0: 0, y0: 0, x1: doc.lot.width, y1: doc.lot.depth }, pad: LOT_PAD };
+  const { width: w, depth: d } = doc.lot;
+  return {
+    box: { x0: 0, y0: 0, x1: w, y1: d },
+    pad: LOT_PAD,
+    context: { x0: -LOT_CONTEXT, y0: -LOT_CONTEXT, x1: w + LOT_CONTEXT, y1: d + LOT_CONTEXT },
+  };
 }
 
 function boxes(
@@ -157,6 +167,7 @@ export function layoutSheet(
   pad: number,
   paper: PaperId,
   fixedScale: number | null,
+  context: Rect | null = null,
 ): SheetLayout {
   const tall = heightOf(content) > widthOf(content);
   const order: Orientation[] = tall ? ['portrait', 'landscape'] : ['landscape', 'portrait'];
@@ -183,6 +194,16 @@ export function layoutSheet(
   const cy = (content.y0 + content.y1) / 2;
   const vw = widthOf(pick.drawing) * pick.scale;
   const vh = heightOf(pick.drawing) * pick.scale;
+  const view = { x0: cx - vw / 2, y0: cy - vh / 2, x1: cx + vw / 2, y1: cy + vh / 2 };
+  const dr = pick.drawing;
+  const clip = context
+    ? {
+        x0: Math.max(dr.x0, dr.x0 + (context.x0 - view.x0) / pick.scale),
+        y0: Math.max(dr.y0, dr.y0 + (context.y0 - view.y0) / pick.scale),
+        x1: Math.min(dr.x1, dr.x0 + (context.x1 - view.x0) / pick.scale),
+        y1: Math.min(dr.y1, dr.y0 + (context.y1 - view.y0) / pick.scale),
+      }
+    : dr;
   return {
     paper,
     orientation: pick.orientation,
@@ -190,9 +211,10 @@ export function layoutSheet(
     h: pick.h,
     scale: pick.scale,
     fits: pick.fits,
-    drawing: pick.drawing,
+    drawing: dr,
+    clip,
     panel: pick.panel,
     panelColumns: pick.panelColumns,
-    view: { x0: cx - vw / 2, y0: cy - vh / 2, x1: cx + vw / 2, y1: cy + vh / 2 },
+    view,
   };
 }

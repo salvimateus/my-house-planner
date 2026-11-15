@@ -91,7 +91,8 @@ export const DimensionsLayer = memo(function DimensionsLayer({
     () => (screen ? coveredDims(areas, derived, Math.exp(bucket * BUCKET)) : NONE),
     [screen, areas, derived, bucket],
   );
-  if (ctx.mode === 'thumb' || !ctx.layers.measures) return null;
+  // Print dimensions come from the export label layout (src/export/printLabels.tsx).
+  if (ctx.mode !== 'screen' || !ctx.layers.measures) return null;
   const { theme } = ctx;
   const size = printSize(ctx, 2);
   const gap = printSize(ctx, 1.2);

@@ -158,19 +158,22 @@ function RulerMark({ id, d, ctx }: { id: Id; d: RulerDerived; ctx: RenderContext
         {tick(d.a.x, d.a.y)}
         {tick(d.b.x, d.b.y)}
       </g>
-      <Fixed ctx={ctx} transform={`translate(${mid.x} ${mid.y})`} className="ruler-label">
-        <rect
-          x={-w / 2}
-          y={-PILL_H / 2}
-          width={w}
-          height={PILL_H}
-          rx={PILL_H / 2}
-          fill={theme.halo}
-          stroke={theme.ruler}
-          strokeWidth={1}
-        />
-        <LabelText ctx={ctx} text={text} fill={theme.ruler} />
-      </Fixed>
+      {/* Print: the export label layout draws the pill, so it never covers a room name. */}
+      {ctx.mode === 'screen' ? (
+        <Fixed ctx={ctx} transform={`translate(${mid.x} ${mid.y})`} className="ruler-label">
+          <rect
+            x={-w / 2}
+            y={-PILL_H / 2}
+            width={w}
+            height={PILL_H}
+            rx={PILL_H / 2}
+            fill={theme.halo}
+            stroke={theme.ruler}
+            strokeWidth={1}
+          />
+          <LabelText ctx={ctx} text={text} fill={theme.ruler} />
+        </Fixed>
+      ) : null}
     </g>
   );
 }

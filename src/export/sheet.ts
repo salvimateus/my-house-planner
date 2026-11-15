@@ -20,15 +20,16 @@ export function printContext(opts: ExportOptions, scale: number): RenderContext 
       textures: true,
       items: opts.items,
       openings: true,
-      measures: opts.measures || opts.lotSize || opts.rulers,
+      // In print the layers draw no text; `measures` now only gates the ruler lines.
+      measures: opts.rulers,
     },
     reducedMotion: true,
   };
 }
 
 export function sheetLayoutFor(doc: ProjectDoc, opts: ExportOptions): SheetLayout {
-  const { box, pad } = contentOf(doc, sceneOf(doc), opts.frame);
-  return layoutSheet(box, pad, opts.paper, opts.scale);
+  const { box, pad, context } = contentOf(doc, sceneOf(doc), opts.frame);
+  return layoutSheet(box, pad, opts.paper, opts.scale, context);
 }
 
 /**
@@ -95,6 +96,7 @@ export function renderSheet(
         scene,
         layout,
         ctx,
+        opts,
         date: new Intl.DateTimeFormat('pt-BR').format(date),
       }),
     );
@@ -102,9 +104,6 @@ export function renderSheet(
     throw new ExportError('Não foi possível desenhar a folha. Tente de novo.', { cause: err });
   }
   const svg = rendered.root as SVGSVGElement;
-  // Dims, lot size and rulers share the `measures` layer; each toggle removes its own part.
-  if (!opts.measures) for (const g of svg.querySelectorAll('.layer-dims')) g.remove();
-  if (!opts.lotSize) for (const t of svg.querySelectorAll('.layer-lot text')) t.remove();
   normalizeWeights(svg);
   if (opts.mono) grayPaints(svg);
   stripScreenAttributes(svg);

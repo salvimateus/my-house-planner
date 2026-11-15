@@ -19,7 +19,8 @@ export const LabelsLayer = memo(function LabelsLayer({
   derived: Map<Id, AreaDerived>;
   ctx: RenderContext;
 }): ReactElement | null {
-  if (ctx.mode === 'thumb') return null;
+  // Print labels come from the export label layout (src/export/printLabels.tsx).
+  if (ctx.mode !== 'screen') return null;
   return (
     <g className="scene-layer layer-labels" pointerEvents="none">
       {areas.map((a) => {
