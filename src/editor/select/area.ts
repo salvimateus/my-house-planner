@@ -34,7 +34,6 @@ import {
   afterPaint,
   areaEl,
   closeRoomPicker,
-  fxRoot,
   numberedName,
   overlapRects,
   rippleArea,
@@ -426,7 +425,6 @@ export const areaHandler: SelectHandler = {
     const area = id ? doc?.areas.find((a) => a.id === id) : null;
     if (!doc || !area || ctx.doc.readOnly) return false;
     stopMergePick();
-    fxRoot();
     if (hit?.kind === 'label') {
       drag = { kind: 'label', id: area.id, base: area.labelOffset ?? { x: 0, y: 0 } };
       ctx.doc.beginGesture('Mover nome');

@@ -14,6 +14,9 @@ import { Handles } from './Handles.tsx';
 import { Readout } from './Readout.tsx';
 import './Overlay.css';
 
+/** Stripe pitch of the carve hatch, in screen px. */
+const HATCH_PX = 9;
+
 /**
  * Editor marks above the scene: selection outline and ghost in a world group that follows the
  * live camera, then guides, marquee and handles in screen px, then the readout chip. The
@@ -21,16 +24,24 @@ import './Overlay.css';
  */
 export function OverlaySvg({ ctx }: { ctx: RenderContext }): ReactElement {
   const worldRef = useRef<SVGGElement>(null);
+  const hatchRef = useRef<SVGPatternElement>(null);
 
   useLayoutEffect(() => {
     const g = worldRef.current;
+    const hatch = hatchRef.current;
     if (!g) return;
+    let hatchZoom = 0;
     const apply = () => {
       const { cx, cy, zoom, vw, vh } = camera.get();
       g.setAttribute(
         'transform',
         `matrix(${zoom} 0 0 ${zoom} ${vw / 2 - cx * zoom} ${vh / 2 - cy * zoom})`,
       );
+      // The hatch is used in world mm; this scale keeps its stripes a constant size on screen.
+      if (hatch && zoom !== hatchZoom) {
+        hatchZoom = zoom;
+        hatch.setAttribute('patternTransform', `scale(${1 / zoom}) rotate(45)`);
+      }
     };
     apply();
     return camera.subscribe(apply);
@@ -39,6 +50,18 @@ export function OverlaySvg({ ctx }: { ctx: RenderContext }): ReactElement {
   return (
     <div className="overlay" aria-hidden="true">
       <svg className="overlay-svg" focusable="false" aria-hidden="true">
+        <defs>
+          <pattern
+            ref={hatchRef}
+            id="casinha-carve-hatch"
+            patternUnits="userSpaceOnUse"
+            width={HATCH_PX}
+            height={HATCH_PX}
+          >
+            <rect className="overlay-hatch-bg" width={HATCH_PX} height={HATCH_PX} />
+            <rect className="overlay-hatch-line" width={HATCH_PX} height={2.5} />
+          </pattern>
+        </defs>
         <RenderContextProvider value={ctx}>
           <g ref={worldRef}>
             <SelectionOutline />

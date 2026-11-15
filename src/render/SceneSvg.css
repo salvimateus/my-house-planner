@@ -65,6 +65,11 @@
       stroke-dasharray: calc(var(--mmpp) * 7px) calc(var(--mmpp) * 4px);
     }
 
+    & .open-boundary {
+      stroke-width: calc(var(--mmpp) * 2px);
+      stroke-dasharray: calc(var(--mmpp) * 7px) calc(var(--mmpp) * 5px);
+    }
+
     & .grid-line {
       stroke-width: calc(var(--mmpp) * 1px);
     }

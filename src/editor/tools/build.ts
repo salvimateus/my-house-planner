@@ -70,12 +70,10 @@ export const closeRoomPicker = (): void => {
 
 /* ------------------------------------------------------------------------------------------------
  * Effects layer: one SVG above the scene and below the overlay, for wall traces, removed-wall lines
- * and the carve hatch pattern.
+ * and the selected removed-wall highlight.
  * ---------------------------------------------------------------------------------------------- */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
-export const HATCH_ID = 'casinha-carve-hatch';
-const HATCH_PX = 9;
 
 export interface FxRoot {
   svg: SVGSVGElement;
@@ -110,19 +108,9 @@ export function fxRoot(): FxRoot | null {
   if (!scene?.parentElement) return null;
 
   const svg = svgEl('svg', { class: 'build-fx', 'aria-hidden': 'true', focusable: 'false' });
-  const defs = svgEl('defs');
-  const pattern = svgEl('pattern', {
-    id: HATCH_ID,
-    patternUnits: 'userSpaceOnUse',
-    patternTransform: 'rotate(45)',
-  });
-  const bg = svgEl('rect', { class: 'build-fx-hatch-bg' });
-  const stripe = svgEl('rect', { class: 'build-fx-hatch-line' });
-  pattern.append(bg, stripe);
-  defs.append(pattern);
   const world = svgEl('g');
   const screen = svgEl('g');
-  svg.append(defs, world, screen);
+  svg.append(world, screen);
   scene.after(svg);
 
   const apply = () => {
@@ -131,12 +119,6 @@ export function fxRoot(): FxRoot | null {
       'transform',
       `matrix(${zoom} 0 0 ${zoom} ${vw / 2 - cx * zoom} ${vh / 2 - cy * zoom})`,
     );
-    const s = HATCH_PX / zoom;
-    pattern.setAttribute('width', String(s));
-    pattern.setAttribute('height', String(s));
-    for (const r of [bg, stripe]) r.setAttribute('height', String(s));
-    bg.setAttribute('width', String(s));
-    stripe.setAttribute('width', String(s * 0.32));
     for (const fn of screenListeners) fn();
   };
   apply();

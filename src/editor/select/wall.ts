@@ -106,7 +106,7 @@ export function setWallOpen(a: Id, b: Id, open: boolean): boolean {
 }
 
 /* ------------------------------------------------------------------------------------------------
- * Removed walls on the canvas: a dashed line where the wall was (screen px, effects layer)
+ * Highlight of the selected removed wall (screen px, effects layer); the scene draws the dashed line
  * ---------------------------------------------------------------------------------------------- */
 
 let openGroup: SVGGElement | null = null;
@@ -117,7 +117,12 @@ let listening = false;
 function drawOpenWalls(): void {
   frame = 0;
   const doc = docStore.getState().doc;
-  const list = doc && uiStore.getState().screen === 'editor' ? openWalls(doc) : [];
+  const sel = uiStore.getState().selection;
+  const selected =
+    doc && sel?.kind === 'wall' && uiStore.getState().screen === 'editor'
+      ? openWallFor(doc, sel.segmentId)
+      : null;
+  const list = selected ? [selected] : [];
   if (!list.length && !openGroup?.isConnected) return;
   const root = fxRoot();
   if (!root) {
@@ -136,8 +141,6 @@ function drawOpenWalls(): void {
       if (!frame) frame = requestAnimationFrame(drawOpenWalls);
     });
   }
-  const sel = uiStore.getState().selection;
-  const selected = sel?.kind === 'wall' && doc ? openWallFor(doc, sel.segmentId) : null;
   const lines = list.map((w) => {
     const p = camera.worldToScreen(
       w.axis === 'h' ? { x: w.start, y: w.line } : { x: w.line, y: w.start },
@@ -145,16 +148,7 @@ function drawOpenWalls(): void {
     const q = camera.worldToScreen(
       w.axis === 'h' ? { x: w.end, y: w.line } : { x: w.line, y: w.end },
     );
-    const line = svgEl('line', { class: 'build-fx-open', x1: p.x, y1: p.y, x2: q.x, y2: q.y });
-    if (
-      selected &&
-      selected.axis === w.axis &&
-      selected.line === w.line &&
-      selected.start === w.start
-    ) {
-      line.setAttribute('data-selected', 'true');
-    }
-    return line;
+    return svgEl('line', { class: 'build-fx-open-selected', x1: p.x, y1: p.y, x2: q.x, y2: q.y });
   });
   openGroup.replaceChildren(...lines);
 }

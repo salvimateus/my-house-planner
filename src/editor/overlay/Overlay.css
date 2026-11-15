@@ -57,11 +57,21 @@
     stroke-width: 2px;
   }
 
+  /* Overlapped parts of other rooms: hatched, so the user reads "this part changes owner". */
   .ghost-carve {
-    fill: var(--danger);
-    fill-opacity: 0.16;
+    fill: url(#casinha-carve-hatch) var(--danger);
     stroke: var(--danger);
     stroke-width: 1px;
+  }
+
+  .overlay-hatch-bg {
+    fill: var(--danger);
+    fill-opacity: 0.1;
+  }
+
+  .overlay-hatch-line {
+    fill: var(--danger);
+    fill-opacity: 0.42;
   }
 
   .ghost-opening {
@@ -128,7 +138,8 @@
     font-weight: 650;
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
-    white-space: nowrap;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
     will-change: transform;
     animation: overlay-in 120ms var(--ease-enter);
 
