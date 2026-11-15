@@ -136,7 +136,10 @@ export function WallInspector(): ReactElement | null {
         onChange={(mm, id) => commitWallThickness(seg.kind, mm, id)}
       />
 
-      <p className="wall-note">Arraste a parede na planta para mudar o tamanho dos cômodos.</p>
+      <p className="wall-note">
+        Arraste a parede na planta para mudar o tamanho dos cômodos. Sem a parede, cada cômodo
+        continua com o próprio nome e piso.
+      </p>
     </div>
   );
 }

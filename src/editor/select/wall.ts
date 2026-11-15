@@ -106,10 +106,12 @@ export function setWallOpen(a: Id, b: Id, open: boolean): boolean {
 }
 
 /* ------------------------------------------------------------------------------------------------
- * Highlight of the selected removed wall (screen px, effects layer); the scene draws the dashed line
+ * Highlight of the selected removed wall and of the walls an inspector row points at (screen px,
+ * effects layer); the scene draws the walls and the dashed lines
  * ---------------------------------------------------------------------------------------------- */
 
 let openGroup: SVGGElement | null = null;
+let hovered: SegmentKey[] = [];
 let frame = 0;
 let retries = 0;
 let listening = false;
@@ -122,7 +124,7 @@ function drawOpenWalls(): void {
     doc && sel?.kind === 'wall' && uiStore.getState().screen === 'editor'
       ? openWallFor(doc, sel.segmentId)
       : null;
-  const list = selected ? [selected] : [];
+  const list: SegmentKey[] = [...(selected ? [selected] : []), ...(doc ? hovered : [])];
   if (!list.length && !openGroup?.isConnected) return;
   const root = fxRoot();
   if (!root) {
@@ -156,6 +158,13 @@ function drawOpenWalls(): void {
 const scheduleOpenWalls = () => {
   if (!frame) frame = requestAnimationFrame(drawOpenWalls);
 };
+
+/** Highlights wall lines on the canvas, for example while an inspector row is hovered. */
+export function highlightWalls(keys: SegmentKey[]): void {
+  if (!keys.length && !hovered.length) return;
+  hovered = keys;
+  scheduleOpenWalls();
+}
 
 if (typeof window !== 'undefined') {
   docStore.subscribe((s, prev) => {

@@ -1,4 +1,4 @@
-import { BrickWall, Combine, Copy, Trash2, X } from 'lucide-react';
+import { BrickWall, Combine, Copy, Trash2, Unplug, X } from 'lucide-react';
 import type { KeyboardEvent, ReactElement } from 'react';
 import { useEffect, useId, useState } from 'react';
 import { useStore } from 'zustand';
@@ -14,10 +14,12 @@ import {
   startMergePick,
   stopMergePick,
 } from '../../editor/select/area.ts';
-import { openWalls, setWallOpen } from '../../editor/select/wall.ts';
+import { highlightWalls, type SegmentKey, setWallOpen } from '../../editor/select/wall.ts';
+import { sharedIntervals } from '../../geometry/areaOps.ts';
+import { pairKey } from '../../geometry/walls.ts';
 import { MIN_ROOM_SIDE } from '../../model/defaults.ts';
 import type { AreaKind } from '../../model/types.ts';
-import { formatArea } from '../../model/units.ts';
+import { formatArea, formatLength } from '../../model/units.ts';
 import { useDoc } from '../../store/docStore.ts';
 import { useScene } from '../../store/selectors.ts';
 import { useUi } from '../../store/uiStore.ts';
@@ -61,9 +63,6 @@ export function AreaInspector(): ReactElement | null {
   const derived = scene.areas.get(area.id);
   const rect = rectOf(area);
   const presets = area.kind === 'outdoor' ? OUTDOOR_PRESETS : BUILT_PRESETS;
-  const removed = openWalls(doc).filter((w) => w.a === area.id || w.b === area.id);
-  const removedPairs = [...new Map(removed.map((w) => [`${w.a}|${w.b}`, w])).values()];
-  const nameOf = (other: string) => doc.areas.find((a) => a.id === other)?.name ?? 'vizinho';
 
   return (
     <div className="area-inspector">
@@ -147,26 +146,7 @@ export function AreaInspector(): ReactElement | null {
         />
       </section>
 
-      {removedPairs.length ? (
-        <section className="area-section" aria-labelledby="area-open-title">
-          <h3 id="area-open-title" className="area-section-title">
-            Paredes removidas
-          </h3>
-          {removedPairs.map((w) => {
-            const other = w.a === area.id ? w.b : w.a;
-            return (
-              <Button
-                key={`${w.a}|${w.b}`}
-                icon={<BrickWall />}
-                block
-                onClick={() => setWallOpen(w.a, w.b, false)}
-              >
-                Recolocar parede com {nameOf(other)}
-              </Button>
-            );
-          })}
-        </section>
-      ) : null}
+      {area.kind === 'room' ? <IntegrateSection areaId={area.id} /> : null}
 
       <section className="area-section area-actions" aria-label="Ações">
         {picking ? (
@@ -181,6 +161,9 @@ export function AreaInspector(): ReactElement | null {
             Juntar com…
           </Button>
         )}
+        <p className="area-note">
+          Juntar vira um cômodo só. Para manter pisos diferentes, use Remover parede.
+        </p>
         <Button icon={<Copy />} block onClick={() => commands.duplicateSelection()}>
           Duplicar
         </Button>
@@ -237,5 +220,76 @@ function NameField({
         onKeyDown={onKeyDown}
       />
     </div>
+  );
+}
+
+/**
+ * Neighbor rooms that share a wall with this one: remove the wall to integrate them, or put it
+ * back. Each room keeps its own name and floor. Hover or focus highlights the shared wall.
+ */
+function IntegrateSection({ areaId }: { areaId: string }): ReactElement | null {
+  const doc = useDoc((s) => s.doc);
+  useEffect(() => () => highlightWalls([]), []);
+  const area = doc?.areas.find((a) => a.id === areaId);
+  if (!doc || !area) return null;
+  const open = new Set(doc.openBoundaries.map(([a, b]) => pairKey(a, b)));
+  const rows = doc.areas
+    .filter((n) => n.id !== areaId && n.kind === 'room')
+    .map((n) => {
+      const walls: SegmentKey[] = sharedIntervals(area.shape, n.shape).map((iv) => ({
+        axis: iv.axis,
+        line: iv.line,
+        start: iv.a,
+        end: iv.b,
+      }));
+      const length = walls.reduce((sum, w) => sum + w.end - w.start, 0);
+      return { n, walls, length, isOpen: open.has(pairKey(areaId, n.id)) };
+    })
+    .filter((r) => r.length > 0);
+  if (!rows.length) return null;
+
+  return (
+    <section className="area-section" aria-labelledby="area-integrate-title">
+      <h3 id="area-integrate-title" className="area-section-title">
+        Integrar com outro ambiente
+      </h3>
+      <ul className="area-integrate">
+        {rows.map(({ n, walls, length, isOpen }) => {
+          const show = () => highlightWalls(walls);
+          const hide = () => highlightWalls([]);
+          return (
+            <li
+              key={n.id}
+              className="area-integrate-row"
+              onPointerEnter={show}
+              onPointerLeave={hide}
+              onFocus={show}
+              onBlur={hide}
+            >
+              <span className="area-integrate-name">
+                {isOpen ? (
+                  `Sem parede com ${n.name}`
+                ) : (
+                  <>
+                    {n.name} · <span className="num">{formatLength(length)}</span>
+                  </>
+                )}
+              </span>
+              <Button
+                size="sm"
+                icon={isOpen ? <BrickWall /> : <Unplug />}
+                onClick={() => setWallOpen(areaId, n.id, !isOpen)}
+              >
+                {isOpen ? 'Recolocar parede' : 'Remover parede'}
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="area-note">
+        Sem a parede, cada ambiente continua com o próprio nome e piso. A linha tracejada mostra
+        onde a parede ficava.
+      </p>
+    </section>
   );
 }

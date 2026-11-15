@@ -102,4 +102,41 @@
       flex: 1 1 12rem;
     }
   }
+
+  .area-integrate {
+    display: grid;
+    gap: 0.375rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .area-integrate-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.375rem 0.375rem 0.375rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--paper);
+
+    @media (hover: hover) {
+      &:hover {
+        border-color: var(--select);
+      }
+    }
+
+    &:focus-within {
+      border-color: var(--select);
+    }
+  }
+
+  .area-integrate-name {
+    flex: 1 1 9rem;
+    min-width: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
 }
