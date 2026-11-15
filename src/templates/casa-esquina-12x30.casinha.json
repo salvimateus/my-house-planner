@@ -1,0 +1,1622 @@
+{
+  "format": "casinha.project",
+  "schemaVersion": 1,
+  "id": "0sJToKtdZd",
+  "name": "Casa de esquina 12×30",
+  "createdAt": "2026-11-01T12:00:00.000Z",
+  "updatedAt": "2026-11-01T12:00:00.000Z",
+  "lot": {
+    "width": 12000,
+    "depth": 30000,
+    "frontSide": "bottom",
+    "cornerSide": "right",
+    "boundaryWalls": {
+      "top": true,
+      "right": true,
+      "bottom": true,
+      "left": true
+    },
+    "sidewalkWidth": 2500,
+    "northDeg": 0,
+    "ground": {
+      "color": "#EFE7D2",
+      "material": "earth",
+      "scale": 1,
+      "angle": 0
+    },
+    "frontage": {
+      "ramps": [
+        {
+          "id": "FiEKaPjDRi",
+          "side": "bottom",
+          "width": 3600,
+          "at": 1800,
+          "gateId": "xh8ZsSfhli"
+        }
+      ],
+      "trees": [
+        {
+          "id": "EEDv6HLBvn",
+          "side": "bottom",
+          "at": 4700,
+          "size": 4200,
+          "species": "ipe-amarelo"
+        },
+        {
+          "id": "PX7nU5kd9N",
+          "side": "bottom",
+          "at": 8500,
+          "size": 3800,
+          "species": "quaresmeira"
+        },
+        {
+          "id": "BHtjKTxt5v",
+          "side": "right",
+          "at": 3600,
+          "size": 4400,
+          "species": "oiti"
+        },
+        {
+          "id": "InFktqmHo-",
+          "side": "right",
+          "at": 8900,
+          "size": 3600,
+          "species": "reseda"
+        },
+        {
+          "id": "8w8AV7RNWZ",
+          "side": "right",
+          "at": 14200,
+          "size": 4400,
+          "species": "ipe-roxo"
+        },
+        {
+          "id": "gzEe1X_ScN",
+          "side": "right",
+          "at": 19400,
+          "size": 4200,
+          "species": "ipe-amarelo"
+        },
+        {
+          "id": "MD1oov-RoP",
+          "side": "right",
+          "at": 24700,
+          "size": 3800,
+          "species": "quaresmeira"
+        }
+      ]
+    }
+  },
+  "structure": {
+    "preset": "masonry",
+    "internal": 150,
+    "external": 200,
+    "boundary": 150,
+    "wallPresets": {
+      "internal": "tijolo-em-pe",
+      "external": "bloco-14-externo",
+      "boundary": "tijolo-em-pe"
+    }
+  },
+  "areas": [
+    {
+      "id": "x9Yr3eriGc",
+      "kind": "room",
+      "preset": "laundry",
+      "name": "Lavanderia",
+      "shape": [
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 3000,
+            "y": 0
+          },
+          {
+            "x": 3000,
+            "y": 2500
+          },
+          {
+            "x": 0,
+            "y": 2500
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#ECEEEF",
+        "material": "ceramic-45",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "ta1b-FrO4z",
+      "kind": "covered",
+      "preset": "gourmet",
+      "name": "Área gourmet",
+      "shape": [
+        [
+          {
+            "x": 0,
+            "y": 8000
+          },
+          {
+            "x": 5500,
+            "y": 8000
+          },
+          {
+            "x": 5500,
+            "y": 12000
+          },
+          {
+            "x": 0,
+            "y": 12000
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#F3E6DA",
+        "material": "porcelain-90",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "J8Fd2AZbx7",
+      "kind": "outdoor",
+      "preset": "deck",
+      "name": "Deck",
+      "shape": [
+        [
+          {
+            "x": 6000,
+            "y": 1000
+          },
+          {
+            "x": 11500,
+            "y": 1000
+          },
+          {
+            "x": 11500,
+            "y": 9000
+          },
+          {
+            "x": 6000,
+            "y": 9000
+          }
+        ],
+        [
+          {
+            "x": 7000,
+            "y": 8000
+          },
+          {
+            "x": 10500,
+            "y": 8000
+          },
+          {
+            "x": 10500,
+            "y": 2000
+          },
+          {
+            "x": 7000,
+            "y": 2000
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#C9A27A",
+        "material": "deck",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "1cvud98MLJ",
+      "kind": "outdoor",
+      "preset": "pool",
+      "name": "Piscina",
+      "shape": [
+        [
+          {
+            "x": 7000,
+            "y": 2000
+          },
+          {
+            "x": 10500,
+            "y": 2000
+          },
+          {
+            "x": 10500,
+            "y": 8000
+          },
+          {
+            "x": 7000,
+            "y": 8000
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#7CC3E6",
+        "material": "water",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "gYU3aA9xg4",
+      "kind": "room",
+      "preset": "kitchen",
+      "name": "Cozinha",
+      "shape": [
+        [
+          {
+            "x": 0,
+            "y": 12000
+          },
+          {
+            "x": 5500,
+            "y": 12000
+          },
+          {
+            "x": 5500,
+            "y": 16500
+          },
+          {
+            "x": 0,
+            "y": 16500
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#F7EEDC",
+        "material": "porcelain-60",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "JSL26Q9R2e",
+      "kind": "room",
+      "preset": "suite",
+      "name": "Suíte",
+      "shape": [
+        [
+          {
+            "x": 5500,
+            "y": 12000
+          },
+          {
+            "x": 10000,
+            "y": 12000
+          },
+          {
+            "x": 10000,
+            "y": 14500
+          },
+          {
+            "x": 8000,
+            "y": 14500
+          },
+          {
+            "x": 8000,
+            "y": 16500
+          },
+          {
+            "x": 5500,
+            "y": 16500
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#E3EAF6",
+        "material": "wood-planks",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "hHUBhz4Ixe",
+      "kind": "room",
+      "preset": "bathroom",
+      "name": "Banho da suíte",
+      "shape": [
+        [
+          {
+            "x": 8000,
+            "y": 14500
+          },
+          {
+            "x": 10000,
+            "y": 14500
+          },
+          {
+            "x": 10000,
+            "y": 16500
+          },
+          {
+            "x": 8000,
+            "y": 16500
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#DDF0EE",
+        "material": "ceramic-45",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "EI2KGQowL_",
+      "kind": "room",
+      "preset": "living",
+      "name": "Sala",
+      "shape": [
+        [
+          {
+            "x": 0,
+            "y": 16500
+          },
+          {
+            "x": 4300,
+            "y": 16500
+          },
+          {
+            "x": 4300,
+            "y": 18000
+          },
+          {
+            "x": 5800,
+            "y": 18000
+          },
+          {
+            "x": 5800,
+            "y": 25000
+          },
+          {
+            "x": 0,
+            "y": 25000
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#F4E8D6",
+        "material": "wood-planks",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "o5CQK8eosk",
+      "kind": "room",
+      "preset": "powder",
+      "name": "Lavabo",
+      "shape": [
+        [
+          {
+            "x": 4300,
+            "y": 16500
+          },
+          {
+            "x": 5800,
+            "y": 16500
+          },
+          {
+            "x": 5800,
+            "y": 18000
+          },
+          {
+            "x": 4300,
+            "y": 18000
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#E2F1EF",
+        "material": "ceramic-45",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "3s5i44w_pz",
+      "kind": "room",
+      "preset": "hall",
+      "name": "Corredor",
+      "shape": [
+        [
+          {
+            "x": 5800,
+            "y": 16500
+          },
+          {
+            "x": 7000,
+            "y": 16500
+          },
+          {
+            "x": 7000,
+            "y": 22500
+          },
+          {
+            "x": 5800,
+            "y": 22500
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#F2EEE8",
+        "material": "porcelain-60",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "bQg6T0_3Z1",
+      "kind": "room",
+      "preset": "bathroom",
+      "name": "Banheiro",
+      "shape": [
+        [
+          {
+            "x": 5800,
+            "y": 22500
+          },
+          {
+            "x": 7000,
+            "y": 22500
+          },
+          {
+            "x": 7000,
+            "y": 25000
+          },
+          {
+            "x": 5800,
+            "y": 25000
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#DDF0EE",
+        "material": "ceramic-45",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "uLViDUGDZ3",
+      "kind": "room",
+      "preset": "bedroom",
+      "name": "Quarto 1",
+      "shape": [
+        [
+          {
+            "x": 7000,
+            "y": 16500
+          },
+          {
+            "x": 10000,
+            "y": 16500
+          },
+          {
+            "x": 10000,
+            "y": 20500
+          },
+          {
+            "x": 7000,
+            "y": 20500
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#E5EDF7",
+        "material": "wood-planks",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "oL_Wbev9Yy",
+      "kind": "room",
+      "preset": "bedroom",
+      "name": "Quarto 2",
+      "shape": [
+        [
+          {
+            "x": 7000,
+            "y": 20500
+          },
+          {
+            "x": 10000,
+            "y": 20500
+          },
+          {
+            "x": 10000,
+            "y": 25000
+          },
+          {
+            "x": 7000,
+            "y": 25000
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#E5EDF7",
+        "material": "wood-planks",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "mGoUk3TGWX",
+      "kind": "outdoor",
+      "preset": "parking",
+      "name": "Vaga descoberta",
+      "shape": [
+        [
+          {
+            "x": 0,
+            "y": 25000
+          },
+          {
+            "x": 3500,
+            "y": 25000
+          },
+          {
+            "x": 3500,
+            "y": 30000
+          },
+          {
+            "x": 0,
+            "y": 30000
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#D6D7D8",
+        "material": "concrete",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "RuNP1OYsdV",
+      "kind": "outdoor",
+      "preset": "patio",
+      "name": "Entrada",
+      "shape": [
+        [
+          {
+            "x": 3500,
+            "y": 25000
+          },
+          {
+            "x": 7500,
+            "y": 25000
+          },
+          {
+            "x": 7500,
+            "y": 30000
+          },
+          {
+            "x": 3500,
+            "y": 30000
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#D8D2C6",
+        "material": "stone",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "3bCLc1UDwo",
+      "kind": "outdoor",
+      "preset": "garden",
+      "name": "Jardim",
+      "shape": [
+        [
+          {
+            "x": 0,
+            "y": 12000
+          },
+          {
+            "x": 12000,
+            "y": 12000
+          },
+          {
+            "x": 12000,
+            "y": 30000
+          },
+          {
+            "x": 7500,
+            "y": 30000
+          },
+          {
+            "x": 7500,
+            "y": 25000
+          },
+          {
+            "x": 0,
+            "y": 25000
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#8DBF6E",
+        "material": "grass",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    },
+    {
+      "id": "v3-merri5t",
+      "kind": "outdoor",
+      "preset": "lawn",
+      "name": "Gramado",
+      "shape": [
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 12000,
+            "y": 0
+          },
+          {
+            "x": 12000,
+            "y": 12000
+          },
+          {
+            "x": 0,
+            "y": 12000
+          }
+        ],
+        [
+          {
+            "x": 6000,
+            "y": 1000
+          },
+          {
+            "x": 6000,
+            "y": 9000
+          },
+          {
+            "x": 11500,
+            "y": 9000
+          },
+          {
+            "x": 11500,
+            "y": 1000
+          }
+        ]
+      ],
+      "fill": {
+        "color": "#9BC87A",
+        "material": "grass",
+        "scale": 1,
+        "angle": 0
+      },
+      "labelOffset": null
+    }
+  ],
+  "openBoundaries": [
+    [
+      "EI2KGQowL_",
+      "gYU3aA9xg4"
+    ]
+  ],
+  "openings": [
+    {
+      "id": "TV35mO1B9D",
+      "type": "door-balcony",
+      "axis": "h",
+      "line": 12000,
+      "at": 3000,
+      "width": 2500,
+      "height": 2100,
+      "sill": 0,
+      "hinge": "end",
+      "side": 1
+    },
+    {
+      "id": "CAR_QM587K",
+      "type": "door",
+      "axis": "h",
+      "line": 16500,
+      "at": 6400,
+      "width": 800,
+      "height": 2100,
+      "sill": 0,
+      "hinge": "end",
+      "side": -1
+    },
+    {
+      "id": "ZwOBLoH_0k",
+      "type": "door-sliding",
+      "axis": "h",
+      "line": 14500,
+      "at": 8450,
+      "width": 700,
+      "height": 2100,
+      "sill": 0,
+      "hinge": "start",
+      "side": 1
+    },
+    {
+      "id": "eem25z1AHK",
+      "type": "door",
+      "axis": "v",
+      "line": 4300,
+      "at": 17250,
+      "width": 600,
+      "height": 2100,
+      "sill": 0,
+      "hinge": "start",
+      "side": 1
+    },
+    {
+      "id": "myZYLw48wT",
+      "type": "passage",
+      "axis": "v",
+      "line": 5800,
+      "at": 20000,
+      "width": 900,
+      "height": 2100,
+      "sill": 0,
+      "hinge": "start",
+      "side": 1
+    },
+    {
+      "id": "7E43GyO32b",
+      "type": "door",
+      "axis": "v",
+      "line": 7000,
+      "at": 17200,
+      "width": 800,
+      "height": 2100,
+      "sill": 0,
+      "hinge": "start",
+      "side": 1
+    },
+    {
+      "id": "1JvNfPce2k",
+      "type": "door",
+      "axis": "v",
+      "line": 7000,
+      "at": 21200,
+      "width": 800,
+      "height": 2100,
+      "sill": 0,
+      "hinge": "start",
+      "side": 1
+    },
+    {
+      "id": "xy1tVnmiPZ",
+      "type": "door",
+      "axis": "h",
+      "line": 22500,
+      "at": 6400,
+      "width": 700,
+      "height": 2100,
+      "sill": 0,
+      "hinge": "end",
+      "side": -1
+    },
+    {
+      "id": "T6Uc8lHOSJ",
+      "type": "door",
+      "axis": "h",
+      "line": 25000,
+      "at": 4800,
+      "width": 900,
+      "height": 2100,
+      "sill": 0,
+      "hinge": "end",
+      "side": -1
+    },
+    {
+      "id": "4052TWDxTt",
+      "type": "door",
+      "axis": "v",
+      "line": 3000,
+      "at": 1500,
+      "width": 700,
+      "height": 2100,
+      "sill": 0,
+      "hinge": "start",
+      "side": -1
+    },
+    {
+      "id": "jWKR41awi9",
+      "type": "window-sliding",
+      "axis": "h",
+      "line": 12000,
+      "at": 7300,
+      "width": 2000,
+      "height": 1000,
+      "sill": 1100,
+      "hinge": "start",
+      "side": 1
+    },
+    {
+      "id": "fZPvZS-6L2",
+      "type": "window-sliding",
+      "axis": "h",
+      "line": 12000,
+      "at": 4600,
+      "width": 1200,
+      "height": 1000,
+      "sill": 1100,
+      "hinge": "start",
+      "side": 1
+    },
+    {
+      "id": "oEqSiFhDeP",
+      "type": "window-maxim",
+      "axis": "v",
+      "line": 10000,
+      "at": 15500,
+      "width": 600,
+      "height": 600,
+      "sill": 1500,
+      "hinge": "start",
+      "side": 1
+    },
+    {
+      "id": "zbzLDEleg1",
+      "type": "window-sliding",
+      "axis": "v",
+      "line": 10000,
+      "at": 18500,
+      "width": 1500,
+      "height": 1000,
+      "sill": 1100,
+      "hinge": "start",
+      "side": 1
+    },
+    {
+      "id": "KMJwrN8INe",
+      "type": "window-sliding",
+      "axis": "v",
+      "line": 10000,
+      "at": 22700,
+      "width": 1500,
+      "height": 1000,
+      "sill": 1100,
+      "hinge": "start",
+      "side": 1
+    },
+    {
+      "id": "qLccsEkxuA",
+      "type": "window-sliding",
+      "axis": "h",
+      "line": 25000,
+      "at": 8500,
+      "width": 1500,
+      "height": 1000,
+      "sill": 1100,
+      "hinge": "start",
+      "side": 1
+    },
+    {
+      "id": "6R-PqpxN-m",
+      "type": "window-maxim",
+      "axis": "h",
+      "line": 25000,
+      "at": 6400,
+      "width": 600,
+      "height": 600,
+      "sill": 1500,
+      "hinge": "start",
+      "side": 1
+    },
+    {
+      "id": "n5F8kA-GoJ",
+      "type": "window-sliding",
+      "axis": "h",
+      "line": 25000,
+      "at": 2200,
+      "width": 2500,
+      "height": 1000,
+      "sill": 1100,
+      "hinge": "start",
+      "side": 1
+    },
+    {
+      "id": "NTzreCGf31",
+      "type": "window-sliding",
+      "axis": "h",
+      "line": 2500,
+      "at": 1500,
+      "width": 1000,
+      "height": 1000,
+      "sill": 1100,
+      "hinge": "start",
+      "side": 1
+    },
+    {
+      "id": "xh8ZsSfhli",
+      "type": "gate-sliding",
+      "axis": "h",
+      "line": 30000,
+      "at": 1750,
+      "width": 3000,
+      "height": 2300,
+      "sill": 0,
+      "hinge": "end",
+      "side": 1
+    },
+    {
+      "id": "iTaq2TuYmq",
+      "type": "gate-pedestrian",
+      "axis": "h",
+      "line": 30000,
+      "at": 7000,
+      "width": 1000,
+      "height": 2000,
+      "sill": 0,
+      "hinge": "start",
+      "side": -1
+    }
+  ],
+  "items": [
+    {
+      "id": "0Dw2a6w_Iq",
+      "type": "bed-double",
+      "variant": "queen",
+      "x": 6565,
+      "y": 14000,
+      "w": 1580,
+      "d": 1980,
+      "rotation": 270,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "M_NhnKvSij",
+      "type": "nightstand",
+      "variant": null,
+      "x": 5775,
+      "y": 12675,
+      "w": 450,
+      "d": 400,
+      "rotation": 270,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "6UvIPW9Ohg",
+      "type": "nightstand",
+      "variant": null,
+      "x": 5775,
+      "y": 15325,
+      "w": 450,
+      "d": 400,
+      "rotation": 270,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "XxlAfUT7He",
+      "type": "wardrobe",
+      "variant": "200",
+      "x": 9600,
+      "y": 13300,
+      "w": 2000,
+      "d": 600,
+      "rotation": 90,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "kQACuQYT4X",
+      "type": "dresser",
+      "variant": null,
+      "x": 7400,
+      "y": 16175,
+      "w": 1000,
+      "d": 500,
+      "rotation": 180,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "c1_5UxDVyl",
+      "type": "shower-box",
+      "variant": "s90x120",
+      "x": 9300,
+      "y": 15100,
+      "w": 900,
+      "d": 1200,
+      "rotation": 90,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "no-9Auer6f",
+      "type": "toilet",
+      "variant": null,
+      "x": 8300,
+      "y": 16100,
+      "w": 400,
+      "d": 650,
+      "rotation": 180,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "e5cf3srhDw",
+      "type": "sink-cabinet",
+      "variant": "w80",
+      "x": 9300,
+      "y": 16200,
+      "w": 800,
+      "d": 450,
+      "rotation": 180,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "tSYwMNkgaL",
+      "type": "fridge",
+      "variant": "duplex",
+      "x": 575,
+      "y": 12600,
+      "w": 700,
+      "d": 750,
+      "rotation": 270,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "MXRogZuu_g",
+      "type": "kitchen-sink",
+      "variant": "w180",
+      "x": 500,
+      "y": 13900,
+      "w": 1800,
+      "d": 600,
+      "rotation": 270,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "XC3K4qNbaQ",
+      "type": "stove",
+      "variant": null,
+      "x": 500,
+      "y": 15150,
+      "w": 550,
+      "d": 600,
+      "rotation": 270,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "pRNyUqCfLP",
+      "type": "counter",
+      "variant": null,
+      "x": 500,
+      "y": 15850,
+      "w": 800,
+      "d": 600,
+      "rotation": 270,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "ad0xdMuOCi",
+      "type": "island",
+      "variant": "stools",
+      "x": 3200,
+      "y": 14300,
+      "w": 1800,
+      "d": 1300,
+      "rotation": 90,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "y9gz94ABxF",
+      "type": "tall-cabinet",
+      "variant": null,
+      "x": 5000,
+      "y": 12400,
+      "w": 600,
+      "d": 600,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "YYX_cjoqJX",
+      "type": "dining-table",
+      "variant": "seats6",
+      "x": 2900,
+      "y": 18200,
+      "w": 1600,
+      "d": 900,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "9mAZmGPvQi",
+      "type": "sofa-l",
+      "variant": null,
+      "x": 1050,
+      "y": 22300,
+      "w": 2600,
+      "d": 1700,
+      "rotation": 270,
+      "color": null,
+      "label": null,
+      "mirrored": true
+    },
+    {
+      "id": "E0h8xk5z7B",
+      "type": "tv-rack",
+      "variant": null,
+      "x": 5500,
+      "y": 22300,
+      "w": 1800,
+      "d": 450,
+      "rotation": 90,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "hJQUCpEsWA",
+      "type": "rug",
+      "variant": null,
+      "x": 2700,
+      "y": 22300,
+      "w": 2400,
+      "d": 1700,
+      "rotation": 90,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "2RHnAbNtjm",
+      "type": "coffee-table",
+      "variant": null,
+      "x": 2900,
+      "y": 22300,
+      "w": 1000,
+      "d": 550,
+      "rotation": 90,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "ob8NJu505s",
+      "type": "plant",
+      "variant": null,
+      "x": 5475,
+      "y": 23500,
+      "w": 500,
+      "d": 500,
+      "rotation": 90,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "jZXrKc-u8Z",
+      "type": "toilet",
+      "variant": null,
+      "x": 5300,
+      "y": 16900,
+      "w": 400,
+      "d": 650,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "eRJP-6_W40",
+      "type": "sink-pedestal",
+      "variant": null,
+      "x": 5515,
+      "y": 17600,
+      "w": 500,
+      "d": 420,
+      "rotation": 90,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "fvCy6FIq90",
+      "type": "toilet",
+      "variant": null,
+      "x": 6200,
+      "y": 24575,
+      "w": 400,
+      "d": 650,
+      "rotation": 180,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "6ry9brAfZy",
+      "type": "sink-cabinet",
+      "variant": "w50",
+      "x": 6700,
+      "y": 23900,
+      "w": 500,
+      "d": 450,
+      "rotation": 90,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "ZmYQ6C-f5l",
+      "type": "shower-box",
+      "variant": null,
+      "x": 6400,
+      "y": 23025,
+      "w": 900,
+      "d": 900,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "npuvSZG4T3",
+      "type": "bed-single",
+      "variant": null,
+      "x": 8500,
+      "y": 17515,
+      "w": 880,
+      "d": 1880,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "9In-Hzy3fT",
+      "type": "nightstand",
+      "variant": null,
+      "x": 9200,
+      "y": 16775,
+      "w": 450,
+      "d": 400,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "hTkPrAmUcB",
+      "type": "wardrobe",
+      "variant": "160",
+      "x": 8650,
+      "y": 20125,
+      "w": 1600,
+      "d": 600,
+      "rotation": 180,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "qvilK8Cyuy",
+      "type": "office-desk",
+      "variant": null,
+      "x": 7375,
+      "y": 19000,
+      "w": 1200,
+      "d": 600,
+      "rotation": 270,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "CswljLAtC6",
+      "type": "bed-double",
+      "variant": null,
+      "x": 8600,
+      "y": 23960,
+      "w": 1380,
+      "d": 1880,
+      "rotation": 180,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "8OHadm8m2l",
+      "type": "nightstand",
+      "variant": null,
+      "x": 7600,
+      "y": 24700,
+      "w": 450,
+      "d": 400,
+      "rotation": 180,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "qj0fBUIOex",
+      "type": "wardrobe",
+      "variant": "200",
+      "x": 8875,
+      "y": 20875,
+      "w": 2000,
+      "d": 600,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "72x7r7kB-S",
+      "type": "laundry-tank",
+      "variant": null,
+      "x": 500,
+      "y": 475,
+      "w": 600,
+      "d": 550,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "r61h3ZHnCO",
+      "type": "washing-machine",
+      "variant": null,
+      "x": 1250,
+      "y": 525,
+      "w": 600,
+      "d": 650,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "MhzB1ilbvX",
+      "type": "tall-cabinet",
+      "variant": "w90",
+      "x": 2200,
+      "y": 500,
+      "w": 900,
+      "d": 600,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "zAwE6N8nPG",
+      "type": "bbq",
+      "variant": null,
+      "x": 450,
+      "y": 9500,
+      "w": 900,
+      "d": 600,
+      "rotation": 270,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "4kEnOu0JS0",
+      "type": "gourmet-counter",
+      "variant": null,
+      "x": 450,
+      "y": 10700,
+      "w": 1500,
+      "d": 600,
+      "rotation": 270,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "9bAhPT3NDm",
+      "type": "dining-table",
+      "variant": "seats6",
+      "x": 3200,
+      "y": 10000,
+      "w": 1600,
+      "d": 900,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "NxecWchpBd",
+      "type": "pillar",
+      "variant": null,
+      "x": 5400,
+      "y": 8100,
+      "w": 200,
+      "d": 200,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "APMIlC6HbR",
+      "type": "lounge-chair",
+      "variant": null,
+      "x": 6500,
+      "y": 3500,
+      "w": 1900,
+      "d": 700,
+      "rotation": 90,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "MhV2advJaK",
+      "type": "lounge-chair",
+      "variant": null,
+      "x": 6500,
+      "y": 5500,
+      "w": 1900,
+      "d": 700,
+      "rotation": 90,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "WliSwJw1gd",
+      "type": "tree",
+      "variant": null,
+      "x": 2000,
+      "y": 5000,
+      "w": 3200,
+      "d": 3200,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "sduooi06nm",
+      "type": "shrub",
+      "variant": null,
+      "x": 11300,
+      "y": 10800,
+      "w": 1000,
+      "d": 1000,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "kf4sQz1Htu",
+      "type": "tree",
+      "variant": null,
+      "x": 11000,
+      "y": 14000,
+      "w": 1600,
+      "d": 1600,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "HrWrZ8cMlx",
+      "type": "tree",
+      "variant": null,
+      "x": 11000,
+      "y": 21000,
+      "w": 1600,
+      "d": 1600,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "nCDEBvCfa-",
+      "type": "tree",
+      "variant": null,
+      "x": 9000,
+      "y": 27300,
+      "w": 2600,
+      "d": 2600,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "UoZ7AqM6z-",
+      "type": "shrub",
+      "variant": null,
+      "x": 11200,
+      "y": 29000,
+      "w": 1000,
+      "d": 1000,
+      "rotation": 0,
+      "color": null,
+      "label": null,
+      "mirrored": false
+    },
+    {
+      "id": "ruNAUctu8z",
+      "type": "car-sedan",
+      "variant": null,
+      "x": 1750,
+      "y": 27450,
+      "w": 4630,
+      "d": 1780,
+      "rotation": 90,
+      "color": "#2A2D33",
+      "label": null,
+      "mirrored": false
+    }
+  ],
+  "rulers": [
+    {
+      "id": "3CeJQJld7a",
+      "mode": "fit",
+      "origin": {
+        "x": 6400,
+        "y": 19000
+      },
+      "axis": "h"
+    }
+  ],
+  "walkways": []
+}
