@@ -5,7 +5,7 @@ import { onDocSaved, onUserEdit } from '../persistence/autosave.ts';
 import { listProjectMeta, loadProjectRecord } from '../persistence/db.ts';
 import { docStore } from '../store/docStore.ts';
 import { TEMPLATES } from '../templates/index.ts';
-import { ID_PATTERN, postPlan, type UploadMeta } from './api.ts';
+import { ID_PATTERN, postPlan, type UploadMeta, type UploadResult } from './api.ts';
 import { hasGalleryKey } from './galleryKey.ts';
 
 const STATE_KEY = 'casinha:collect';
@@ -19,6 +19,12 @@ const KEEPALIVE_MAX_BYTES = 60 * 1024;
 const MAX_BODY_BYTES = 1024 * 1024;
 const BACKOFF_START_MS = 10 * 60_000;
 const BACKOFF_MAX_MS = 6 * 60 * 60_000;
+/** The quota service is down: a short pause, so a broken counter is not hammered. */
+const UNAVAILABLE_BACKOFF_MS = 15 * 60_000;
+const QUOTA_PAUSE_DEFAULT_MS = 24 * 60 * 60_000;
+
+/** The end of the 429 back-off, the 503 back-off or the quota pause, whichever is later. */
+const blockedUntil = (s: CollectState): number => Math.max(s.backoffUntil, s.pausedUntil);
 
 interface Sent {
   /** Sync hash of the uploaded content (`contentKey`). */
@@ -35,6 +41,8 @@ interface CollectState {
   sent: Record<Id, Sent>;
   backoffUntil: number;
   backoffMs: number;
+  /** The Worker's quota is full: nothing goes out before this time. */
+  pausedUntil: number;
 }
 
 interface Prepared {
@@ -72,6 +80,7 @@ function readState(): CollectState {
     sent: isObj(r.sent) ? (r.sent as CollectState['sent']) : {},
     backoffUntil: typeof r.backoffUntil === 'number' ? r.backoffUntil : 0,
     backoffMs: typeof r.backoffMs === 'number' ? r.backoffMs : 0,
+    pausedUntil: typeof r.pausedUntil === 'number' ? r.pausedUntil : 0,
   };
   if (r.device !== state.device || r.since !== state.since) writeState(state);
   return state;
@@ -257,7 +266,9 @@ function clearDirtyIf(id: Id, hash: string): void {
   });
 }
 
-function onStatus(id: Id, hash: string, status: number): void {
+const NO_RESPONSE: UploadResult = { status: 0, retryAfterS: null };
+
+function onStatus(id: Id, hash: string, { status, retryAfterS }: UploadResult): void {
   if (status >= 200 && status < 300) {
     update((s) => {
       s.sent[id] = { h: hash, at: Date.now() };
@@ -265,10 +276,22 @@ function onStatus(id: Id, hash: string, status: number): void {
       s.backoffUntil = 0;
     });
     clearDirtyIf(id, hash);
-  } else if (status === 429) {
+  } else if (status === 429 || status === 503 || status === 507) {
+    // Nothing was stored: the shared wait below decides when to try again, not the throttle.
+    lastAttempt.delete(id);
+  }
+  if (status === 429) {
     update((s) => {
       s.backoffMs = Math.min(BACKOFF_MAX_MS, s.backoffMs ? s.backoffMs * 2 : BACKOFF_START_MS);
       s.backoffUntil = Date.now() + s.backoffMs;
+    });
+  } else if (status === 507) {
+    update((s) => {
+      s.pausedUntil = Date.now() + (retryAfterS ? retryAfterS * 1000 : QUOTA_PAUSE_DEFAULT_MS);
+    });
+  } else if (status === 503) {
+    update((s) => {
+      s.backoffUntil = Math.max(s.backoffUntil, Date.now() + UNAVAILABLE_BACKOFF_MS);
     });
   }
   // Other failures keep the plan dirty: a later save or session tries again.
@@ -277,7 +300,7 @@ function onStatus(id: Id, hash: string, status: number): void {
 /** The throttled path. True when the request went out. */
 async function upload(id: Id): Promise<boolean> {
   if (!active() || inFlight.has(id)) return false;
-  if (readState().backoffUntil > Date.now()) return false;
+  if (blockedUntil(readState()) > Date.now()) return false;
   inFlight.add(id);
   try {
     const p = await prepare(id);
@@ -293,7 +316,7 @@ async function upload(id: Id): Promise<boolean> {
       return false;
     }
     lastAttempt.set(id, Date.now());
-    onStatus(id, p.hash, await postPlan(p.meta, p.body, false).catch(() => 0));
+    onStatus(id, p.hash, await postPlan(p.meta, p.body, false).catch(() => NO_RESPONSE));
     return true;
   } catch {
     return false;
@@ -311,7 +334,7 @@ function schedule(id: Id): void {
   if (uploadTimers.has(id)) return;
   const state = readState();
   const now = Date.now();
-  const wait = Math.max(0, lastSendOf(id, state) + THROTTLE_MS - now, state.backoffUntil - now);
+  const wait = Math.max(0, lastSendOf(id, state) + THROTTLE_MS - now, blockedUntil(state) - now);
   uploadTimers.set(
     id,
     window.setTimeout(() => {
@@ -343,7 +366,7 @@ function prepareSoon(id: Id): void {
 function flushHidden(): void {
   if (!active()) return;
   const state = readState();
-  if (state.backoffUntil > Date.now()) return;
+  if (blockedUntil(state) > Date.now()) return;
   const open = openDoc();
   const dirty = Object.keys(state.dirty);
   const ids =
@@ -379,7 +402,7 @@ function flushHidden(): void {
     hideSent.set(id, sentHash);
     lastAttempt.set(id, Date.now());
     postPlan(meta, body, true).then(
-      (status) => onStatus(id, sentHash, status),
+      (res) => onStatus(id, sentHash, res),
       () => undefined,
     );
   }
@@ -435,6 +458,11 @@ async function backfill(): Promise<void> {
     const state = readState();
     if (!state.dirty[id] && state.sent[id]) continue;
     if (uploadTimers.has(id)) continue;
+    if (blockedUntil(state) > Date.now()) {
+      // Paused or backing off: the dirty plans go once the wait ends.
+      if (state.dirty[id]) schedule(id);
+      continue;
+    }
     if (Date.now() - lastSendOf(id, state) < THROTTLE_MS) {
       schedule(id);
       continue;

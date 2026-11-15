@@ -17,8 +17,11 @@ import {
   deletePlan,
   fetchPlanText,
   GalleryApiError,
+  getUsage,
   listPlans,
   type RemotePlan,
+  recountUsage,
+  type Usage,
 } from '../../collect/api.ts';
 import { clearGalleryKey, getGalleryKey, setGalleryKey } from '../../collect/galleryKey.ts';
 import {
@@ -371,6 +374,54 @@ function KeyForm({ onEnter }: { onEnter(key: string, plans: RemotePlan[]): void 
   );
 }
 
+const count = new Intl.NumberFormat('pt-BR');
+const oneDecimal = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
+
+/** Decimal units, like the Worker's limit of 1 GB = 10⁹ bytes. */
+function sizeLabel(bytes: number): string {
+  if (bytes >= 1e9) return `${oneDecimal.format(bytes / 1e9)} GB`;
+  if (bytes >= 1e6) return `${oneDecimal.format(bytes / 1e6)} MB`;
+  return `${oneDecimal.format(bytes / 1e3)} KB`;
+}
+
+const WARN_RATIO = 0.8;
+
+function UsageLine({
+  usage,
+  busy,
+  onRecount,
+}: {
+  usage: Usage;
+  busy: boolean;
+  onRecount(): void;
+}): ReactElement {
+  const near =
+    (usage.writesLimit > 0 && usage.writes / usage.writesLimit >= WARN_RATIO) ||
+    (usage.bytesLimit > 0 && usage.bytes / usage.bytesLimit >= WARN_RATIO);
+  const tone = usage.paused ? 'paused' : near ? 'near' : 'ok';
+  return (
+    <div className="gallery-usage" data-tone={tone} role={tone === 'ok' ? undefined : 'status'}>
+      <p className="gallery-usage-text">
+        Uso do mês: {count.format(usage.writes)} de {count.format(usage.writesLimit)} envios ·{' '}
+        {sizeLabel(usage.bytes)} de {sizeLabel(usage.bytesLimit)}
+        {tone === 'near' ? (
+          <strong className="gallery-usage-note">Perto do limite grátis</strong>
+        ) : null}
+        {usage.paused ? (
+          <strong className="gallery-usage-note">
+            {usage.reason === 'writes'
+              ? 'Novos envios pausados até o próximo mês.'
+              : 'Novos envios pausados: limite de espaço atingido. Exclua plantas para liberar.'}
+          </strong>
+        ) : null}
+      </p>
+      <button type="button" className="gallery-usage-recount" disabled={busy} onClick={onRecount}>
+        {busy ? 'Recontando…' : 'Recontar uso'}
+      </button>
+    </div>
+  );
+}
+
 type View =
   | { kind: 'key' }
   | { kind: 'loading' }
@@ -428,6 +479,8 @@ export default function GalleryScreen(): ReactElement {
   const [deleting, setDeleting] = useState<RemotePlan | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [leaving, setLeaving] = useState<ReadonlySet<string>>(() => new Set());
+  const [usage, setUsage] = useState<Usage | null>(null);
+  const [recounting, setRecounting] = useState(false);
   const innerRef = useRef<HTMLDivElement>(null);
   const seq = useRef(0);
 
@@ -452,7 +505,13 @@ export default function GalleryScreen(): ReactElement {
     [updateSeen],
   );
 
+  /** A failed usage call only hides the line: the gallery works without it. */
+  const loadUsage = useCallback((k: string) => {
+    getUsage(k).then(setUsage, () => setUsage(null));
+  }, []);
+
   const forget = useCallback(() => {
+    setUsage(null);
     clearGalleryKey();
     planCache.clear();
     setKey(null);
@@ -463,6 +522,7 @@ export default function GalleryScreen(): ReactElement {
     (k: string) => {
       const n = ++seq.current;
       setView({ kind: 'loading' });
+      loadUsage(k);
       listPlans(k).then(
         (plans) => {
           if (n === seq.current) showPlans(plans);
@@ -474,7 +534,7 @@ export default function GalleryScreen(): ReactElement {
         },
       );
     },
-    [forget, showPlans],
+    [forget, showPlans, loadUsage],
   );
 
   useEffect(() => {
@@ -539,6 +599,7 @@ export default function GalleryScreen(): ReactElement {
       setDeleting(null);
       setLeaving((prev) => new Set(prev).add(cacheKey(p)));
       toast('Planta excluída', { tone: 'success' });
+      loadUsage(key);
     } catch (err) {
       setDeleting(null);
       if (isUnauthorized(err)) forget();
@@ -546,6 +607,17 @@ export default function GalleryScreen(): ReactElement {
     } finally {
       setDeleteBusy(false);
     }
+  };
+
+  const recount = () => {
+    if (!key || recounting) return;
+    setRecounting(true);
+    recountUsage(key)
+      .then(setUsage, (err: unknown) => {
+        if (isUnauthorized(err)) forget();
+        else toast('Não foi possível recontar o uso. Tente de novo.', { tone: 'error' });
+      })
+      .finally(() => setRecounting(false));
   };
 
   const leave = () => {
@@ -586,12 +658,16 @@ export default function GalleryScreen(): ReactElement {
       </header>
 
       <div ref={innerRef} className="gallery-inner">
+        {key && usage && view.kind !== 'key' ? (
+          <UsageLine usage={usage} busy={recounting} onRecount={recount} />
+        ) : null}
         {view.kind === 'key' || !key ? (
           <KeyForm
             onEnter={(k, plans) => {
               seq.current += 1;
               setKey(k);
               showPlans(plans);
+              loadUsage(k);
             }}
           />
         ) : view.kind === 'loading' ? (

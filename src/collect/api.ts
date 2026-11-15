@@ -29,6 +29,23 @@ export class GalleryApiError extends Error {
   }
 }
 
+export interface UploadResult {
+  status: number;
+  /** `Retry-After` in seconds, when the Worker sent a readable one. */
+  retryAfterS: number | null;
+}
+
+export interface Usage {
+  month: string;
+  writes: number;
+  writesLimit: number;
+  bytes: number;
+  bytesLimit: number;
+  plans: number;
+  paused: boolean;
+  reason: 'writes' | 'storage' | null;
+}
+
 export const ID_PATTERN = /^[A-Za-z0-9_-]{4,64}$/;
 
 export function uploadUrl(meta: UploadMeta): string {
@@ -51,7 +68,7 @@ export async function postPlan(
   meta: UploadMeta,
   body: Uint8Array<ArrayBuffer>,
   keepalive: boolean,
-): Promise<number> {
+): Promise<UploadResult> {
   const res = await fetch(uploadUrl(meta), {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
@@ -60,7 +77,11 @@ export async function postPlan(
     credentials: 'omit',
     mode: 'cors',
   });
-  return res.status;
+  const seconds = Number(res.headers.get('Retry-After'));
+  return {
+    status: res.status,
+    retryAfterS: Number.isFinite(seconds) && seconds > 0 ? seconds : null,
+  };
 }
 
 async function authed(path: string, key: string, method = 'GET'): Promise<Response> {
@@ -121,6 +142,39 @@ const planPath = (device: string, project: string) =>
 /** Deletes one received plan. A plan that is already gone also counts as deleted. */
 export async function deletePlan(key: string, device: string, project: string): Promise<void> {
   await authed(planPath(device, project), key, 'DELETE');
+}
+
+const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+
+async function readUsage(res: Response): Promise<Usage> {
+  let data: unknown;
+  try {
+    data = await res.json();
+  } catch {
+    throw new GalleryApiError('server');
+  }
+  if (!data || typeof data !== 'object') throw new GalleryApiError('server');
+  const u = data as Record<string, unknown>;
+  return {
+    month: typeof u.month === 'string' ? u.month : '',
+    writes: num(u.writes),
+    writesLimit: num(u.writesLimit),
+    bytes: num(u.bytes),
+    bytesLimit: num(u.bytesLimit),
+    plans: num(u.plans),
+    paused: u.paused === true,
+    reason: u.reason === 'writes' || u.reason === 'storage' ? u.reason : null,
+  };
+}
+
+/** This month's writes and the stored bytes against the free limits. */
+export async function getUsage(key: string): Promise<Usage> {
+  return readUsage(await authed('/v1/usage', key));
+}
+
+/** Rebuilds the totals from the stored plans, then returns them. */
+export async function recountUsage(key: string): Promise<Usage> {
+  return readUsage(await authed('/v1/usage/recount', key, 'POST'));
 }
 
 /** The project JSON text of one received plan. */
