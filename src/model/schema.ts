@@ -3,6 +3,9 @@ import { OPENING_SPECS } from '../catalog/openingSpecs.ts';
 import type { OpeningType } from './types.ts';
 import { FORMAT, SCHEMA_VERSION } from './types.ts';
 
+// The site CSP blocks eval, so zod must skip its JIT probe. Zod reads this flag when a schema is built.
+z.config({ jitless: true });
+
 // Structural validation only. Ranges, rounding, colors and references are repaired by sanitize().
 
 const id = z.string().min(1).max(40);
