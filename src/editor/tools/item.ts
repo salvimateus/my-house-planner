@@ -1,6 +1,8 @@
 import { itemDef } from '../../catalog/registry.ts';
 import { hitTest } from '../../geometry/hitTest.ts';
+import { rotatedAabb } from '../../geometry/shape.ts';
 import { snapItem } from '../../geometry/snap.ts';
+import type { Rect } from '../../geometry/types.ts';
 import { emit } from '../../juice/events.ts';
 import { tuning } from '../../juice/tuning.ts';
 import { FINE_STEP } from '../../model/defaults.ts';
@@ -51,9 +53,72 @@ export function placementCandidate(
   return { ...item, ...res.value };
 }
 
+/** Ring search step and reach of `freeSpotNear`. */
+const FREE_STEP: Mm = 100;
+const FREE_MAX_RINGS = 80;
+
+// Rugs lie under furniture, so floor items never block a spot and never look for one.
+const blocks = (i: Item) => itemDef(i.type).layer !== 'floor';
+
+function overlapsAny(item: Item, others: Rect[]): boolean {
+  const a = rotatedAabb(item.x, item.y, item.w, item.d, item.rotation);
+  return others.some((b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1);
+}
+
+const insideRect = (b: Rect, r: Rect) =>
+  b.x0 >= r.x0 && b.y0 >= r.y0 && b.x1 <= r.x1 && b.y1 <= r.y1;
+
+/**
+ * Nearest center, on rings of 100 mm around the candidate, where the new item (turned and
+ * snapped as at any placement) overlaps no other item and stays inside the view and the lot.
+ * Null when the candidate is already free, or when no free spot is in view.
+ */
+function freeSpotNear(item: Item, ctx: ToolContext): Pick<Item, 'x' | 'y' | 'rotation'> | null {
+  const doc = ctx.getDoc();
+  if (!doc || !blocks(item)) return null;
+  const others = doc.items.filter(blocks).map((i) => rotatedAabb(i.x, i.y, i.w, i.d, i.rotation));
+  if (!overlapsAny(item, others)) return null;
+  const { cx, cy, zoom, vw, vh } = ctx.camera.get();
+  const view: Rect = {
+    x0: Math.max(0, cx - vw / zoom / 2),
+    y0: Math.max(0, cy - vh / zoom / 2),
+    x1: Math.min(doc.lot.width, cx + vw / zoom / 2),
+    y1: Math.min(doc.lot.depth, cy + vh / zoom / 2),
+  };
+  const fits = (c: Item) =>
+    insideRect(rotatedAabb(c.x, c.y, c.w, c.d, c.rotation), view) && !overlapsAny(c, others);
+  for (let ring = 1; ring <= FREE_MAX_RINGS; ring++) {
+    const r = ring * FREE_STEP;
+    const points: Vec[] = [];
+    for (let k = -ring; k <= ring; k++) {
+      const t = k * FREE_STEP;
+      points.push({ x: item.x + t, y: item.y - r }, { x: item.x + t, y: item.y + r });
+      if (Math.abs(k) !== ring) {
+        points.push({ x: item.x - r, y: item.y + t }, { x: item.x + r, y: item.y + t });
+      }
+    }
+    points.sort(
+      (a, b) => Math.hypot(a.x - item.x, a.y - item.y) - Math.hypot(b.x - item.x, b.y - item.y),
+    );
+    let any = false;
+    for (const p of points) {
+      if (p.x < view.x0 || p.x > view.x1 || p.y < view.y0 || p.y > view.y1) continue;
+      any = true;
+      // Cheap test with the current turn first; the full placement runs only where it may fit.
+      if (!fits({ ...item, x: p.x, y: p.y })) continue;
+      const c = placementCandidate(item.type, item.variant, p, ctx);
+      if (c && fits(c)) return { x: c.x, y: c.y, rotation: c.rotation };
+    }
+    if (!any) return null;
+  }
+  return null;
+}
+
 export interface PlaceOptions {
   /** Look for a free spot when another item of the type already sits there. */
   avoidStack?: boolean;
+  /** Move to the nearest spot in view where the box overlaps no other item. */
+  findFree?: boolean;
   snap?: boolean;
 }
 
@@ -75,7 +140,9 @@ export function placeItem(
   const item = placementCandidate(type, variant, at, ctx, opts.snap ?? true);
   const doc = ctx.getDoc();
   if (!item || !doc) return null;
-  if (opts.avoidStack) {
+  const free = opts.findFree ? freeSpotNear(item, ctx) : null;
+  if (free) Object.assign(item, free);
+  else if (opts.avoidStack) {
     const taken = (x: Mm, y: Mm) =>
       doc.items.some(
         (i) => i.type === type && Math.abs(i.x - x) < FINE_STEP && Math.abs(i.y - y) < FINE_STEP,
@@ -132,7 +199,7 @@ export function keepCatalog(ctx: ToolContext, fn: () => void): void {
 /** Tap on a catalog card: the item lands at the center of the view. */
 export function placeItemAtViewCenter(type: ItemTypeId, variant: string | null): Item | null {
   const { cx, cy } = toolContext.camera.get();
-  return placeItem(type, variant, { x: cx, y: cy }, { avoidStack: true });
+  return placeItem(type, variant, { x: cx, y: cy }, { avoidStack: true, findFree: true });
 }
 
 /** Placement preview for a catalog drag or a pending item. */
