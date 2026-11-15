@@ -1,0 +1,110 @@
+/* Screen-mode scene styles. Scoped to the editor canvas: print and thumbnail trees use attributes only. */
+@layer components {
+  .canvas-svg {
+    & .scene-layer {
+      pointer-events: none;
+    }
+
+    & .scene-text {
+      font-family: var(--font-sans);
+      font-variant-numeric: tabular-nums;
+    }
+
+    & .scene-halo {
+      fill: #ffffff;
+      stroke: #ffffff;
+      stroke-width: 0.3em;
+      stroke-linejoin: round;
+    }
+
+    /* Name and area: the fit size inside the room, clamped to 8..15 screen px. */
+    & .area-label {
+      font-size: clamp(calc(var(--mmpp) * 8px), calc(var(--fit) * 1px), calc(var(--mmpp) * 15px));
+      font-weight: 650;
+    }
+
+    & .area-label-area {
+      font-size: 0.85em;
+      font-weight: 500;
+    }
+
+    /* Hidden when the edge is under 40 px on screen, or the room is too narrow for name and dims. */
+    & .dim {
+      opacity: min(
+        clamp(0, (var(--len) / var(--mmpp) - 40) / 10, 1),
+        clamp(0, (var(--span) / var(--mmpp) - 110) / 10, 1)
+      );
+    }
+
+    /* 10 px from the wall face; a text below the face also moves down by its cap height. */
+    & .dim-text {
+      font-size: calc(var(--mmpp) * 10.5px);
+      font-weight: 500;
+      translate: 0 calc(var(--in) * var(--mmpp) * 10px + (var(--in) + 1) * 0.36em);
+    }
+
+    & .lot-size-text {
+      font-size: calc(var(--mmpp) * 11px);
+      font-weight: 600;
+      translate: 0 calc(var(--out) * var(--mmpp) * 10px + (var(--out) + 1) * 0.36em);
+    }
+
+    & .ctx-street-label {
+      font-size: clamp(calc(var(--mmpp) * 9px), 1100px, calc(var(--mmpp) * 16px));
+      font-weight: 700;
+      letter-spacing: 0.4em;
+    }
+
+    & .ctx-lot-line {
+      stroke-width: calc(var(--mmpp) * 1px);
+      stroke-dasharray: calc(var(--mmpp) * 6px) calc(var(--mmpp) * 5px);
+    }
+
+    & .area-edge-covered {
+      stroke-width: calc(var(--mmpp) * 1.25px);
+      stroke-dasharray: calc(var(--mmpp) * 7px) calc(var(--mmpp) * 4px);
+    }
+
+    & .grid-line {
+      stroke-width: calc(var(--mmpp) * 1px);
+    }
+
+    /* Each grid fades out when its cell gets under 6 to 12 px on screen. */
+    & .grid-minor {
+      opacity: clamp(0, (1000 / var(--mmpp) - 6) / 6, 1);
+    }
+
+    & .grid-major {
+      opacity: clamp(0, (5000 / var(--mmpp) - 6) / 6, 1);
+    }
+
+    & .layer-grid {
+      transition: opacity 160ms var(--ease-state);
+
+      &[data-hidden="true"] {
+        opacity: 0;
+      }
+    }
+
+    & .lot-reveal-outline {
+      opacity: 0;
+      stroke-width: calc(var(--mmpp) * 2.5px);
+      stroke-dasharray: 1;
+      stroke-linecap: round;
+    }
+
+    & .ctx-shimmer {
+      opacity: 0;
+    }
+  }
+
+  :root[data-motion="reduced"] .canvas-svg .layer-grid {
+    transition: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root:not([data-motion="full"]) .canvas-svg .layer-grid {
+      transition: none;
+    }
+  }
+}

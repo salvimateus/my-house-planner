@@ -1,0 +1,37 @@
+@layer components {
+  .canvas {
+    position: relative;
+    inline-size: 100%;
+    block-size: 100%;
+    min-inline-size: 0;
+    min-block-size: 0;
+    overflow: hidden;
+    contain: strict;
+  }
+
+  .canvas-svg {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    user-select: none;
+    outline: none;
+    overflow: hidden;
+    cursor: var(--tool-cursor, default);
+
+    &:focus-visible {
+      outline: 2px solid var(--select);
+      outline-offset: -2px;
+    }
+
+    &[data-space="true"] {
+      cursor: grab;
+    }
+
+    &[data-pan="true"] {
+      cursor: grabbing;
+    }
+  }
+}
