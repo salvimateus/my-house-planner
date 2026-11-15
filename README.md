@@ -8,7 +8,7 @@
 
 <p align="center">Live demo: <a href="https://minha-casinha.vercel.app">https://minha-casinha.vercel.app</a></p>
 
-> **Em português.** O app Minha Casinha é um editor de planta baixa para quem não é arquiteto. Você desenha o terreno, os cômodos, as portas, as janelas e os móveis em escala real, no celular ou no computador. O app mostra a área útil de cada cômodo, simula o sol de São Paulo e exporta a planta em PDF, SVG ou PNG para você mandar ao seu arquiteto ou engenheiro. Tudo fica no seu navegador: não tem cadastro e nada vai para a internet sem você mandar.
+> **Em português.** O app Minha Casinha é um editor de planta baixa para quem não é arquiteto. Você desenha o terreno, os cômodos, as portas, as janelas e os móveis em escala real, no celular ou no computador. O app mostra a área útil de cada cômodo, simula o sol de São Paulo e exporta a planta em PDF, SVG ou PNG para você mandar ao seu arquiteto ou engenheiro. Suas plantas ficam salvas no seu navegador, e não tem cadastro.
 
 ![The editor on a desktop screen with the example house of 10 × 25 m: rooms with net areas, doors, windows, furniture, two cars in the garage and the street](docs/images/editor-desktop.png)
 
@@ -19,7 +19,7 @@
 - Each room shows its net area: the area inside the walls, the number that counts when you buy floor tiles.
 - Export a clean PDF and send it to your architect or engineer.
 - It works on a phone of 320 px and on a desktop. Install it as an app. It works offline.
-- Everything stays in your browser. There is no account and no server.
+- Plans are saved in your browser. There is no account.
 
 ## Use cases
 
@@ -152,9 +152,8 @@ On a Mac, use Cmd in place of Ctrl.
 
 ## Privacy
 
-- Everything stays in your browser. Your plans are in the IndexedDB of your browser.
-- There is no account, no server, no analytics and no cookies.
-- A plan leaves your device only when you export a file or share a link.
+- Plans are saved in your browser, in its IndexedDB.
+- There is no account.
 - A share link holds the compressed plan after the `#` of the address. Browsers do not send this part to the server.
 - When you clear the data of the site in your browser, your plans go away. Save a `.casinha.json` file to keep a copy.
 

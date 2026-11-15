@@ -24,10 +24,7 @@ export function AboutDialog(): ReactElement {
 
         <p className="about-privacy">
           <ShieldCheck aria-hidden="true" />
-          <span>
-            Tudo fica neste navegador. Não tem cadastro, não tem servidor e nada é enviado sem você
-            mandar.
-          </span>
+          <span>Suas plantas ficam salvas neste navegador. Não tem cadastro.</span>
         </p>
 
         <section className="about-section" aria-labelledby="about-howto">

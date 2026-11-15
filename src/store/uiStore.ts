@@ -14,7 +14,7 @@ import type {
   ViewPrefs,
 } from '../model/types.ts';
 
-export type Screen = 'start' | 'wizard' | 'editor';
+export type Screen = 'start' | 'wizard' | 'editor' | 'gallery';
 export type BuildMode = 'room' | 'covered' | 'outdoor' | 'split';
 export type DialogId = 'export' | 'share' | 'settings' | 'about';
 export type Selection =

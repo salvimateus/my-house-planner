@@ -68,6 +68,7 @@ const PAGES: Record<Screen, { path: string; title: string }> = {
   start: { path: '/inicio', title: 'Início' },
   wizard: { path: '/novo-terreno', title: 'Novo terreno' },
   editor: { path: '/editor', title: 'Editor da planta' },
+  gallery: { path: '/galeria', title: 'Galeria' },
 };
 
 /**

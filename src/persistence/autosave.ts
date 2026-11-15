@@ -27,6 +27,33 @@ let thumbTimer: number | undefined;
 let idleHandle: number | undefined;
 let inFlight: Promise<void> | null = null;
 
+type SavedListener = (doc: ProjectDoc, updatedAt: string) => void;
+type EditListener = (id: ProjectDoc['id']) => void;
+const savedListeners = new Set<SavedListener>();
+const editListeners = new Set<EditListener>();
+
+/** Runs after each stored write of a doc, with the stored `updatedAt`. Returns the unsubscribe. */
+export function onDocSaved(fn: SavedListener): () => void {
+  savedListeners.add(fn);
+  return () => savedListeners.delete(fn);
+}
+
+/** Runs when the user commits a change to the open doc. Returns the unsubscribe. */
+export function onUserEdit(fn: EditListener): () => void {
+  editListeners.add(fn);
+  return () => editListeners.delete(fn);
+}
+
+function notify<A extends unknown[]>(set: Set<(...args: A) => void>, ...args: A): void {
+  for (const fn of set) {
+    try {
+      fn(...args);
+    } catch {
+      // A listener must never break a save or an edit.
+    }
+  }
+}
+
 function thumbFor(doc: ProjectDoc): string | undefined {
   try {
     return renderThumbSvg(doc);
@@ -51,13 +78,14 @@ export async function persistDoc(doc: ProjectDoc, opts: { thumb: boolean }): Pro
     thumbDocId = doc.id;
     lastThumbDoc = doc;
   }
-  await saveProjectRecord(doc, {
+  const updatedAt = await saveProjectRecord(doc, {
     thumbSvg,
     lotLabel: lotLabelOf(doc),
     view: { layers: uiStore.getState().layers },
   });
   noteSaved();
   notifyGalleryChanged();
+  notify(savedListeners, { ...doc, updatedAt }, updatedAt);
 }
 
 /** The doc that a save would write now: the gesture base while a drag is live. */
@@ -173,7 +201,10 @@ export function startAutosave(): () => void {
       const committed = s.doc !== prev.doc && s.gesture === null && prev.gesture === null;
       const gestureEnded =
         prev.gesture !== null && s.gesture === null && s.doc !== prev.gesture.base;
-      if (committed || gestureEnded) noteEdit();
+      if (committed || gestureEnded) {
+        noteEdit();
+        notify(editListeners, s.doc.id);
+      }
     }
     if (s.doc !== prev.doc || s.gesture !== prev.gesture || s.readOnly !== prev.readOnly) {
       if (isDirty()) schedule();

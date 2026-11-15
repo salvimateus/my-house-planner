@@ -1,0 +1,120 @@
+@layer components {
+  .gallery {
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--paper);
+  }
+
+  .gallery-top {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+    padding: calc(env(safe-area-inset-top) + 6px) max(8px, env(safe-area-inset-right)) 6px
+      max(8px, env(safe-area-inset-left));
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in oklch, var(--paper) 92%, transparent);
+    backdrop-filter: blur(8px);
+  }
+
+  .gallery-title {
+    flex: 1;
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .gallery-top-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-inline-start: auto;
+  }
+
+  .gallery-inner {
+    display: grid;
+    gap: 2rem;
+    width: min(1040px, 100%);
+    margin: 0 auto;
+    padding: 1.5rem max(16px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 2rem)
+      max(16px, env(safe-area-inset-left));
+  }
+
+  .gallery-group {
+    display: grid;
+    gap: 0.875rem;
+  }
+
+  .gallery-device {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 700;
+  }
+
+  .gallery-card {
+    display: grid;
+    gap: 0.625rem;
+    padding: 0.5rem 0.5rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--surface);
+    content-visibility: auto;
+    contain-intrinsic-size: auto 300px;
+  }
+
+  .gallery-card-text {
+    display: grid;
+    gap: 2px;
+    padding: 0 0.25rem;
+    min-width: 0;
+  }
+
+  .gallery-card-name {
+    overflow: hidden;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .gallery-card-meta {
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+  }
+
+  .gallery-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0 0.25rem;
+
+    & .btn {
+      flex: 1 1 auto;
+    }
+  }
+
+  .gallery-key {
+    display: grid;
+    gap: 0.375rem;
+    width: min(420px, 100%);
+    margin: 2rem auto 0;
+  }
+
+  .gallery-key-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .gallery-key-input {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+
+  .gallery-key-error {
+    color: var(--danger-strong);
+    font-weight: 600;
+  }
+}

@@ -51,7 +51,7 @@ export function relativeTime(iso: string, now = Date.now()): string {
 /** Thumbnails come from IndexedDB: only ever shown through an <img>, never injected as markup. */
 const thumbUrl = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
-function Thumb({ svg, large = false }: { svg: string; large?: boolean }): ReactElement {
+export function Thumb({ svg, large = false }: { svg: string; large?: boolean }): ReactElement {
   return (
     <span className="plan-thumb" data-large={large ? 'true' : undefined}>
       {svg ? (
@@ -411,7 +411,7 @@ export function StartScreen(): ReactElement {
 
         <footer className="start-foot">
           <ShieldCheck className="start-foot-icon" aria-hidden="true" />
-          <p>Suas plantas ficam salvas só neste navegador.</p>
+          <p>Suas plantas ficam salvas neste navegador.</p>
           <Button variant="ghost" size="sm" onClick={() => uiStore.getState().openDialog('about')}>
             Sobre
           </Button>

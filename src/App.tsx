@@ -1,5 +1,7 @@
 import type { ReactElement } from 'react';
 import { lazy, Suspense, useEffect } from 'react';
+import { startGalleryRoute } from './collect/galleryRoute.ts';
+import { startCollect } from './collect/uploader.ts';
 import { EducationLayer } from './education/EducationLayer.tsx';
 import { startLaunchQueue } from './io/launchQueue.ts';
 import { handleIncomingShare } from './io/shareLink.ts';
@@ -17,6 +19,8 @@ import { errorMessage } from './ui/Menu.tsx';
 import { LotWizard } from './ui/screens/LotWizard.tsx';
 import { StartScreen } from './ui/screens/StartScreen.tsx';
 import './App.css';
+
+const GalleryScreen = lazy(() => import('./ui/screens/GalleryScreen.tsx'));
 
 const DevGallery = import.meta.env.DEV ? lazy(() => import('./catalog/DevGallery.tsx')) : null;
 const DevMaterials = import.meta.env.DEV ? lazy(() => import('./catalog/DevMaterials.tsx')) : null;
@@ -70,7 +74,7 @@ function onPopState(): void {
     void closeProject().catch((err: unknown) =>
       toast(errorMessage(err, 'Não foi possível fechar a planta.'), { tone: 'error' }),
     );
-  } else if (ui.screen === 'wizard') {
+  } else if (ui.screen === 'wizard' || ui.screen === 'gallery') {
     ui.setScreen('start');
   }
 }
@@ -83,6 +87,10 @@ function MainApp(): ReactElement {
   const theme = useUi((s) => s.prefs.theme);
 
   useEffect(() => startAutosave(), []);
+
+  useEffect(() => startCollect(), []);
+
+  useEffect(() => startGalleryRoute(), []);
 
   useEffect(() => {
     startLaunchQueue();
@@ -123,6 +131,11 @@ function MainApp(): ReactElement {
         {screen === 'start' ? <StartScreen /> : null}
         {screen === 'wizard' ? <LotWizard /> : null}
         {screen === 'editor' ? <AppShell /> : null}
+        {screen === 'gallery' ? (
+          <Suspense fallback={null}>
+            <GalleryScreen />
+          </Suspense>
+        ) : null}
       </div>
       <PersistenceBanners />
       <EducationLayer />
