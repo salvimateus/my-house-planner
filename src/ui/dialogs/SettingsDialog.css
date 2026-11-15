@@ -22,17 +22,40 @@
     color: var(--ink-2);
   }
 
-  .settings-fieldset {
+  .settings-walls {
     display: grid;
-    gap: 0.75rem;
+    gap: 1rem;
     min-width: 0;
-    border: 0;
   }
 
-  .settings-pair {
+  .settings-wall-group {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
-    gap: 0.75rem;
+    gap: 1rem;
+    min-width: 0;
+    padding: 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: color-mix(in oklch, var(--paper) 60%, var(--surface));
+  }
+
+  .settings-scope {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    justify-self: start;
+    padding: 0.25rem 0.625rem;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+
+    & svg {
+      width: 14px;
+      height: 14px;
+    }
   }
 
   .settings-note {

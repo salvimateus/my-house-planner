@@ -10,12 +10,19 @@ import { useScene } from '../../store/selectors.ts';
 import { useUi } from '../../store/uiStore.ts';
 import { Button } from '../controls/Button.tsx';
 import { toast } from '../controls/Toast.tsx';
+import { commitWallThickness, WallThicknessPicker } from '../controls/WallThicknessPicker.tsx';
 import './WallInspector.css';
 
 const KIND_LABEL: Record<WallSegment['kind'], string> = {
   internal: 'Parede interna',
   external: 'Parede externa',
   boundary: 'Muro',
+};
+
+const SCOPE_NOTE: Record<WallSegment['kind'], string> = {
+  internal: 'Vale para todas as paredes internas da casa.',
+  external: 'Vale para todas as paredes externas da casa.',
+  boundary: 'Vale para todo o muro do terreno.',
 };
 
 const center = (seg: { axis: 'h' | 'v'; line: number; start: number; end: number }): Vec => {
@@ -43,11 +50,12 @@ function addOpening(type: OpeningType, at: Vec): void {
   }
 }
 
-/** Inspector of a wall segment: kind, thickness and length; remove or put back; add door or window. */
+/** Inspector of a wall segment: kind, length and thickness of its kind; remove or put back; add door or window. */
 export function WallInspector(): ReactElement | null {
   const sel = useUi((s) => s.selection);
   const segmentId = sel?.kind === 'wall' ? sel.segmentId : null;
   const doc = useDoc((s) => s.doc);
+  const readOnly = useDoc((s) => s.readOnly);
   const scene = useScene();
   if (!doc || !segmentId) return null;
 
@@ -118,10 +126,17 @@ export function WallInspector(): ReactElement | null {
         </Button>
       ) : null}
 
-      <p className="wall-note">
-        Arraste a parede na planta para mudar o tamanho dos cômodos. A espessura vem das
-        configurações da obra.
-      </p>
+      <WallThicknessPicker
+        kind={seg.kind}
+        label={`Espessura · ${KIND_LABEL[seg.kind]}`}
+        hint={SCOPE_NOTE[seg.kind]}
+        value={doc.structure[seg.kind]}
+        presetId={doc.structure.wallPresets?.[seg.kind]}
+        disabled={readOnly}
+        onChange={(mm, id) => commitWallThickness(seg.kind, mm, id)}
+      />
+
+      <p className="wall-note">Arraste a parede na planta para mudar o tamanho dos cômodos.</p>
     </div>
   );
 }

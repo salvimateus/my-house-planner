@@ -46,11 +46,17 @@ const lot = z.object({
   frontage,
 });
 
+const presetRef = z.string().max(40).nullable().catch(null);
+
 const structure = z.object({
   preset: z.enum(['masonry', 'slim-masonry', 'drywall', 'custom']),
   internal: num,
   external: num,
   boundary: num,
+  wallPresets: z
+    .object({ internal: presetRef, external: presetRef, boundary: presetRef })
+    .optional()
+    .catch(undefined),
 });
 
 const ring = z.array(vec).min(4).max(2000);

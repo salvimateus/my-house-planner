@@ -37,6 +37,7 @@ import { MeasureInput } from '../controls/MeasureInput.tsx';
 import { Segmented } from '../controls/Segmented.tsx';
 import { Switch } from '../controls/Switch.tsx';
 import { toast } from '../controls/Toast.tsx';
+import { commitWallThickness, WallThicknessPicker } from '../controls/WallThicknessPicker.tsx';
 import { commands } from '../shortcuts.ts';
 import './LotInspector.css';
 
@@ -141,7 +142,9 @@ const NORTH_STEP = 15;
 export function LotInspector(): ReactElement | null {
   const lot = useDoc((s) => s.doc?.lot ?? null);
   const openings = useDoc((s) => s.doc?.openings ?? EMPTY_OPENINGS);
-  if (!lot) return null;
+  const structure = useDoc((s) => s.doc?.structure ?? null);
+  const readOnly = useDoc((s) => s.readOnly);
+  if (!lot || !structure) return null;
   const frontGates = openings.filter((o) => gateSide(o, lot) === lot.frontSide);
   const vehicleGates = frontGates.filter((o) => isVehicleGate(o.type)).length;
   const socialGates = frontGates.length - vehicleGates;
@@ -273,6 +276,15 @@ export function LotInspector(): ReactElement | null {
             />
           ))}
         </div>
+        <WallThicknessPicker
+          kind="boundary"
+          label="Espessura do muro"
+          hint="Só o muro do terreno. As paredes da casa mudam ao tocar numa parede ou em Configurações."
+          value={structure.boundary}
+          presetId={structure.wallPresets?.boundary}
+          disabled={readOnly}
+          onChange={(mm, id) => commitWallThickness('boundary', mm, id)}
+        />
       </section>
 
       <section className="lot-section" aria-labelledby="lot-north-title">

@@ -1,33 +1,14 @@
+import { Fence, House } from 'lucide-react';
 import type { ReactElement } from 'react';
-import { STRUCTURE_PRESETS } from '../../model/defaults.ts';
-import type { Mm, Structure } from '../../model/types.ts';
-import { docStore, useDoc } from '../../store/docStore.ts';
+import { WALL_PRESET_NOTE } from '../../catalog/wallPresets.ts';
+import { useDoc } from '../../store/docStore.ts';
 import { type UiState, uiStore, useUi } from '../../store/uiStore.ts';
 import { Dialog } from '../controls/Dialog.tsx';
-import { MeasureInput } from '../controls/MeasureInput.tsx';
 import { Segmented } from '../controls/Segmented.tsx';
 import { Switch } from '../controls/Switch.tsx';
+import { commitWallThickness, WallThicknessPicker } from '../controls/WallThicknessPicker.tsx';
 import { commands } from '../shortcuts.ts';
 import './SettingsDialog.css';
-
-const WALL_MIN: Mm = 50;
-const WALL_MAX: Mm = 400;
-
-type Preset = Structure['preset'];
-
-const PRESET_OPTIONS: { value: Preset; label: string }[] = [
-  { value: 'masonry', label: 'Alvenaria' },
-  { value: 'slim-masonry', label: 'Bloco fino' },
-  { value: 'drywall', label: 'Drywall' },
-  { value: 'custom', label: 'Outra' },
-];
-
-const PRESET_NOTE: Record<Preset, string> = {
-  masonry: 'Tijolo ou bloco comum com reboco: 15 cm por dentro, 20 cm nas paredes de fora.',
-  'slim-masonry': 'Bloco mais fino: 12 cm por dentro, 15 cm nas paredes de fora.',
-  drywall: 'Placas de gesso por dentro (10 cm) e alvenaria de 20 cm por fora.',
-  custom: 'Escolha a espessura das paredes em centímetros.',
-};
 
 const MOTION_OPTIONS: { value: UiState['prefs']['motion']; label: string }[] = [
   { value: 'auto', label: 'Automático' },
@@ -41,15 +22,6 @@ const SNAP_OPTIONS: { value: string; label: string }[] = [
   { value: '100', label: '0,1 m' },
 ];
 
-/** Wall thickness stays a multiple of 10 mm, so half thickness is integer. */
-const toWall = (mm: Mm): Mm => Math.round(mm / 10) * 10;
-
-function commitStructure(label: string, patch: Partial<Structure>): void {
-  docStore.getState().commit(label, (d) => {
-    Object.assign(d.structure, patch);
-  });
-}
-
 function WallSettings(): ReactElement {
   const structure = useDoc((s) => s.doc?.structure ?? null);
   const readOnly = useDoc((s) => s.readOnly);
@@ -62,59 +34,53 @@ function WallSettings(): ReactElement {
     );
   }
 
-  const setPreset = (preset: Preset) => {
-    if (preset === 'custom') commitStructure('Tipo de parede', { preset });
-    else commitStructure('Tipo de parede', { preset, ...STRUCTURE_PRESETS[preset] });
-  };
-
+  const presets = structure.wallPresets;
   return (
-    <fieldset className="settings-fieldset" disabled={readOnly}>
-      <legend className="sr-only">Paredes e muro</legend>
-      <Segmented
-        label="Tipo de parede"
-        options={PRESET_OPTIONS}
-        value={structure.preset}
-        onChange={setPreset}
-        disabled={readOnly}
-      />
-      <p className="settings-note">{PRESET_NOTE[structure.preset]}</p>
-      {structure.preset === 'custom' ? (
-        <div className="settings-pair">
-          <MeasureInput
-            label="Parede interna"
-            unit="cm"
-            value={structure.internal}
-            min={WALL_MIN}
-            max={WALL_MAX}
-            disabled={readOnly}
-            onCommit={(v) =>
-              commitStructure('Espessura da parede interna', { internal: toWall(v) })
-            }
-          />
-          <MeasureInput
-            label="Parede externa"
-            unit="cm"
-            value={structure.external}
-            min={WALL_MIN}
-            max={WALL_MAX}
-            disabled={readOnly}
-            onCommit={(v) =>
-              commitStructure('Espessura da parede externa', { external: toWall(v) })
-            }
-          />
-        </div>
-      ) : null}
-      <MeasureInput
-        label="Muro"
-        unit="cm"
-        value={structure.boundary}
-        min={WALL_MIN}
-        max={WALL_MAX}
-        disabled={readOnly}
-        hint="Espessura do muro nas divisas do terreno."
-        onCommit={(v) => commitStructure('Espessura do muro', { boundary: toWall(v) })}
-      />
-    </fieldset>
+    <div className="settings-walls">
+      <div className="settings-wall-group">
+        <p className="settings-scope">
+          <House aria-hidden="true" />
+          Muda a casa
+        </p>
+        <WallThicknessPicker
+          kind="internal"
+          label="Paredes internas da casa"
+          hint="As paredes entre um cômodo e outro."
+          value={structure.internal}
+          presetId={presets?.internal}
+          showNote={false}
+          disabled={readOnly}
+          onChange={(mm, id) => commitWallThickness('internal', mm, id)}
+        />
+        <WallThicknessPicker
+          kind="external"
+          label="Paredes externas da casa"
+          hint="As paredes entre a casa e o lado de fora."
+          value={structure.external}
+          presetId={presets?.external}
+          showNote={false}
+          disabled={readOnly}
+          onChange={(mm, id) => commitWallThickness('external', mm, id)}
+        />
+      </div>
+      <div className="settings-wall-group">
+        <p className="settings-scope">
+          <Fence aria-hidden="true" />
+          Muda só o terreno
+        </p>
+        <WallThicknessPicker
+          kind="boundary"
+          label="Muro do terreno"
+          hint="O muro nas divisas do lote. Não muda as paredes da casa."
+          value={structure.boundary}
+          presetId={presets?.boundary}
+          showNote={false}
+          disabled={readOnly}
+          onChange={(mm, id) => commitWallThickness('boundary', mm, id)}
+        />
+      </div>
+      <p className="settings-note">{WALL_PRESET_NOTE}</p>
+    </div>
   );
 }
 

@@ -78,6 +78,14 @@ export interface Structure {
   internal: Mm;
   external: Mm;
   boundary: Mm;
+  /** Chosen wall preset id (or 'custom') per wall kind; null derives it from the thickness. */
+  wallPresets?: WallPresetIds | undefined;
+}
+
+export interface WallPresetIds {
+  internal: string | null;
+  external: string | null;
+  boundary: string | null;
 }
 
 export type AreaKind = 'room' | 'covered' | 'outdoor';

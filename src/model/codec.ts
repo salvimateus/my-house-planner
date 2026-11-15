@@ -1,5 +1,6 @@
 import { OPENING_SPECS } from '../catalog/openingSpecs.ts';
 import { presetFor } from '../catalog/roomPresets.ts';
+import { wallPresetFor } from '../catalog/wallPresets.ts';
 import {
   clampRampAt,
   clampRampWidth,
@@ -35,6 +36,7 @@ import type {
   StreetTree,
   Structure,
   Vec,
+  WallPresetIds,
 } from './types.ts';
 
 export { CodecError, migrate };
@@ -498,6 +500,18 @@ function cleanStructure(s: Structure, log: RepairLog): Structure {
     internal: fit(s.internal),
     external: fit(s.external),
     boundary: fit(s.boundary),
+  };
+  // A preset id survives only when it applies to its kind and matches its thickness.
+  const ref = (kind: keyof WallPresetIds): string | null => {
+    const stored = s.wallPresets?.[kind];
+    if (stored === 'custom') return stored;
+    const p = wallPresetFor(stored, kind);
+    return p && p.thickness === out[kind] ? p.id : null;
+  };
+  out.wallPresets = {
+    internal: ref('internal'),
+    external: ref('external'),
+    boundary: ref('boundary'),
   };
   if (changed) log.add('structure');
   return out;
