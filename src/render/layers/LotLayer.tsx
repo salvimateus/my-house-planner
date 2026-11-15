@@ -6,11 +6,12 @@ import type { Lot, Side } from '../../model/types.ts';
 import { formatLength } from '../../model/units.ts';
 import { fillPaint } from '../PatternDefs.tsx';
 import { printSize, type RenderContext, strokeProps } from '../RenderContext.ts';
+import { StreetCanopies } from './ContextLayer.tsx';
 
 const streetSides = (lot: Lot): Side[] =>
   lot.cornerSide ? [lot.frontSide, lot.cornerSide] : [lot.frontSide];
 
-/** Lot ground, lot line, muro (lot walls) and the lot size outside the lot. */
+/** Lot ground, muro (lot walls), street tree crowns over them, lot line and the lot size outside the lot. */
 export const LotLayer = memo(function LotLayer({
   lot,
   boundaryGeom,
@@ -49,6 +50,7 @@ export const LotLayer = memo(function LotLayer({
           data-reveal="muro"
         />
       ) : null}
+      <StreetCanopies lot={lot} ctx={ctx} />
       <rect
         x={0}
         y={0}

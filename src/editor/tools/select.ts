@@ -5,6 +5,7 @@ import { tuning } from '../../juice/tuning.ts';
 import type { Id } from '../../model/types.ts';
 import { EMPTY_TRANSIENT, type Selection } from '../../store/uiStore.ts';
 import { areaHandler } from '../select/area.ts';
+import { sidewalkRampHandler, streetTreeHandler } from '../select/frontage.ts';
 import { itemHandler } from '../select/item.ts';
 import { lotHandler } from '../select/lot.ts';
 import { openingHandler } from '../select/opening.ts';
@@ -25,6 +26,8 @@ export const SELECT_HANDLERS: Record<HitKind, SelectHandler> = {
   wall: wallHandler,
   boundary: lotHandler,
   area: areaHandler,
+  'street-tree': streetTreeHandler,
+  'sidewalk-ramp': sidewalkRampHandler,
   lot: lotHandler,
 };
 
@@ -115,6 +118,10 @@ function selectHit(hit: HitTarget, ctx: ToolContext, additive: boolean): void {
     case 'boundary':
     case 'lot':
       ctx.ui.select({ kind: 'lot' });
+      return;
+    case 'street-tree':
+    case 'sidewalk-ramp':
+      ctx.ui.select({ kind: hit.kind, id: hit.id });
       return;
     default:
       if (additive) toggleInSelection(hit.kind, hit.id, ctx);
@@ -270,6 +277,8 @@ export const selectTool: Tool = {
     const movable =
       hit !== null &&
       (isMulti(hit.kind) ||
+        hit.kind === 'street-tree' ||
+        hit.kind === 'sidewalk-ramp' ||
         hit.kind === 'wall' ||
         hit.kind === 'label' ||
         (hit.kind === 'area' && sel?.kind === 'area' && sel.id === hit.id));

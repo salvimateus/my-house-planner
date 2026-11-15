@@ -8,11 +8,13 @@ import { useDoc } from '../../store/docStore.ts';
 import { useScene } from '../../store/selectors.ts';
 import { useUi } from '../../store/uiStore.ts';
 import { marqueeStore } from '../tools/select.ts';
+import { FrontageOutline } from './FrontageOutline.tsx';
 import { Ghost } from './Ghost.tsx';
 import { Guides } from './Guides.tsx';
 import { Handles } from './Handles.tsx';
 import { Readout } from './Readout.tsx';
 import './Overlay.css';
+import './FrontageOutline.css';
 
 /** Stripe pitch of the carve hatch, in screen px. */
 const HATCH_PX = 9;
@@ -168,6 +170,9 @@ function SelectionOutline(): ReactElement | null {
         </g>
       );
     }
+    case 'street-tree':
+    case 'sidewalk-ramp':
+      return <FrontageOutline sel={sel} lot={doc.lot} />;
     case 'ruler':
       return (
         <g className="overlay-sel overlay-sel-ruler">

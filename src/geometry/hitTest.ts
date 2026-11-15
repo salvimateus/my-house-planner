@@ -1,5 +1,6 @@
 import type { Id, Mm, ProjectDoc, Vec, ViewPrefs } from '../model/types.ts';
 import { formatArea } from '../model/units.ts';
+import { frontageHit } from './frontage.ts';
 import { labelTextRect } from './labels.ts';
 import { distToSegment, pointInRect, pointInRotatedRect, pointInShape } from './shape.ts';
 import type { HitTarget, Scene } from './types.ts';
@@ -9,9 +10,9 @@ const usable = (layers: ViewPrefs['layers'], id: keyof ViewPrefs['layers']) =>
   layers[id].visible && !layers[id].locked;
 
 /**
- * Geometric hit test, in priority order: openings > items (last first) > rulers > label of the selected area >
- * walls > boundary walls > rooms and covered areas > outdoor areas (last first) > lot. Hidden or locked layers
- * are skipped. `tolMm` is the pointer tolerance in world mm.
+ * Geometric hit test, in priority order: openings > items (last first) > rulers > street trees and sidewalk
+ * ramps > label of the selected area > walls > boundary walls > rooms and covered areas > outdoor areas (last
+ * first) > lot. Hidden or locked layers are skipped. `tolMm` is the pointer tolerance in world mm.
  */
 export function hitTest(
   doc: ProjectDoc,
@@ -63,6 +64,11 @@ export function hitTest(
       }
       if (distToSegment(p, d.a, d.b) <= tolMm) return { kind: 'ruler', id: r.id, end: null };
     }
+  }
+
+  if (usable(layers, 'context')) {
+    const f = frontageHit(doc.lot, p, tolMm);
+    if (f) return f;
   }
 
   if (selectedAreaId) {

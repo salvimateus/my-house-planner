@@ -13,6 +13,7 @@ import { docStore, useDoc } from '../store/docStore.ts';
 import { useScene } from '../store/selectors.ts';
 import { type UiState, uiStore, useUi } from '../store/uiStore.ts';
 import { fitClearOfChrome, fitLotView, lotViewBounds, setToolKeyHandler } from '../ui/shortcuts.ts';
+import { startFrontageSync } from './frontageSync.ts';
 import { attachInput } from './InputRouter.ts';
 import { Effects } from './overlay/Effects.tsx';
 import { OverlaySvg } from './overlay/OverlaySvg.tsx';
@@ -269,6 +270,8 @@ export function Canvas(): ReactElement {
       ro.disconnect();
     };
   }, []);
+
+  useEffect(() => startFrontageSync(), []);
 
   // Input router, tool keys, Space pan and the hover cursor.
   useEffect(() => {

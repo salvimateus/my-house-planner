@@ -1,0 +1,6 @@
+/* Screen-mode context styles. Print and thumbnail trees use attributes only. */
+@layer components {
+  .canvas-svg .ctx-boundary {
+    stroke-width: calc(var(--mmpp) * 0.75px);
+  }
+}

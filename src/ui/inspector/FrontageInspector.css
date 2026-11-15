@@ -1,0 +1,120 @@
+@layer components {
+  .frontage-inspector {
+    display: grid;
+    gap: 0.875rem;
+    min-width: 0;
+  }
+
+  .frontage-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .frontage-swatch {
+    flex: none;
+    inline-size: 40px;
+    block-size: 40px;
+    border-radius: 50%;
+    background:
+      radial-gradient(
+        circle at 34% 30%,
+        color-mix(in oklch, var(--swatch) 55%, white) 0 18%,
+        transparent 19%
+      ),
+      radial-gradient(
+        circle at 64% 62%,
+        color-mix(in oklch, var(--swatch-edge) 70%, transparent) 0 22%,
+        transparent 23%
+      ),
+      var(--swatch);
+    box-shadow:
+      inset 0 0 0 2px color-mix(in oklch, var(--swatch-edge) 60%, transparent),
+      var(--shadow-sm);
+  }
+
+  .frontage-head-text,
+  .frontage-readout {
+    display: grid;
+    gap: 0.125rem;
+    min-width: 0;
+  }
+
+  .frontage-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .frontage-length {
+    color: var(--measure);
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .frontage-sub {
+    color: var(--ink-2);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .frontage-field {
+    display: grid;
+    gap: 0.5rem;
+    min-width: 0;
+    border: 0;
+    padding: 0;
+    margin: 0;
+  }
+
+  .frontage-label {
+    padding: 0;
+    margin-block-end: 0.5rem;
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .frontage-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .frontage-dot {
+    display: block;
+    inline-size: 12px;
+    block-size: 12px;
+    border-radius: 50%;
+    background: var(--swatch);
+    box-shadow: inset 0 0 0 1.5px var(--swatch-edge);
+  }
+
+  .frontage-note {
+    color: var(--ink-2);
+    font-size: 0.875rem;
+  }
+
+  .frontage-status {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: var(--radius);
+    background: var(--select-soft);
+    color: var(--select-strong);
+    font-size: 0.875rem;
+    font-weight: 600;
+
+    & svg {
+      flex: none;
+      inline-size: 18px;
+      block-size: 18px;
+      margin-block-start: 1px;
+    }
+  }
+}

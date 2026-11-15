@@ -58,11 +58,68 @@ export const MONO_THEME: SceneTheme = {
   invalid: '#444444',
 };
 
-/** Street trees on the sidewalk service strip. Not part of `SceneTheme`, so mono print picks a grey here. */
-export function treeColors(ctx: RenderContext): { crown: string; edge: string } {
-  return ctx.print?.mono
-    ? { crown: '#D6D6D6', edge: '#9E9E9E' }
-    : { crown: '#8CBF6F', edge: '#6E9F55' };
+/** Street, sidewalk and neighborhood colors beyond `SceneTheme`. Hex only; mono print gets grays. */
+export interface ContextPalette {
+  asphalt: string;
+  asphaltDark: string;
+  asphaltLight: string;
+  gutter: string;
+  curb: string;
+  curbLow: string;
+  paint: string;
+  grass: string;
+  slab: string;
+  joint: string;
+  ramp: string;
+  rampFlare: string;
+  rampLine: string;
+  pit: string;
+  neighborGround: readonly [string, string, string];
+  neighborLine: string;
+  shadow: string;
 }
+
+const CONTEXT_COLOR: ContextPalette = {
+  asphalt: '#5D6169',
+  asphaltDark: '#464A51',
+  asphaltLight: '#878B92',
+  gutter: '#B9B6AE',
+  curb: '#CFCBC1',
+  curbLow: '#DEDAD1',
+  paint: '#F4F1E8',
+  grass: '#9DC47B',
+  slab: '#DCD7CB',
+  joint: '#C2BCAE',
+  ramp: '#EAE6DC',
+  rampFlare: '#DAD5C9',
+  rampLine: '#ABA597',
+  pit: '#9A7B58',
+  neighborGround: ['#E3E7DB', '#E6E8DE', '#E0E5D7'],
+  neighborLine: '#B8BBB0',
+  shadow: '#1E2B17',
+};
+
+const CONTEXT_MONO: ContextPalette = {
+  asphalt: '#C9C9C9',
+  asphaltDark: '#B3B3B3',
+  asphaltLight: '#DADADA',
+  gutter: '#E0E0E0',
+  curb: '#A8A8A8',
+  curbLow: '#C4C4C4',
+  paint: '#FFFFFF',
+  grass: '#E6E6E6',
+  slab: '#F2F2F2',
+  joint: '#C8C8C8',
+  ramp: '#FAFAFA',
+  rampFlare: '#EBEBEB',
+  rampLine: '#9E9E9E',
+  pit: '#BDBDBD',
+  neighborGround: ['#FFFFFF', '#FFFFFF', '#FFFFFF'],
+  neighborLine: '#A8A8A8',
+  shadow: '#000000',
+};
+
+export const contextPalette = (ctx: RenderContext): ContextPalette =>
+  ctx.print?.mono ? CONTEXT_MONO : CONTEXT_COLOR;
 
 export const themeFor = (mono: boolean): SceneTheme => (mono ? MONO_THEME : SCENE_THEME);

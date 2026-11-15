@@ -1,0 +1,7 @@
+@layer components {
+  .overlay-sel-frontage {
+    fill: var(--select);
+    fill-opacity: 0.08;
+    stroke-dasharray: 6px 4px;
+  }
+}

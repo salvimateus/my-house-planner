@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { useDoc } from '../../store/docStore.ts';
 import { type Selection, useUi } from '../../store/uiStore.ts';
 import { AreaInspector } from './AreaInspector.tsx';
+import { FrontageInspector } from './FrontageInspector.tsx';
 import { ItemInspector } from './ItemInspector.tsx';
 import { LotInspector } from './LotInspector.tsx';
 import { OpeningInspector } from './OpeningInspector.tsx';
@@ -24,6 +25,10 @@ export function inspectorTitle(sel: Selection): string {
       return sel.ids.length > 1 ? `${sel.ids.length} objetos` : 'Objeto';
     case 'ruler':
       return sel.ids.length > 1 ? 'Réguas' : 'Régua';
+    case 'street-tree':
+      return 'Árvore da calçada';
+    case 'sidewalk-ramp':
+      return 'Rampa para carro';
     default:
       return 'Seleção';
   }
@@ -43,6 +48,9 @@ function SelectionBody({ sel }: { sel: Selection }): ReactElement {
       return <ItemInspector />;
     case 'ruler':
       return <RulerInspector />;
+    case 'street-tree':
+    case 'sidewalk-ramp':
+      return <FrontageInspector key={sel.id} />;
     default:
       return <EmptySelection />;
   }

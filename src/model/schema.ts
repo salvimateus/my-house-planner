@@ -18,6 +18,17 @@ const fill = z.object({
   angle: z.union([z.literal(0), z.literal(45), z.literal(90)]),
 });
 
+// A malformed frontage falls back to the default one instead of rejecting the file.
+const frontage = z
+  .object({
+    ramps: z.array(z.object({ id, side, at: num, width: num, gateId: id.nullable() })).max(200),
+    trees: z
+      .array(z.object({ id, side, at: num, size: num, species: z.string().max(40) }))
+      .max(500),
+  })
+  .optional()
+  .catch(undefined);
+
 const lot = z.object({
   width: num,
   depth: num,
@@ -32,6 +43,7 @@ const lot = z.object({
   sidewalkWidth: num,
   northDeg: num,
   ground: fill,
+  frontage,
 });
 
 const structure = z.object({

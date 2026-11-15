@@ -1,5 +1,6 @@
 import { OPENING_SPECS } from '../catalog/openingSpecs.ts';
 import { presetFor } from '../catalog/roomPresets.ts';
+import { defaultFrontage } from '../geometry/frontage.ts';
 import { DEFAULT_LOT, DEFAULT_STRUCTURE } from './defaults.ts';
 import { newId } from './ids.ts';
 import type {
@@ -29,6 +30,8 @@ const roundVec = (p: Vec): Vec => ({ x: Math.round(p.x), y: Math.round(p.y) });
 export function createProject(input: NewProjectInput): ProjectDoc {
   const now = new Date().toISOString();
   const walled = input.walled;
+  const width = Math.round(input.width);
+  const depth = Math.round(input.depth);
   return {
     format: FORMAT,
     schemaVersion: SCHEMA_VERSION,
@@ -37,14 +40,21 @@ export function createProject(input: NewProjectInput): ProjectDoc {
     createdAt: now,
     updatedAt: now,
     lot: {
-      width: Math.round(input.width),
-      depth: Math.round(input.depth),
+      width,
+      depth,
       frontSide: input.frontSide,
       cornerSide: input.cornerSide,
       boundaryWalls: { top: walled, right: walled, bottom: walled, left: walled },
       sidewalkWidth: DEFAULT_LOT.sidewalkWidth,
       northDeg: DEFAULT_LOT.northDeg,
       ground: { ...DEFAULT_LOT.ground },
+      frontage: defaultFrontage({
+        width,
+        depth,
+        frontSide: input.frontSide,
+        cornerSide: input.cornerSide,
+        sidewalkWidth: DEFAULT_LOT.sidewalkWidth,
+      }),
     },
     structure: { ...DEFAULT_STRUCTURE },
     areas: [],

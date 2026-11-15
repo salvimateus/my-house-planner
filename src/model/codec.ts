@@ -1,5 +1,14 @@
 import { OPENING_SPECS } from '../catalog/openingSpecs.ts';
 import { presetFor } from '../catalog/roomPresets.ts';
+import {
+  clampRampAt,
+  clampRampWidth,
+  clampTreeAt,
+  clampTreeSize,
+  defaultFrontage,
+  isSpecies,
+  streetSides,
+} from '../geometry/frontage.ts';
 import { bboxOf, isRectilinear, signedArea, simplifyRing } from '../geometry/shape.ts';
 import type { Rect } from '../geometry/types.ts';
 import { DEFAULT_LOT } from './defaults.ts';
@@ -10,6 +19,7 @@ import { projectSchema } from './schema.ts';
 import type {
   Area,
   Fill,
+  Frontage,
   Id,
   Item,
   Lot,
@@ -21,6 +31,8 @@ import type {
   Ruler,
   Shape,
   Side,
+  SidewalkRamp,
+  StreetTree,
   Structure,
   Vec,
 } from './types.ts';
@@ -39,6 +51,17 @@ export interface ParseOptions extends SanitizeOptions {
   /** Give the doc a new id (import always creates a copy). */
   newId?: boolean;
 }
+
+/** Sidewalk items as they come from a file: frontage may be missing and species may be unknown. */
+interface RawFrontage {
+  ramps: SidewalkRamp[];
+  trees: (Omit<StreetTree, 'species'> & { species: string })[];
+}
+
+/** A doc before sanitize: a valid `ProjectDoc` or the schema output of a file. */
+export type SanitizeInput = Omit<ProjectDoc, 'lot'> & {
+  lot: Omit<Lot, 'frontage'> & { frontage?: RawFrontage | undefined };
+};
 
 export interface ParseResult {
   doc: ProjectDoc;
@@ -84,7 +107,8 @@ type RepairKind =
   | 'opening'
   | 'item'
   | 'rulerDropped'
-  | 'rulerClamped';
+  | 'rulerClamped'
+  | 'frontage';
 
 const plural = (n: number, one: string, many: string): string =>
   n === 1 ? `1 ${one}` : `${n} ${many}`;
@@ -121,6 +145,8 @@ const REPAIR_TEXT: Record<RepairKind, (n: number) => string> = {
     `${plural(n, 'régua sem comprimento foi removida', 'réguas sem comprimento foram removidas')}.`,
   rulerClamped: (n) =>
     `${plural(n, 'régua foi trazida', 'réguas foram trazidas')} para dentro do terreno.`,
+  frontage: (n) =>
+    `${plural(n, 'item da calçada foi ajustado', 'itens da calçada foram ajustados')}.`,
 };
 
 class RepairLog {
@@ -218,13 +244,15 @@ function cleanFill(fill: Fill, fallbackColor: string, opts: SanitizeOptions, log
 // ---------------------------------------------------------------------------
 // Shapes
 
+type LotSize = Pick<Lot, 'width' | 'depth'>;
+
 const roundVec = (p: Vec): Vec => ({ x: Math.round(p.x), y: Math.round(p.y) });
 
 const rectInside = (inner: Rect, outer: Rect): boolean =>
   inner.x0 >= outer.x0 && inner.y0 >= outer.y0 && inner.x1 <= outer.x1 && inner.y1 <= outer.y1;
 
 /** Rounded, simplified and rectilinear ring with the requested orientation, or null. */
-function cleanRing(ring: Ring, lot: Lot, sign: 1 | -1, onClamp: () => void): Ring | null {
+function cleanRing(ring: Ring, lot: LotSize, sign: 1 | -1, onClamp: () => void): Ring | null {
   let clamped = false;
   const pts = ring.map((p) => {
     const r = roundVec(p);
@@ -240,7 +268,7 @@ function cleanRing(ring: Ring, lot: Lot, sign: 1 | -1, onClamp: () => void): Rin
   return Math.sign(area) === sign ? simple : simple.reverse();
 }
 
-function cleanShape(shape: Shape, lot: Lot, log: RepairLog): Shape | null {
+function cleanShape(shape: Shape, lot: LotSize, log: RepairLog): Shape | null {
   let clamped = false;
   const onClamp = () => {
     clamped = true;
@@ -290,7 +318,7 @@ function sameShape(a: Shape, b: Shape): boolean {
 // ---------------------------------------------------------------------------
 // Sanitize
 
-export function sanitize(input: ProjectDoc, opts: SanitizeOptions = {}): ParseResult {
+export function sanitize(input: SanitizeInput, opts: SanitizeOptions = {}): ParseResult {
   const log = new RepairLog();
   const now = new Date().toISOString();
 
@@ -307,12 +335,12 @@ export function sanitize(input: ProjectDoc, opts: SanitizeOptions = {}): ParseRe
     return fresh;
   };
 
-  const lot = cleanLot(input.lot, opts, log);
+  const baseLot = cleanLot(input.lot, opts, log);
   const structure = cleanStructure(input.structure, log);
 
   const areas: Area[] = [];
   for (const area of input.areas) {
-    const shape = cleanShape(area.shape, lot, log);
+    const shape = cleanShape(area.shape, baseLot, log);
     if (!shape) continue;
     const preset = presetFor(area.preset);
     areas.push({
@@ -340,11 +368,23 @@ export function sanitize(input: ProjectDoc, opts: SanitizeOptions = {}): ParseRe
     openBoundaries.push(pair);
   }
 
-  const openings = input.openings.map((o) => ({
-    ...cleanOpening(o, lot, log),
-    id: uniqueId(o.id),
+  const openingIds = new Map<Id, Id>();
+  const openings = input.openings.map((o) => {
+    const id = uniqueId(o.id);
+    if (!openingIds.has(o.id)) openingIds.set(o.id, id);
+    return { ...cleanOpening(o, baseLot, log), id };
+  });
+  const items = input.items.map((it) => ({
+    ...cleanItem(it, baseLot, log),
+    id: uniqueId(it.id),
   }));
-  const items = input.items.map((it) => ({ ...cleanItem(it, lot, log), id: uniqueId(it.id) }));
+
+  const lot: Lot = {
+    ...baseLot,
+    frontage: input.lot.frontage
+      ? cleanFrontage(input.lot.frontage, baseLot, openingIds, uniqueId, log)
+      : defaultFrontage(baseLot),
+  };
 
   const rulers: Ruler[] = [];
   for (const r of input.rulers) {
@@ -376,7 +416,11 @@ export function sanitize(input: ProjectDoc, opts: SanitizeOptions = {}): ParseRe
   return { doc, repairs: log.lines() };
 }
 
-function cleanLot(lot: Lot, opts: SanitizeOptions, log: RepairLog): Lot {
+function cleanLot(
+  lot: SanitizeInput['lot'],
+  opts: SanitizeOptions,
+  log: RepairLog,
+): Omit<Lot, 'frontage'> {
   let changed = false;
   const flag = () => {
     changed = true;
@@ -403,6 +447,45 @@ function cleanLot(lot: Lot, opts: SanitizeOptions, log: RepairLog): Lot {
   };
 }
 
+/**
+ * Sidewalk items: only on street sides, positions inside their side, sizes in range, known species,
+ * fresh ids for repeats, and a gate link only to an opening of the file.
+ */
+function cleanFrontage(
+  raw: RawFrontage,
+  lot: Omit<Lot, 'frontage'>,
+  openingIds: Map<Id, Id>,
+  uniqueId: (id: Id) => Id,
+  log: RepairLog,
+): Frontage {
+  const sides = streetSides(lot);
+  const ramps: SidewalkRamp[] = [];
+  for (const r of raw.ramps) {
+    if (!sides.includes(r.side)) {
+      log.add('frontage');
+      continue;
+    }
+    const width = clampRampWidth(r.width);
+    const at = clampRampAt(lot, r.side, r.at, width);
+    const gateId = r.gateId === null ? null : (openingIds.get(r.gateId) ?? null);
+    if (width !== r.width || at !== r.at || gateId !== r.gateId) log.add('frontage');
+    ramps.push({ id: uniqueId(r.id), side: r.side, at, width, gateId });
+  }
+  const trees: StreetTree[] = [];
+  for (const t of raw.trees) {
+    if (!sides.includes(t.side)) {
+      log.add('frontage');
+      continue;
+    }
+    const size = clampTreeSize(t.size);
+    const at = clampTreeAt(lot, t.side, t.at);
+    const species = isSpecies(t.species) ? t.species : 'oiti';
+    if (size !== t.size || at !== t.at || species !== t.species) log.add('frontage');
+    trees.push({ id: uniqueId(t.id), side: t.side, at, size, species });
+  }
+  return { ramps, trees };
+}
+
 function cleanStructure(s: Structure, log: RepairLog): Structure {
   let changed = false;
   const fit = (v: number): Mm => {
@@ -420,7 +503,7 @@ function cleanStructure(s: Structure, log: RepairLog): Structure {
   return out;
 }
 
-function cleanOpening(o: Opening, lot: Lot, log: RepairLog): Opening {
+function cleanOpening(o: Opening, lot: LotSize, log: RepairLog): Opening {
   const spec = OPENING_SPECS[o.type];
   let changed = false;
   const flag = () => {
@@ -444,7 +527,7 @@ function cleanOpening(o: Opening, lot: Lot, log: RepairLog): Opening {
   return out;
 }
 
-function cleanItem(it: Item, lot: Lot, log: RepairLog): Item {
+function cleanItem(it: Item, lot: LotSize, log: RepairLog): Item {
   let changed = false;
   const flag = () => {
     changed = true;
@@ -477,7 +560,7 @@ function cleanItem(it: Item, lot: Lot, log: RepairLog): Item {
   return out;
 }
 
-function cleanRuler(r: Ruler, lot: Lot, log: RepairLog): Ruler | null {
+function cleanRuler(r: Ruler, lot: LotSize, log: RepairLog): Ruler | null {
   if (r.mode === 'free') {
     const a = roundVec(r.a);
     const b = roundVec(r.b);

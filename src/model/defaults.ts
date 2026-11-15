@@ -21,6 +21,7 @@ export const DEFAULT_LOT: Omit<Lot, 'width' | 'depth'> = {
   sidewalkWidth: 2500,
   northDeg: 0,
   ground: { color: '#EFE7D2', material: 'earth', scale: 1, angle: 0 },
+  frontage: { ramps: [], trees: [] },
 };
 
 export const SNAP_STEP: Mm = 500;

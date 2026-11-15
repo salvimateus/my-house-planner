@@ -121,6 +121,8 @@ export type HitTarget =
   | { kind: 'wall'; segmentId: string }
   | { kind: 'boundary'; side: Side }
   | { kind: 'area'; id: Id }
+  | { kind: 'street-tree'; id: Id }
+  | { kind: 'sidewalk-ramp'; id: Id }
   | { kind: 'lot' }
   | null;
 

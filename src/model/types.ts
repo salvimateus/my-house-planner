@@ -42,6 +42,35 @@ export interface Lot {
   sidewalkWidth: Mm;
   northDeg: number;
   ground: Fill;
+  frontage: Frontage;
+}
+
+/** Sidewalk items on the street sides of the lot. */
+export interface Frontage {
+  ramps: SidewalkRamp[];
+  trees: StreetTree[];
+}
+
+/** Curb cut with a ramp across the service strip. `at` is the center along the lot side, in lot coordinates. */
+export interface SidewalkRamp {
+  id: Id;
+  side: Side;
+  at: Mm;
+  /** Width at the curb, flares included. */
+  width: Mm;
+  /** Vehicle gate the ramp follows; null after a manual edit. */
+  gateId: Id | null;
+}
+
+export type StreetTreeSpecies = 'ipe-amarelo' | 'ipe-roxo' | 'quaresmeira' | 'oiti' | 'reseda';
+
+/** Tree in the service strip. `at` is the trunk position along the lot side; `size` is the canopy diameter. */
+export interface StreetTree {
+  id: Id;
+  side: Side;
+  at: Mm;
+  size: Mm;
+  species: StreetTreeSpecies;
 }
 
 export interface Structure {

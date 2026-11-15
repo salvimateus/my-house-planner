@@ -1,5 +1,6 @@
 import { castDraft } from 'immer';
 import { nanoid } from 'nanoid';
+import { deleteFrontageItem } from '../editor/select/frontage.ts';
 import type { ToolId } from '../editor/tools/types.ts';
 import { deleteArea } from '../geometry/areaOps.ts';
 import type { Rect } from '../geometry/types.ts';
@@ -271,6 +272,11 @@ export const commands = {
       });
       feedback.remove(shapeCenter(area.shape[0]));
       toast([`“${area.name}” excluído.`, ...res.messages].join(' '), { undo: true });
+    } else if (sel.kind === 'street-tree' || sel.kind === 'sidewalk-ramp') {
+      const at = deleteFrontageItem(sel);
+      if (!at) return false;
+      feedback.remove(at);
+      toast(sel.kind === 'street-tree' ? 'Árvore excluída.' : 'Rampa excluída.', { undo: true });
     } else {
       const ids = new Set(sel.ids);
       if (ids.size === 0) return false;
