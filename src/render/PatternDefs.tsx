@@ -14,13 +14,19 @@ const numToken = (n: number): string =>
     .replace('.', 'p')
     .replace('-', 'm');
 
-/** `pat-<material>-<hex>-<scale>-<angle>`, a valid SVG id and CSS-safe in `url(#…)`. */
-export function patternId(fill: Fill): string {
+/**
+ * `pat-<material>-<hex>-<scale>-<angle>[-<mode>][-mono]`, a valid SVG id and CSS-safe in
+ * `url(#…)`. The suffix keeps a print copy, mounted next to the canvas, from resolving to the
+ * screen pattern. Without `ctx` the id is the screen one.
+ */
+export function patternId(fill: Fill, ctx?: RenderContext): string {
   const hex = fill.color
     .replace('#', '')
     .toLowerCase()
     .replace(/[^0-9a-f]/g, '');
-  return `pat-${safe(fill.material)}-${hex}-${numToken(fill.scale)}-${fill.angle}`;
+  const mode = ctx && ctx.mode !== 'screen' ? `-${ctx.mode}` : '';
+  const mono = ctx?.print?.mono ? '-mono' : '';
+  return `pat-${safe(fill.material)}-${hex}-${numToken(fill.scale)}-${fill.angle}${mode}${mono}`;
 }
 
 /**
@@ -46,7 +52,7 @@ export function fillPaint(fill: Fill, ctx: RenderContext, pxPerMm?: number): str
   const color = colorFor(fill, ctx);
   if (def.id === 'solid') return color;
   if (isFlatFill(fill, ctx, pxPerMm)) return def.flatColor(color);
-  return `url(#${patternId(fill)})`;
+  return `url(#${patternId(fill, ctx)})`;
 }
 
 /** One `<pattern>` per unique (material, color, scale, angle) among the fills in use. */
@@ -56,7 +62,7 @@ export function PatternDefs({ fills }: { fills: Fill[] }): ReactElement | null {
   const seen = new Map<string, Fill>();
   for (const f of fills) {
     if (materialDef(f.material).id === 'solid') continue;
-    const id = patternId(f);
+    const id = patternId(f, ctx);
     if (!seen.has(id)) seen.set(id, f);
   }
   if (seen.size === 0) return null;
