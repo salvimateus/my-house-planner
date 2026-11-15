@@ -4,6 +4,7 @@ import {
   FlipHorizontal2,
   RotateCcw,
   RotateCw,
+  Ruler,
   SendToBack,
   Trash2,
 } from 'lucide-react';
@@ -12,6 +13,7 @@ import { useEffect, useId, useMemo, useState } from 'react';
 import { itemDef } from '../../catalog/registry.ts';
 import type { ItemDef } from '../../catalog/types.ts';
 import {
+  fixedSize,
   normalizeRotation,
   restackItems,
   rotateItemsBy,
@@ -22,7 +24,8 @@ import {
   setItemVariant,
   toggleMirror,
 } from '../../editor/select/item.ts';
-import type { Item } from '../../model/types.ts';
+import type { Item, Mm } from '../../model/types.ts';
+import { formatLengthShort } from '../../model/units.ts';
 import { useDoc } from '../../store/docStore.ts';
 import { useUi } from '../../store/uiStore.ts';
 import { Button } from '../controls/Button.tsx';
@@ -240,17 +243,36 @@ function ColorRow({ items, def }: { items: Item[]; def: ItemDef }): ReactElement
   );
 }
 
+function FixedSize({ size }: { size: { w: Mm; d: Mm } }): ReactElement {
+  return (
+    <p className="item-fixed-size">
+      <Ruler className="item-fixed-size-icon" aria-hidden="true" />
+      <span>
+        <strong className="item-fixed-size-value num">
+          {formatLengthShort(size.w)} × {formatLengthShort(size.d)} m
+        </strong>
+        <span className="item-fixed-size-tag"> · tamanho real</span>
+      </span>
+    </p>
+  );
+}
+
 function SingleItem({ item }: { item: Item }): ReactElement {
   const def = itemDef(item.type);
-  const variants = def.variants ?? [];
+  const fixed = fixedSize(def);
+  // A fixed-size item keeps only the variants that do not change its size.
+  const variants = (def.variants ?? []).filter(
+    (v) => !fixed || (v.w === fixed.w && v.d === fixed.d),
+  );
+  const shown = fixed ?? item;
   return (
     <>
       <div className="item-identity">
         <span className="item-identity-thumb">
           <ItemPreview
             def={def}
-            w={item.w}
-            d={item.d}
+            w={shown.w}
+            d={shown.d}
             color={item.color}
             mirrored={item.mirrored}
             className="item-identity-preview"
@@ -284,27 +306,33 @@ function SingleItem({ item }: { item: Item }): ReactElement {
       ) : null}
 
       <Section title="Medidas">
-        <div className="item-size">
-          <MeasureInput
-            label="Largura"
-            unit="cm"
-            value={item.w}
-            min={def.min.w}
-            max={def.max.w}
-            onCommit={(w) => setItemSize(item.id, w, item.d)}
-          />
-          <MeasureInput
-            label="Profundidade"
-            unit="cm"
-            value={item.d}
-            min={def.min.d}
-            max={def.max.d}
-            onCommit={(d) => setItemSize(item.id, item.w, d)}
-          />
-        </div>
-        {def.keepAspect ? (
-          <p className="item-note">Largura e profundidade mudam juntas, na mesma proporção.</p>
-        ) : null}
+        {fixed ? (
+          <FixedSize size={fixed} />
+        ) : (
+          <>
+            <div className="item-size">
+              <MeasureInput
+                label="Largura"
+                unit="cm"
+                value={item.w}
+                min={def.min.w}
+                max={def.max.w}
+                onCommit={(w) => setItemSize(item.id, w, item.d)}
+              />
+              <MeasureInput
+                label="Profundidade"
+                unit="cm"
+                value={item.d}
+                min={def.min.d}
+                max={def.max.d}
+                onCommit={(d) => setItemSize(item.id, item.w, d)}
+              />
+            </div>
+            {def.keepAspect ? (
+              <p className="item-note">Largura e profundidade mudam juntas, na mesma proporção.</p>
+            ) : null}
+          </>
+        )}
       </Section>
 
       <Section title="Posição">

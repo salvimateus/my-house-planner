@@ -18,7 +18,20 @@ export const normalizeRotation = (deg: number): number => ((Math.round(deg) % 36
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const roundTo = (v: number, step: Mm) => Math.round(v / step) * step;
 
+/** The size of an item that cannot be resized (min equals max on both axes), else null. */
+export function fixedSize(def: ItemDef): { w: Mm; d: Mm } | null {
+  return def.min.w === def.max.w && def.min.d === def.max.d ? def.min : null;
+}
+
+/** The item at its fixed catalog size; a document saved with another size snaps back to it. */
+export function withFixedSize(item: Item): Item {
+  const f = fixedSize(itemDef(item.type));
+  return f && (item.w !== f.w || item.d !== f.d) ? { ...item, w: f.w, d: f.d } : item;
+}
+
 export function itemSize(def: ItemDef, variant: string | null): { w: Mm; d: Mm } {
+  const fixed = fixedSize(def);
+  if (fixed) return { ...fixed };
   const v = variant ? def.variants?.find((x) => x.id === variant) : undefined;
   return v ? { w: v.w, d: v.d } : def.size;
 }
@@ -115,7 +128,16 @@ const sameGuides = (a: Guide[], b: Guide[]) =>
 function editItems(label: string, ids: Iterable<Id>, fn: (item: Item, def: ItemDef) => void): void {
   const set = new Set(ids);
   docStore.getState().commit(label, (d) => {
-    for (const i of d.items) if (set.has(i.id)) fn(i, itemDef(i.type));
+    for (const i of d.items) {
+      if (!set.has(i.id)) continue;
+      const def = itemDef(i.type);
+      fn(i, def);
+      const fixed = fixedSize(def);
+      if (fixed) {
+        i.w = fixed.w;
+        i.d = fixed.d;
+      }
+    }
   });
 }
 
@@ -276,6 +298,8 @@ function dragMove(p: PointerInput, start: PointerInput, ctx: ToolContext): void 
       if (!from) continue;
       i.x = from.x + dx;
       i.y = from.y + dy;
+      i.w = from.w;
+      i.d = from.d;
       if (single) i.rotation = value.rotation;
     }
   });
@@ -294,7 +318,10 @@ function dragRotate(g: HandleGesture, p: PointerInput, ctx: ToolContext): void {
     g.last = key;
     ctx.doc.updateGesture((d) => {
       const i = d.items.find((x) => x.id === b.id);
-      if (i) i.rotation = rotation;
+      if (!i) return;
+      i.rotation = rotation;
+      i.w = b.w;
+      i.d = b.d;
     });
   }
   ctx.ui.setTransient({ readout: { x: p.screen.x, y: p.screen.y, text: `${rotation}°` } });
@@ -362,7 +389,8 @@ function dragResize(
 /**
  * Items: a drag on any item selects and moves it (with the whole selection when it belongs to
  * one), with the wall magnet, alignment guides and the 50 mm grid; Alt moves freely. One selected
- * item gets corner and edge resize handles in its own frame and a rotation handle behind its back.
+ * item gets corner and edge resize handles in its own frame (none for a fixed-size item) and a
+ * rotation handle behind its back.
  */
 export const itemHandler: SelectHandler = {
   kind: 'item',
@@ -377,7 +405,7 @@ export const itemHandler: SelectHandler = {
     else if (p.shift) ids = [...current, hit.id];
     else ids = [hit.id];
     const set = new Set(ids);
-    const items = doc.items.filter((i) => set.has(i.id));
+    const items = doc.items.filter((i) => set.has(i.id)).map(withFixedSize);
     const primary = items.find((i) => i.id === hit.id);
     if (!primary) return false;
     if (!current.includes(hit.id)) ctx.ui.select({ kind: 'item', ids });
@@ -410,9 +438,11 @@ export const itemHandler: SelectHandler = {
   },
 
   getHandles(ctx) {
-    const item = singleSelected(ctx);
-    if (!item || !itemsUsable(ctx)) return [];
+    const selected = singleSelected(ctx);
+    if (!selected || !itemsUsable(ctx)) return [];
+    const item = withFixedSize(selected);
     const def = itemDef(item.type);
+    const fixed = fixedSize(def) !== null;
     const size = isCoarse() ? tuning.touch.handlePx : tuning.touch.mouseHandlePx;
     const zoom = ctx.camera.get().zoom;
     const sw = item.w * zoom;
@@ -428,8 +458,8 @@ export const itemHandler: SelectHandler = {
       handles.push({ id, x: s.x, y: s.y, shape: 'square', cursor });
     };
     // Handles must leave room to grab the item itself.
-    if (sw >= size * 1.6 && sd >= size * 1.6) for (const id of CORNERS) add(id);
-    if (!def.keepAspect) {
+    if (!fixed && sw >= size * 1.6 && sd >= size * 1.6) for (const id of CORNERS) add(id);
+    if (!fixed && !def.keepAspect) {
       if (sw >= size * 3.5) {
         add('n');
         add('s');
@@ -457,7 +487,8 @@ export const itemHandler: SelectHandler = {
     if (phase === 'start') {
       const item = singleSelected(ctx);
       if (!item || !itemsUsable(ctx)) return;
-      handle = { id: id as HandleId, base: item, last: '' };
+      if (id !== 'rotate' && fixedSize(itemDef(item.type))) return;
+      handle = { id: id as HandleId, base: withFixedSize(item), last: '' };
       ctx.doc.beginGesture(id === 'rotate' ? 'Girar objeto' : 'Mudar tamanho');
       return;
     }
