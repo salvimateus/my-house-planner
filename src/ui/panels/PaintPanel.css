@@ -1,0 +1,12 @@
+@layer components {
+  .paint-panel {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .paint-tip {
+    color: var(--ink-2);
+    font-size: 0.875rem;
+  }
+}
