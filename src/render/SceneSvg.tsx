@@ -54,8 +54,8 @@ export function SceneLayers({ data, ctx }: { data: SceneData; ctx: RenderContext
         </defs>
         <ContextLayer lot={doc.lot} ctx={ctx} />
         <LotLayer lot={doc.lot} boundaryGeom={scene.boundaryGeom} ctx={ctx} pxPerMm={pxPerMm} />
-        <GridLayer lot={doc.lot} ctx={ctx} />
         <AreasLayer areas={doc.areas} derived={scene.areas} ctx={ctx} pxPerMm={pxPerMm} />
+        <GridLayer lot={doc.lot} ctx={ctx} />
         <WallsLayer wallsGeom={scene.wallsGeom} wallRects={scene.wallRects} live={live} ctx={ctx} />
         <OpeningsLayer />
         <ItemsLayer />
