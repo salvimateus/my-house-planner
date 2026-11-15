@@ -40,11 +40,16 @@
 
     &[data-layout="wide"] {
       --topbar-h: 52px;
+      /* Tools sit next to the panel they drive; the zero-width track holds the resizer. */
       grid-template:
-        "top top top" auto
-        "tools stage side" minmax(0, 1fr)
-        "tools status side" auto
-        / 72px minmax(0, 1fr) 320px;
+        "top top top top" auto
+        "stage resizer tools side" minmax(0, 1fr)
+        "status resizer tools side" auto
+        / minmax(0, 1fr) 0 72px var(--panel-w, 320px);
+
+      & > .panel-resizer {
+        grid-area: resizer;
+      }
 
       & > .side-panel {
         grid-area: side;

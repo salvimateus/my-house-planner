@@ -5,6 +5,7 @@ import { useDoc } from '../store/docStore.ts';
 import { uiStore, useUi } from '../store/uiStore.ts';
 import { BottomSheet } from './BottomSheet.tsx';
 import { CanvasControls } from './CanvasControls.tsx';
+import { PanelResizer } from './PanelResizer.tsx';
 import { panelSnapFor, SidePanel, toolPanelId } from './SidePanel.tsx';
 import { StatusBar, StatusChip } from './StatusBar.tsx';
 import { startShortcuts } from './shortcuts.ts';
@@ -64,7 +65,6 @@ export function AppShell(): ReactElement {
     <div className="shell" data-layout={wide ? 'wide' : 'compact'}>
       <h1 className="sr-only">{docName} · Casinha</h1>
       <TopBar wide={wide} />
-      {wide ? <ToolBar orientation="vertical" /> : null}
       <main
         className="shell-stage"
         aria-label="Planta"
@@ -77,8 +77,14 @@ export function AppShell(): ReactElement {
         <CanvasControls compact={!wide} />
         {wide ? null : <BottomSheet />}
       </main>
-      {wide ? <SidePanel /> : null}
       {wide ? <StatusBar /> : null}
+      {wide ? (
+        <>
+          <PanelResizer />
+          <ToolBar orientation="vertical" />
+          <SidePanel />
+        </>
+      ) : null}
       {wide ? null : <ToolBar orientation="horizontal" />}
     </div>
   );

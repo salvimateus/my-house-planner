@@ -78,7 +78,7 @@ function markFor(id: CoachId, tool: ToolId): Mark {
 const GAP = 12;
 const GUTTER = 12;
 
-/** Places the bubble next to its anchor (to the right of a left rail, else above or below). */
+/** Places the bubble next to its anchor: beside a vertical tool rail (on the canvas side), else above or below. */
 function place(el: HTMLElement, anchor: string | null): void {
   const vw = document.documentElement.clientWidth;
   const vh = window.visualViewport?.height ?? window.innerHeight;
@@ -88,14 +88,20 @@ function place(el: HTMLElement, anchor: string | null): void {
   const r = target?.getBoundingClientRect();
   let left: number;
   let top: number;
-  let side: 'top' | 'bottom' | 'right' | 'none';
-  if (r && r.width > 0 && r.height > 0) {
+  let side: 'top' | 'bottom' | 'right' | 'left' | 'none';
+  if (target && r && r.width > 0 && r.height > 0) {
     const cx = r.left + r.width / 2;
-    if (r.right < vw * 0.25 && r.height < vh * 0.5) {
+    const cy = r.top + r.height / 2;
+    const inRail = target.closest('.toolbar[data-orientation="vertical"]') !== null;
+    if (inRail && cx > vw / 2) {
+      side = 'left';
+      left = r.left - GAP - w;
+      top = cy - h / 2;
+    } else if (inRail || (r.right < vw * 0.25 && r.height < vh * 0.5)) {
       side = 'right';
       left = r.right + GAP;
-      top = r.top + r.height / 2 - h / 2;
-    } else if (r.top + r.height / 2 > vh / 2) {
+      top = cy - h / 2;
+    } else if (cy > vh / 2) {
       side = 'top';
       left = cx - w / 2;
       top = r.top - GAP - h;
@@ -104,19 +110,18 @@ function place(el: HTMLElement, anchor: string | null): void {
       left = cx - w / 2;
       top = r.bottom + GAP;
     }
-    const clampedLeft = Math.max(GUTTER, Math.min(vw - w - GUTTER, left));
+    left = Math.max(GUTTER, Math.min(vw - w - GUTTER, left));
+    top = Math.max(GUTTER, Math.min(vh - h - GUTTER, top));
     // The arrow keeps pointing at the anchor when the bubble is clamped to the screen.
-    el.style.setProperty('--arrow-x', `${Math.round(cx - clampedLeft)}px`);
-    el.style.setProperty('--arrow-y', `${Math.round(r.top + r.height / 2 - top)}px`);
-    left = clampedLeft;
+    el.style.setProperty('--arrow-x', `${Math.round(cx - left)}px`);
+    el.style.setProperty('--arrow-y', `${Math.round(Math.min(h - 14, Math.max(14, cy - top)))}px`);
   } else {
     side = 'none';
     const canvas = document.querySelector('.canvas')?.getBoundingClientRect();
     const midX = canvas ? canvas.left + canvas.width / 2 : vw / 2;
     left = Math.max(GUTTER, Math.min(vw - w - GUTTER, midX - w / 2));
-    top = (canvas?.top ?? 0) + 64;
+    top = Math.max(GUTTER, Math.min(vh - h - GUTTER, (canvas?.top ?? 0) + 64));
   }
-  top = Math.max(GUTTER, Math.min(vh - h - GUTTER, top));
   el.dataset.side = side;
   el.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
 }
@@ -263,6 +268,9 @@ export function Coach(): ReactElement | null {
     window.addEventListener('resize', reposition);
     const ro = new ResizeObserver(reposition);
     ro.observe(document.body);
+    // The rail moves when the side panel is resized; the stage width tracks that.
+    const stage = document.querySelector('.shell-stage');
+    if (stage) ro.observe(stage);
     return () => {
       window.removeEventListener('resize', reposition);
       ro.disconnect();

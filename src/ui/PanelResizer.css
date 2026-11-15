@@ -1,0 +1,78 @@
+@layer components {
+  .panel-resizer {
+    position: relative;
+    z-index: 15;
+    width: 8px;
+    margin-inline-start: -4px;
+    cursor: col-resize;
+    touch-action: none;
+    user-select: none;
+
+    @media (pointer: coarse) {
+      width: 24px;
+      margin-inline-start: -12px;
+    }
+
+    /* Thin line that lights up on the rail edge. */
+    &::before {
+      content: "";
+      position: absolute;
+      inset-block: 0;
+      inset-inline-start: 50%;
+      width: 2px;
+      translate: -50% 0;
+      background: var(--select);
+      opacity: 0;
+      transition: opacity var(--dur-fast) var(--ease-state);
+    }
+
+    &:focus-visible {
+      outline: none;
+    }
+
+    @media (hover: hover) {
+      &:hover::before {
+        opacity: 0.55;
+      }
+    }
+
+    &:focus-visible::before,
+    &[data-dragging]::before {
+      opacity: 1;
+    }
+  }
+
+  .panel-resizer-grip {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    width: 6px;
+    height: 40px;
+    translate: -50% -50%;
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow:
+      0 0 0 1px var(--line-strong),
+      var(--shadow-sm);
+    opacity: 0;
+    transition: opacity var(--dur-fast) var(--ease-state);
+
+    @media (hover: hover) {
+      .panel-resizer:hover & {
+        opacity: 1;
+      }
+    }
+
+    .panel-resizer:focus-visible &,
+    .panel-resizer[data-dragging] & {
+      opacity: 1;
+      box-shadow:
+        0 0 0 2px var(--select),
+        var(--shadow-sm);
+    }
+
+    @media (pointer: coarse) {
+      opacity: 1;
+    }
+  }
+}
