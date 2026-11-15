@@ -1,0 +1,55 @@
+@layer components {
+  .layers {
+    display: grid;
+    gap: 0.125rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .layers-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 56px;
+    padding-block: 0.25rem;
+    border-bottom: 1px solid var(--line);
+
+    &:last-child {
+      border-bottom: 0;
+    }
+
+    &[data-hidden="true"] :is(.layers-icon, .layers-text) {
+      opacity: 0.5;
+    }
+  }
+
+  .layers-icon {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    color: var(--ink-2);
+    transition: opacity var(--dur-color) var(--ease-state);
+  }
+
+  .layers-text {
+    display: grid;
+    flex: 1;
+    gap: 2px;
+    min-width: 0;
+    transition: opacity var(--dur-color) var(--ease-state);
+  }
+
+  .layers-label {
+    font-weight: 600;
+  }
+
+  .layers-desc {
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+  }
+
+  .layers-spacer {
+    flex: none;
+    width: var(--tap);
+  }
+}
