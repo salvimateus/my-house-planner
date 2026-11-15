@@ -19,7 +19,8 @@ let lastSavedDoc: ProjectDoc | null = null;
 let lastSavedLayers: ViewPrefs['layers'] | null = null;
 let lastThumbAt = 0;
 let thumbDocId: string | null = null;
-let thumbStale = false;
+/** The doc that the stored thumbnail shows. */
+let lastThumbDoc: ProjectDoc | null = null;
 
 let debounceTimer: number | undefined;
 let thumbTimer: number | undefined;
@@ -38,6 +39,7 @@ function thumbFor(doc: ProjectDoc): string | undefined {
 /** Marks a doc as already stored, so loading it does not trigger a save. */
 export function markClean(doc: ProjectDoc): void {
   lastSavedDoc = doc;
+  lastThumbDoc = doc;
   lastSavedLayers = uiStore.getState().layers;
 }
 
@@ -47,7 +49,7 @@ export async function persistDoc(doc: ProjectDoc, opts: { thumb: boolean }): Pro
   if (opts.thumb) {
     lastThumbAt = Date.now();
     thumbDocId = doc.id;
-    thumbStale = false;
+    lastThumbDoc = doc;
   }
   await saveProjectRecord(doc, {
     thumbSvg,
@@ -67,14 +69,18 @@ function saveTarget(flush: boolean): ProjectDoc | null {
 }
 
 async function saveNow(opts: { flush?: boolean; thumb?: boolean; evenIfClean?: boolean } = {}) {
-  while (inFlight) await inFlight;
+  // A flush starts its write now, without a wait: IndexedDB runs the transactions in order.
+  if (!opts.flush) while (inFlight) await inFlight;
   const target = saveTarget(opts.flush ?? false);
   if (!target) return;
   const layers = uiStore.getState().layers;
   const clean = target === lastSavedDoc && layers === lastSavedLayers;
-  if (clean && !(opts.evenIfClean && thumbStale)) return;
-  const thumb =
-    opts.thumb === true || thumbDocId !== target.id || Date.now() - lastThumbAt >= THUMB_EVERY_MS;
+  const thumbDirty = target !== lastThumbDoc;
+  if (clean && !(opts.evenIfClean && thumbDirty)) return;
+  // Leaving the page or the editor: the gallery must show the last change.
+  const thumb = opts.flush
+    ? thumbDirty
+    : opts.thumb === true || thumbDocId !== target.id || Date.now() - lastThumbAt >= THUMB_EVERY_MS;
   const ui = uiStore.getState();
   ui.setSaveStatus('saving');
   const run = (async () => {
@@ -83,10 +89,7 @@ async function saveNow(opts: { flush?: boolean; thumb?: boolean; evenIfClean?: b
       lastSavedDoc = target;
       lastSavedLayers = layers;
       uiStore.getState().setSaveStatus('saved');
-      if (!thumb) {
-        thumbStale = true;
-        scheduleTrailingThumb();
-      }
+      if (!thumb) scheduleTrailingThumb();
     } catch (err) {
       uiStore.getState().setSaveStatus('error');
       reportWriteError(err instanceof StorageWriteError && err.quota);
@@ -96,7 +99,7 @@ async function saveNow(opts: { flush?: boolean; thumb?: boolean; evenIfClean?: b
   try {
     await run;
   } finally {
-    inFlight = null;
+    if (inFlight === run) inFlight = null;
   }
 }
 
@@ -152,10 +155,14 @@ function isDirty(): boolean {
   );
 }
 
-/** Saves pending changes right away (close, tab hidden, app update). Never throws. */
-export async function flushAutosave(opts: { thumb?: boolean } = {}): Promise<void> {
+/**
+ * Saves pending changes right away (page hidden, leaving the editor, app update), with a fresh
+ * thumbnail when the doc changed after the last one. The write starts synchronously, so it
+ * lands when the tab closes. Never throws.
+ */
+export async function flushAutosave(): Promise<void> {
   cancelPending();
-  await saveNow({ flush: true, thumb: opts.thumb, evenIfClean: opts.thumb });
+  await saveNow({ flush: true, evenIfClean: true });
 }
 
 export function startAutosave(): () => void {
@@ -178,9 +185,9 @@ export function startAutosave(): () => void {
   });
 
   const onHidden = () => {
-    if (document.visibilityState === 'hidden') void flushAutosave({ thumb: thumbStale });
+    if (document.visibilityState === 'hidden') void flushAutosave();
   };
-  const onPageHide = () => void flushAutosave({ thumb: thumbStale });
+  const onPageHide = () => void flushAutosave();
   document.addEventListener('visibilitychange', onHidden);
   window.addEventListener('pagehide', onPageHide);
 

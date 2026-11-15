@@ -113,7 +113,7 @@ async function closeCurrent(): Promise<void> {
     docStore.getState().close();
     return;
   }
-  await flushAutosave({ thumb: true });
+  await flushAutosave();
   const { lock, waiter } = current;
   current = null;
   waiter?.abort();

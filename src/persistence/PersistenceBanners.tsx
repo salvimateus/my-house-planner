@@ -174,7 +174,7 @@ function UpdateBanner(): ReactElement | null {
   const update = async () => {
     setUpdating(true);
     try {
-      await flushAutosave({ thumb: true });
+      await flushAutosave();
       await updateServiceWorker(true);
     } catch {
       setUpdating(false);
