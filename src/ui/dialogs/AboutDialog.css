@@ -114,3 +114,36 @@
     }
   }
 }
+
+@layer components {
+  .about-credits {
+    display: grid;
+    justify-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.9375rem;
+    text-align: center;
+  }
+
+  .about-credits-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+    color: var(--select-strong);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+
+    &:focus-visible {
+      outline: 2px solid var(--select);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+  }
+
+  .about-credits-license {
+    margin-top: 0.5rem;
+    color: var(--ink-2);
+    font-size: 0.875rem;
+  }
+}

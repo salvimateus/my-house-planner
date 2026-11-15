@@ -7,6 +7,7 @@ import { SHORTCUT_LIST } from '../shortcuts.ts';
 import './AboutDialog.css';
 
 const REPO_URL = 'https://github.com/salvimateus/my-house-planner';
+const AUTHOR_URL = 'https://github.com/salvimateus';
 
 export function AboutDialog(): ReactElement {
   const open = useUi((s) => s.dialog === 'about');
@@ -63,13 +64,31 @@ export function AboutDialog(): ReactElement {
         </p>
 
         <p className="about-foot">
-          Código aberto, licença MIT.{' '}
-          <a className="about-link" href={REPO_URL} target="_blank" rel="noreferrer">
-            Ver no GitHub
+          <a className="about-link" href={REPO_URL} target="_blank" rel="noopener noreferrer">
+            Ver o código no GitHub
             <ExternalLink aria-hidden="true" />
             <span className="sr-only"> (abre em outra aba)</span>
           </a>
         </p>
+
+        <footer className="about-credits" lang="en">
+          <p>Made by Mateus Salvi</p>
+          <p>
+            <a
+              className="about-credits-link"
+              href={AUTHOR_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              @salvimateus on GitHub
+              <span className="sr-only" lang="pt-BR">
+                {' '}
+                (abre em outra aba)
+              </span>
+            </a>
+          </p>
+          <p className="about-credits-license">MIT license.</p>
+        </footer>
       </div>
     </Dialog>
   );
