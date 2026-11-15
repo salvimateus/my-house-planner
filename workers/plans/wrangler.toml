@@ -17,4 +17,13 @@ namespace_id = "1001"
   limit = 30
   period = 60
 
+# Usage quota: 1 GB stored and 100,000 writes per UTC month, held by one Durable Object.
+[[durable_objects.bindings]]
+name = "USAGE"
+class_name = "UsageCounter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["UsageCounter"]
+
 # GALLERY_KEY is a secret. Set it with `wrangler secret put GALLERY_KEY`; never commit it.

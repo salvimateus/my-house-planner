@@ -2,13 +2,26 @@
  * Minha Casinha plan collection Worker.
  *
  * POST /v1/plans stores one project JSON in R2. The gallery routes (GET) need
- * `Authorization: Bearer <GALLERY_KEY>`, and so does DELETE /v1/plans/<device>/<project>.
+ * `Authorization: Bearer <GALLERY_KEY>`, and so do DELETE /v1/plans/<device>/<project>
+ * and the /v1/usage routes.
+ *
+ * A single UsageCounter Durable Object enforces a hard quota so the bucket stays
+ * inside the R2 free tier: total stored bytes and successful writes per UTC month.
  *
  * @typedef {object} Env
  * @property {R2Bucket} PLANS
  * @property {string} GALLERY_KEY
+ * @property {DurableObjectNamespace} USAGE
  * @property {{ limit(options: { key: string }): Promise<{ success: boolean }> }} [WRITE_LIMIT]
+ *
+ * @typedef {{ month: string, writes: number, bytes: number, plans: number, seeded: boolean }} Meta
+ * @typedef {{ b: number, t: number }} SizeEntry
+ * @typedef {{ ok: true, previous: number | null, month: string }
+ *   | { ok: false, reason: 'storage' | 'writes', retryAfter: number }
+ *   | { ok: false, reason: 'unseeded' }} Reservation
  */
+
+import { DurableObject } from 'cloudflare:workers';
 
 const ALLOWED_ORIGINS = new Set([
   'https://minha-casinha.vercel.app',
@@ -20,6 +33,12 @@ const MAX_RAW_BYTES = 1024 * 1024;
 const MAX_TEXT_BYTES = 8 * 1024 * 1024;
 const ID_PATTERN = /^[A-Za-z0-9_-]{4,64}$/;
 const PREFIX = 'plans/';
+
+export const BYTES_LIMIT = 1_000_000_000;
+export const WRITES_LIMIT = 100_000;
+const STORAGE_RETRY_AFTER = 86400;
+const META_KEY = 'meta';
+const SIZE_PREFIX = 'p:';
 
 export default {
   /**
@@ -39,6 +58,149 @@ export default {
     return withCommonHeaders(response, origin);
   },
 };
+
+/**
+ * Holds the quota state. Every method body is synchronous, so each call is atomic
+ * against all other calls to this object.
+ */
+export class UsageCounter extends DurableObject {
+  /**
+   * @param {string} key
+   * @param {number} newBytes
+   * @returns {Reservation}
+   */
+  reserve(key, newBytes) {
+    const meta = this.#meta();
+    if (!meta.seeded) return { ok: false, reason: 'unseeded' };
+
+    if (meta.writes >= WRITES_LIMIT) {
+      return { ok: false, reason: 'writes', retryAfter: secondsToNextMonth() };
+    }
+    const entry = this.#size(key);
+    const previous = entry ? entry.b : null;
+    const delta = newBytes - (previous ?? 0);
+    if (delta > 0 && meta.bytes + delta > BYTES_LIMIT) {
+      return { ok: false, reason: 'storage', retryAfter: STORAGE_RETRY_AFTER };
+    }
+
+    meta.writes += 1;
+    meta.bytes += delta;
+    if (previous === null) meta.plans += 1;
+    this.ctx.storage.kv.put(SIZE_PREFIX + key, { b: newBytes, t: Date.now() });
+    this.ctx.storage.kv.put(META_KEY, meta);
+    return { ok: true, previous, month: meta.month };
+  }
+
+  /**
+   * Reverts a reservation whose R2 put failed. It does nothing when a later write
+   * already replaced the entry.
+   *
+   * @param {string} key
+   * @param {number} newBytes
+   * @param {number | null} previous
+   * @param {string} month
+   */
+  undo(key, newBytes, previous, month) {
+    const meta = this.#meta();
+    if (month === meta.month) meta.writes = Math.max(0, meta.writes - 1);
+    const entry = this.#size(key);
+    if (entry && entry.b === newBytes) {
+      meta.bytes = Math.max(0, meta.bytes - newBytes + (previous ?? 0));
+      if (previous === null) {
+        meta.plans = Math.max(0, meta.plans - 1);
+        this.ctx.storage.kv.delete(SIZE_PREFIX + key);
+      } else {
+        this.ctx.storage.kv.put(SIZE_PREFIX + key, { b: previous, t: entry.t });
+      }
+    }
+    this.ctx.storage.kv.put(META_KEY, meta);
+  }
+
+  /** @param {string} key */
+  release(key) {
+    const meta = this.#meta();
+    const entry = this.#size(key);
+    if (!entry) return;
+    meta.bytes = Math.max(0, meta.bytes - entry.b);
+    meta.plans = Math.max(0, meta.plans - 1);
+    this.ctx.storage.kv.delete(SIZE_PREFIX + key);
+    this.ctx.storage.kv.put(META_KEY, meta);
+  }
+
+  /**
+   * Replaces the size map with a bucket listing taken from `startedAt` on. Entries
+   * written after `startedAt` win over the listing, so a concurrent write is never lost.
+   *
+   * @param {Array<[string, number]>} entries
+   * @param {number} startedAt
+   * @param {boolean} onlyIfUnseeded
+   */
+  recount(entries, startedAt, onlyIfUnseeded) {
+    const meta = this.#meta();
+    if (onlyIfUnseeded && meta.seeded) return this.usage();
+
+    /** @type {Map<string, SizeEntry>} */
+    const next = new Map(entries.map(([key, b]) => [key, { b, t: startedAt }]));
+    for (const [storageKey, value] of this.ctx.storage.kv.list({ prefix: SIZE_PREFIX })) {
+      const entry = /** @type {SizeEntry} */ (value);
+      if (entry.t >= startedAt) next.set(storageKey.slice(SIZE_PREFIX.length), entry);
+      this.ctx.storage.kv.delete(storageKey);
+    }
+
+    let bytes = 0;
+    for (const [key, entry] of next) {
+      bytes += entry.b;
+      this.ctx.storage.kv.put(SIZE_PREFIX + key, entry);
+    }
+    meta.bytes = bytes;
+    meta.plans = next.size;
+    meta.seeded = true;
+    this.ctx.storage.kv.put(META_KEY, meta);
+    return this.usage();
+  }
+
+  usage() {
+    const meta = this.#meta();
+    const reason =
+      meta.writes >= WRITES_LIMIT ? 'writes' : meta.bytes >= BYTES_LIMIT ? 'storage' : null;
+    return {
+      month: meta.month,
+      writes: meta.writes,
+      writesLimit: WRITES_LIMIT,
+      bytes: meta.bytes,
+      bytesLimit: BYTES_LIMIT,
+      plans: meta.plans,
+      paused: reason !== null,
+      reason,
+      seeded: meta.seeded,
+    };
+  }
+
+  /**
+   * Reads the totals and resets the write count when a new UTC month starts.
+   *
+   * @returns {Meta}
+   */
+  #meta() {
+    const month = currentMonth();
+    const stored = /** @type {Meta | undefined} */ (this.ctx.storage.kv.get(META_KEY));
+    const meta = stored ?? { month, writes: 0, bytes: 0, plans: 0, seeded: false };
+    if (meta.month !== month) {
+      meta.month = month;
+      meta.writes = 0;
+      this.ctx.storage.kv.put(META_KEY, meta);
+    }
+    return meta;
+  }
+
+  /**
+   * @param {string} key
+   * @returns {SizeEntry | undefined}
+   */
+  #size(key) {
+    return /** @type {SizeEntry | undefined} */ (this.ctx.storage.kv.get(SIZE_PREFIX + key));
+  }
+}
 
 /**
  * @param {Request} request
@@ -62,6 +224,16 @@ async function route(request, env) {
     if (method === 'GET') return getPlan(request, env, match[1], match[2]);
     if (method === 'DELETE') return deletePlan(request, env, match[1], match[2]);
     return text('Method not allowed', 405);
+  }
+
+  if (url.pathname === '/v1/usage') {
+    if (method !== 'GET') return text('Method not allowed', 405);
+    return getUsage(request, env);
+  }
+
+  if (url.pathname === '/v1/usage/recount') {
+    if (method !== 'POST') return text('Method not allowed', 405);
+    return recountUsage(request, env);
   }
 
   return text('Not found', 404);
@@ -103,12 +275,13 @@ async function savePlan(request, env, url) {
       return text('Bad gzip', 400);
     }
   }
+  if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) {
+    bytes = bytes.subarray(3);
+  }
 
-  let body;
   let data;
   try {
-    body = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-    data = JSON.parse(body);
+    data = JSON.parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes));
   } catch {
     return text('Bad JSON', 400);
   }
@@ -121,16 +294,44 @@ async function savePlan(request, env, url) {
     return text('Bad format', 400);
   }
 
-  await env.PLANS.put(planKey(device, project), body, {
-    httpMetadata: { contentType: 'application/json' },
-    customMetadata: {
-      name: cleanName(params.get('name')),
-      w: cleanMeters(params.get('w')),
-      d: cleanMeters(params.get('d')),
-      updated: cleanDate(params.get('updated')),
-      bytes: String(bytes.length),
-    },
-  });
+  const key = planKey(device, project);
+  const counter = usageCounter(env);
+  let reservation;
+  try {
+    reservation = await counter.reserve(key, bytes.length);
+    if (!reservation.ok && reservation.reason === 'unseeded') {
+      await seedCounter(env, counter, true);
+      reservation = await counter.reserve(key, bytes.length);
+    }
+  } catch (error) {
+    console.error(error);
+    return text('Quota service unavailable', 503);
+  }
+  if (!reservation.ok) {
+    if (reservation.reason === 'unseeded') return text('Quota service unavailable', 503);
+    return Response.json(
+      { error: 'quota', reason: reservation.reason },
+      { status: 507, headers: { 'Retry-After': String(reservation.retryAfter) } },
+    );
+  }
+
+  try {
+    await env.PLANS.put(key, bytes, {
+      httpMetadata: { contentType: 'application/json' },
+      customMetadata: {
+        name: cleanName(params.get('name')),
+        w: cleanMeters(params.get('w')),
+        d: cleanMeters(params.get('d')),
+        updated: cleanDate(params.get('updated')),
+        bytes: String(bytes.length),
+      },
+    });
+  } catch (error) {
+    await counter
+      .undo(key, bytes.length, reservation.previous, reservation.month)
+      .catch((/** @type {unknown} */ undoError) => console.error(undoError));
+    throw error;
+  }
 
   return new Response(null, { status: 204 });
 }
@@ -187,7 +388,8 @@ async function getPlan(request, env, device, project) {
 }
 
 /**
- * Idempotent: a missing plan also returns 204.
+ * Idempotent: a missing plan also returns 204. The R2 delete runs first, so a failed
+ * release can only leave the counter too high, never too low.
  *
  * @param {Request} request
  * @param {Env} env
@@ -198,8 +400,70 @@ async function deletePlan(request, env, device, project) {
   if (!(await isAuthorized(request, env))) return text('Unauthorized', 401);
   if (!ID_PATTERN.test(device) || !ID_PATTERN.test(project)) return text('Bad id', 400);
 
-  await env.PLANS.delete(planKey(device, project));
+  const key = planKey(device, project);
+  await env.PLANS.delete(key);
+  try {
+    await usageCounter(env).release(key);
+  } catch (error) {
+    console.error(error);
+  }
   return new Response(null, { status: 204 });
+}
+
+/**
+ * @param {Request} request
+ * @param {Env} env
+ */
+async function getUsage(request, env) {
+  if (!(await isAuthorized(request, env))) return text('Unauthorized', 401);
+  const counter = usageCounter(env);
+  let usage = await counter.usage();
+  if (!usage.seeded) usage = await seedCounter(env, counter, true);
+  return Response.json(publicUsage(usage));
+}
+
+/**
+ * @param {Request} request
+ * @param {Env} env
+ */
+async function recountUsage(request, env) {
+  if (!(await isAuthorized(request, env))) return text('Unauthorized', 401);
+  const usage = await seedCounter(env, usageCounter(env), false);
+  return Response.json(publicUsage(usage));
+}
+
+/**
+ * Lists every stored plan and hands the sizes to the counter.
+ *
+ * @param {Env} env
+ * @param {ReturnType<typeof usageCounter>} counter
+ * @param {boolean} onlyIfUnseeded
+ */
+async function seedCounter(env, counter, onlyIfUnseeded) {
+  const startedAt = Date.now();
+  /** @type {Array<[string, number]>} */
+  const entries = [];
+  /** @type {string | undefined} */
+  let cursor;
+  do {
+    const page = await env.PLANS.list({ prefix: PREFIX, cursor });
+    for (const object of page.objects) entries.push([object.key, object.size]);
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
+  return counter.recount(entries, startedAt, onlyIfUnseeded);
+}
+
+/**
+ * @param {{ seeded?: boolean } & Record<string, unknown>} usage
+ */
+function publicUsage(usage) {
+  const { seeded: _seeded, ...rest } = usage;
+  return rest;
+}
+
+/** @param {Env} env */
+function usageCounter(env) {
+  return /** @type {any} */ (env.USAGE.get(env.USAGE.idFromName('global')));
 }
 
 /**
@@ -250,6 +514,16 @@ async function readLimited(stream, limit) {
   return out;
 }
 
+function currentMonth() {
+  return new Date(Date.now()).toISOString().slice(0, 7);
+}
+
+function secondsToNextMonth() {
+  const now = new Date(Date.now());
+  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
+  return Math.max(1, Math.ceil((next - now.getTime()) / 1000));
+}
+
 /**
  * @param {string} device
  * @param {string} project
@@ -273,10 +547,16 @@ function cleanMeters(value) {
   return Number.isFinite(number) && number >= 0 && number <= 1000 ? String(number) : '';
 }
 
-/** @param {string | null} value */
+/**
+ * A client date in the future is clamped to server time, so it cannot pin a plan to
+ * the top of the gallery.
+ *
+ * @param {string | null} value
+ */
 function cleanDate(value) {
+  const now = Date.now();
   const time = value ? Date.parse(value) : Number.NaN;
-  return Number.isNaN(time) ? new Date().toISOString() : new Date(time).toISOString();
+  return new Date(Number.isNaN(time) ? now : Math.min(time, now)).toISOString();
 }
 
 /** @param {string | undefined} value */
@@ -306,6 +586,7 @@ function withCommonHeaders(response, origin) {
     headers.set('Access-Control-Allow-Origin', origin);
     headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     headers.set('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    headers.set('Access-Control-Expose-Headers', 'Retry-After');
     headers.set('Access-Control-Max-Age', '86400');
   }
   return new Response(response.body, { status: response.status, headers });
