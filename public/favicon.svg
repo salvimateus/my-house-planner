@@ -1,6 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
   <title>Minha Casinha</title>
-  <rect x="2" y="2" width="60" height="60" rx="18" fill="#1A3263"/>
-  <path d="M14 30.5 32 16l18 14.5V48a2 2 0 0 1-2 2H16a2 2 0 0 1-2-2Z" fill="#FFF8EE" stroke="#FAB95B" stroke-width="3" stroke-linejoin="round"/>
-  <path d="M19 33v13h12V36M31 46h14V33M31 36h-5M38 33v6" fill="none" stroke="#1A3263" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <style>
+    .tile-from { stop-color: #1A3263; }
+    .tile-to { stop-color: #1A3263; }
+    .house { fill: #FFF8EE; stroke: #FAB95B; }
+    .plan { stroke: #1A3263; }
+    @media (prefers-color-scheme: dark) {
+      .tile-from { stop-color: #8C2A4D; }
+      .tile-to { stop-color: #4C2341; }
+      .house { fill: #FFF1EC; stroke: #F7374F; }
+      .plan { stroke: #522546; }
+    }
+  </style>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" class="tile-from"/>
+      <stop offset="1" class="tile-to"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="18" fill="url(#tile)"/>
+  <path class="house" d="M14 30.5 32 16l18 14.5V48a2 2 0 0 1-2 2H16a2 2 0 0 1-2-2Z" stroke-width="3" stroke-linejoin="round"/>
+  <path class="plan" d="M19 33v13h12V36M31 46h14V33M31 36h-5M38 33v6" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

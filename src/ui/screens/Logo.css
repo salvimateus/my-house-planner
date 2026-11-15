@@ -1,0 +1,61 @@
+@layer components {
+  /* The print sheets and the PWA icons keep the navy brand; only the in-app mark follows the theme. */
+  :root {
+    --logo-tile-from: #1a3263;
+    --logo-tile-to: #1a3263;
+    --logo-highlight: transparent;
+    --logo-house-fill: #fff8ee;
+    --logo-house-stroke: #fab95b;
+    --logo-plan: #1a3263;
+    --logo-shadow-tint: var(--primary);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --logo-tile-from: oklch(0.43 0.11 355);
+      --logo-tile-to: oklch(0.29 0.075 336);
+      --logo-highlight: oklch(1 0 0 / 0.1);
+      --logo-house-fill: oklch(0.96 0.02 40);
+      --logo-house-stroke: var(--coral);
+      --logo-plan: var(--plum);
+      --logo-shadow-tint: var(--shadow-ink);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --logo-tile-from: oklch(0.43 0.11 355);
+    --logo-tile-to: oklch(0.29 0.075 336);
+    --logo-highlight: oklch(1 0 0 / 0.1);
+    --logo-house-fill: oklch(0.96 0.02 40);
+    --logo-house-stroke: var(--coral);
+    --logo-plan: var(--plum);
+    --logo-shadow-tint: var(--shadow-ink);
+  }
+
+  .logo {
+    flex: none;
+
+    & .logo-tile-from {
+      stop-color: var(--logo-tile-from);
+    }
+
+    & .logo-tile-to {
+      stop-color: var(--logo-tile-to);
+    }
+
+    & .logo-highlight {
+      fill: none;
+      stroke: var(--logo-highlight);
+      stroke-width: 1;
+    }
+
+    & .logo-house {
+      fill: var(--logo-house-fill);
+      stroke: var(--logo-house-stroke);
+    }
+
+    & .logo-plan {
+      stroke: var(--logo-plan);
+    }
+  }
+}

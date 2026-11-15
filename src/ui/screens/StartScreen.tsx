@@ -27,6 +27,7 @@ import { Button } from '../controls/Button.tsx';
 import { Dialog } from '../controls/Dialog.tsx';
 import { toast } from '../controls/Toast.tsx';
 import { errorMessage } from '../Menu.tsx';
+import { ThemeToggle } from '../ThemeToggle.tsx';
 import { Logo } from './Logo.tsx';
 import './StartScreen.css';
 
@@ -287,6 +288,7 @@ export function StartScreen(): ReactElement {
       <div className="start-art" aria-hidden="true">
         <StartScreenArt />
       </div>
+      <ThemeToggle className="start-theme" />
       <div className="start-inner">
         <header className="start-hero">
           <Logo size={64} />

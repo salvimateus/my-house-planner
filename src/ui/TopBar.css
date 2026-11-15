@@ -147,26 +147,4 @@
     margin: 0 6px;
     background: var(--line);
   }
-
-  .theme-toggle-icon {
-    animation: theme-icon-in var(--dur-pop) var(--ease-enter);
-  }
-
-  @keyframes theme-icon-in {
-    from {
-      opacity: 0;
-      rotate: -90deg;
-      scale: 0.6;
-    }
-  }
-
-  :root[data-motion="reduced"] .theme-toggle-icon {
-    animation: none;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    :root:not([data-motion="full"]) .theme-toggle-icon {
-      animation: none;
-    }
-  }
 }
