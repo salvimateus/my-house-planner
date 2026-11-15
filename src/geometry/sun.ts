@@ -615,3 +615,67 @@ export function sunSummary(model: SunModel, date: SunDate, northDeg: number): Ro
     return { id: room.id, name: room.name, preset: room.preset, ranges };
   });
 }
+
+// Sun path around the lot
+
+export interface SunArc {
+  /** Pieces of the day's path, each with its middle time as a 0..1 fraction of the day. */
+  pieces: { d: string; t: number }[];
+  times: SunTimes;
+  /** Unit plan directions toward the sun at sunrise and sunset. */
+  rise: Vec;
+  set: Vec;
+}
+
+const ARC_SAMPLE_MIN = 1;
+
+/**
+ * The day's sun azimuths drawn on a circle around `center`. Samples join with circle arcs in the
+ * direction of the azimuth change, so a sun that passes near the zenith still turns the right way.
+ */
+export function sunArc(
+  date: SunDate,
+  northDeg: number,
+  center: Vec,
+  radius: Mm,
+  pieceCount = 24,
+): SunArc {
+  const times = sunTimes(date);
+  const span = times.sunset - times.sunrise;
+  const bearingAt = (t: number) => sunPosition(date, t).azimuth + northDeg;
+  const at = (b: number) => ({
+    x: Math.round(center.x + Math.sin(b * RAD) * radius),
+    y: Math.round(center.y - Math.cos(b * RAD) * radius),
+  });
+  const pieces: { d: string; t: number }[] = [];
+  for (let k = 0; k < pieceCount; k++) {
+    const t0 = times.sunrise + (span * k) / pieceCount;
+    const t1 = times.sunrise + (span * (k + 1)) / pieceCount;
+    let prev = bearingAt(t0);
+    const p0 = at(prev);
+    let d = `M${p0.x} ${p0.y}`;
+    for (let t = t0 + ARC_SAMPLE_MIN; t <= t1 + 1e-6; t = Math.min(t + ARC_SAMPLE_MIN, t1 + 1)) {
+      const tt = Math.min(t, t1);
+      const b = bearingAt(tt);
+      const delta = ((((b - prev) % 360) + 540) % 360) - 180;
+      const p = at(b);
+      d += `A${radius} ${radius} 0 0 ${delta >= 0 ? 1 : 0} ${p.x} ${p.y}`;
+      prev = b;
+      if (tt >= t1) break;
+    }
+    pieces.push({ d, t: (k + 0.5) / pieceCount });
+  }
+  return {
+    pieces,
+    times,
+    rise: sunDirection(sunPosition(date, times.sunrise).azimuth, northDeg),
+    set: sunDirection(sunPosition(date, times.sunset).azimuth, northDeg),
+  };
+}
+
+/** Distance from the center of a w × d box to its edge along the unit direction `dir`. */
+export function boxExit(w: Mm, d: Mm, dir: Vec): Mm {
+  const ax = Math.abs(dir.x) > 1e-9 ? w / 2 / Math.abs(dir.x) : Infinity;
+  const ay = Math.abs(dir.y) > 1e-9 ? d / 2 / Math.abs(dir.y) : Infinity;
+  return Math.min(ax, ay);
+}

@@ -13,6 +13,7 @@ import { type SunState, sunStore, useSun } from '../../store/sunStore.ts';
 import { useRenderContext } from '../RenderContext.ts';
 import { useSceneData } from '../SceneSvg.tsx';
 import { type ContextGeom, contextGeometry } from './ContextLayer.tsx';
+import { SunPath } from './SunPath.tsx';
 import './SunLayer.css';
 
 const SHADOW = '#1C2A4A';
@@ -119,6 +120,7 @@ function SunBody(): ReactElement {
         </g>
       ))}
       <rect ref={tint} x={x0} y={y0} width={x1 - x0} height={y1 - y0} fill="none" opacity={0} />
+      <SunPath lot={doc.lot} />
     </g>
   );
 }
