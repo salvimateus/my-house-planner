@@ -1,0 +1,150 @@
+@layer components {
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: calc(var(--topbar-h) + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) calc(4px + env(safe-area-inset-right)) 0
+      calc(4px + env(safe-area-inset-left));
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    contain: layout style;
+  }
+
+  .topbar-brand {
+    padding: 0 0.5rem 0 0.25rem;
+    color: var(--brand-strong);
+    font-size: 1.0625rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .topbar-title {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .project-name {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    max-width: 100%;
+    min-height: var(--tap);
+    padding: 0 0.5rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 650;
+    text-align: start;
+    transition: background-color var(--dur-fast) var(--ease-state);
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: color-mix(in oklch, var(--ink) 6%, transparent);
+      }
+    }
+
+    &:disabled {
+      cursor: default;
+    }
+  }
+
+  .project-name-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .project-name-input {
+    flex: 1;
+    min-width: 0;
+    height: 38px;
+    padding: 0 0.5rem;
+    border: 1px solid var(--select);
+    border-radius: 10px;
+    background: var(--surface);
+    font-size: 1rem;
+    font-weight: 650;
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--select) 22%, transparent);
+
+    &:focus-visible {
+      outline: none;
+    }
+  }
+
+  .save-dot {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 16px;
+    height: 16px;
+  }
+
+  .save-dot-mark {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: oklch(0.62 0.13 150);
+    transition: background-color var(--dur-pop) var(--ease-state);
+
+    .save-dot[data-status="saving"] & {
+      background: var(--brand);
+      animation: save-pulse 900ms var(--ease-state) infinite alternate;
+    }
+
+    .save-dot[data-status="error"] & {
+      background: var(--danger);
+    }
+  }
+
+  @keyframes save-pulse {
+    to {
+      opacity: 0.35;
+      scale: 0.75;
+    }
+  }
+
+  .save-ro {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-size: 0.75rem;
+    font-weight: 700;
+
+    & svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  .save-ro-text {
+    @media (width < 400px) {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+  }
+
+  .topbar-actions {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .topbar-sep {
+    width: 1px;
+    height: 24px;
+    margin: 0 6px;
+    background: var(--line);
+  }
+}

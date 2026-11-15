@@ -1,0 +1,111 @@
+@layer components {
+  .btn {
+    --btn-bg: var(--surface);
+    --btn-fg: var(--ink);
+    --btn-border: var(--line-strong);
+    --btn-hover: color-mix(in oklch, var(--btn-bg) 92%, var(--ink));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: var(--tap);
+    min-width: var(--tap);
+    padding: 0 1.1rem;
+    border: 1px solid var(--btn-border);
+    border-radius: 999px;
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    user-select: none;
+    transition:
+      background-color var(--dur-fast) var(--ease-state),
+      border-color var(--dur-fast) var(--ease-state),
+      translate 160ms var(--ease-state),
+      scale 160ms var(--ease-state);
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: var(--btn-hover);
+      }
+    }
+
+    &:active:not(:disabled) {
+      translate: 0 1px;
+      scale: 0.98;
+      transition-duration: 60ms;
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-icon {
+    display: inline-flex;
+    flex: none;
+
+    & svg {
+      width: 1.15em;
+      height: 1.15em;
+    }
+  }
+
+  .btn-primary {
+    --btn-bg: var(--brand-strong);
+    --btn-fg: oklch(1 0 0);
+    --btn-border: transparent;
+    --btn-hover: color-mix(in oklch, var(--brand-strong) 86%, black);
+    box-shadow: 0 6px 16px color-mix(in oklch, var(--brand-strong) 26%, transparent);
+  }
+
+  .btn-secondary {
+    --btn-bg: var(--surface);
+  }
+
+  .btn-ghost {
+    --btn-bg: transparent;
+    --btn-border: transparent;
+    --btn-hover: color-mix(in oklch, var(--ink) 7%, transparent);
+  }
+
+  .btn-danger {
+    --btn-bg: var(--danger-strong);
+    --btn-fg: oklch(1 0 0);
+    --btn-border: transparent;
+    --btn-hover: color-mix(in oklch, var(--danger-strong) 86%, black);
+  }
+
+  /* Small buttons keep a 44 px hit area through an invisible extension. */
+  .btn-sm {
+    position: relative;
+    min-height: 36px;
+    padding: 0 0.85rem;
+    font-size: 0.875rem;
+
+    @media (pointer: coarse) {
+      min-height: var(--tap);
+    }
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: -4px 0;
+    }
+  }
+
+  .btn-lg {
+    min-height: 56px;
+    padding: 0 1.6rem;
+    font-size: 1.0625rem;
+  }
+
+  .btn-block {
+    display: flex;
+    width: 100%;
+  }
+}

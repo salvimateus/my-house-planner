@@ -1,0 +1,100 @@
+@layer components {
+  .statusbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    height: 40px;
+    padding: 0 0.5rem 0 1rem;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+    contain: layout style;
+  }
+
+  .status-totals {
+    display: flex;
+    flex: 1;
+    gap: 1.25rem;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .status-item {
+    display: flex;
+    gap: 0.375rem;
+    white-space: nowrap;
+
+    & dd {
+      color: var(--ink);
+      font-weight: 650;
+    }
+  }
+
+  .status-tools {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .status-tips {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: var(--tap);
+    padding: 0 0.75rem;
+    border-radius: 10px;
+    color: var(--ink);
+    font-weight: 600;
+    transition: background-color var(--dur-fast) var(--ease-state);
+
+    & svg {
+      width: 16px;
+      height: 16px;
+      color: var(--brand);
+    }
+
+    @media (hover: hover) {
+      &:hover {
+        background: color-mix(in oklch, var(--ink) 6%, transparent);
+      }
+    }
+  }
+
+  .status-chip {
+    position: absolute;
+    top: 10px;
+    left: calc(10px + env(safe-area-inset-left));
+    z-index: 10;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: var(--tap);
+    max-width: calc(100% - 20px);
+    padding: 0 0.875rem;
+    border: 1px solid color-mix(in oklch, var(--line) 80%, transparent);
+    border-radius: 999px;
+    background: color-mix(in oklch, var(--surface) 92%, transparent);
+    box-shadow: var(--shadow-sm);
+    color: var(--ink);
+    font-size: 0.8125rem;
+    font-weight: 650;
+    white-space: nowrap;
+    backdrop-filter: blur(8px);
+    transition: translate 160ms var(--ease-state);
+
+    &:active {
+      translate: 0 1px;
+      transition-duration: 60ms;
+    }
+  }
+
+  .status-chip-sep {
+    color: var(--ink-2);
+  }
+
+  .status-chip-tips {
+    color: var(--brand-strong);
+  }
+}

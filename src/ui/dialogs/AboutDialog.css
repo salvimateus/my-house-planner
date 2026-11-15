@@ -1,0 +1,116 @@
+@layer components {
+  .about {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .about-hero {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+  }
+
+  .about-name {
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .about-tag {
+    color: var(--ink-2);
+  }
+
+  .about-privacy {
+    display: flex;
+    gap: 0.625rem;
+    padding: 0.875rem 1rem;
+    border-radius: 14px;
+    background: color-mix(in oklch, oklch(0.62 0.13 150) 10%, var(--surface));
+    font-size: 0.9375rem;
+
+    & svg {
+      flex: none;
+      width: 20px;
+      height: 20px;
+      color: oklch(0.45 0.11 150);
+    }
+  }
+
+  .about-section {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .about-h3 {
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .about-list {
+    display: grid;
+    gap: 0.375rem;
+    padding-left: 1.1rem;
+    list-style: disc;
+
+    & li::marker {
+      color: var(--brand);
+    }
+  }
+
+  .about-keys {
+    display: grid;
+    gap: 2px;
+  }
+
+  .about-key-row {
+    display: grid;
+    grid-template-columns: minmax(7rem, auto) 1fr;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.9375rem;
+
+    & kbd {
+      padding: 2px 7px;
+      border: 1px solid var(--line-strong);
+      border-bottom-width: 2px;
+      border-radius: 6px;
+      background: var(--paper);
+      font-family: var(--font-sans);
+      font-size: 0.8125rem;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    & dd {
+      color: var(--ink-2);
+    }
+  }
+
+  .about-disclaimer {
+    color: var(--ink-2);
+    font-size: 0.875rem;
+  }
+
+  .about-foot {
+    font-size: 0.875rem;
+  }
+
+  .about-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: var(--tap);
+    color: var(--select-strong);
+    font-weight: 650;
+
+    & svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+}

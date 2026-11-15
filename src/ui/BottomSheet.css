@@ -1,0 +1,124 @@
+@layer components {
+  .sheet-scroller {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    container-type: size;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
+    pointer-events: none;
+
+    &[data-hidden] {
+      visibility: hidden;
+      transition: visibility 0s linear var(--dur-exit);
+    }
+  }
+
+  .sheet-track {
+    position: relative;
+    padding-top: calc(100cqh - var(--sheet-peek));
+  }
+
+  .sheet-snap {
+    position: absolute;
+    left: 0;
+    width: 1px;
+    height: 0;
+    scroll-snap-align: start;
+  }
+
+  .sheet-snap-peek {
+    top: 0;
+  }
+
+  .sheet-snap-half {
+    top: calc(min(50dvh, 100cqh) - var(--sheet-peek));
+  }
+
+  .sheet-snap-full {
+    top: calc(min(90dvh, 100cqh) - var(--sheet-peek));
+  }
+
+  /* Content taller than the full snap keeps scrolling in the same scroller: the panel is a snap
+     area larger than the snapport, so every position inside it stays valid. */
+  .sheet-panel {
+    min-height: min(90dvh, 100cqh);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--surface);
+    box-shadow:
+      0 -1px 0 var(--line),
+      0 -10px 30px oklch(0.2 0.02 85 / 0.12);
+    pointer-events: auto;
+    scroll-snap-align: start;
+    scroll-margin-top: max(0px, 100cqh - 90dvh);
+    transition: translate var(--dur-modal) var(--ease-enter);
+
+    .sheet-scroller[data-hidden] & {
+      translate: 0 calc(var(--sheet-peek) + 24px);
+      transition-duration: var(--dur-exit);
+      transition-timing-function: var(--ease-exit);
+    }
+  }
+
+  .sheet-handle {
+    width: 40px;
+    height: 5px;
+    margin: 7px auto 0;
+    border-radius: 999px;
+    background: var(--line-strong);
+  }
+
+  .sheet-head {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    height: 52px;
+    padding: 0 0.375rem 0 0.25rem;
+  }
+
+  .sheet-toggle {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 0.375rem;
+    min-width: 0;
+    min-height: var(--tap);
+    padding: 0 0.75rem;
+    border-radius: 12px;
+    text-align: start;
+    transition: background-color var(--dur-fast) var(--ease-state);
+
+    &:active {
+      background: color-mix(in oklch, var(--ink) 6%, transparent);
+    }
+  }
+
+  .sheet-title {
+    overflow: hidden;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sheet-chevron {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    color: var(--ink-2);
+  }
+
+  .sheet-body {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0 1rem calc(1.5rem + env(safe-area-inset-bottom));
+  }
+
+  .sheet-hint {
+    color: var(--ink-2);
+    font-size: 0.875rem;
+  }
+}

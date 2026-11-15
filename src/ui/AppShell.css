@@ -1,0 +1,58 @@
+@layer components {
+  .shell-stage {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    isolation: isolate;
+
+    & > .shell-canvas {
+      position: absolute;
+      inset: 0;
+      display: grid;
+    }
+  }
+
+  .shell {
+    --topbar-h: 48px;
+    --sheet-peek: 64px;
+    display: grid;
+    grid-template:
+      "top" auto
+      "stage" minmax(0, 1fr)
+      "tools" auto
+      / minmax(0, 1fr);
+    height: 100dvh;
+    overflow: hidden;
+    background: var(--paper);
+
+    & > .topbar {
+      grid-area: top;
+    }
+
+    & > .shell-stage {
+      grid-area: stage;
+    }
+
+    & > .toolbar {
+      grid-area: tools;
+    }
+
+    &[data-layout="wide"] {
+      --topbar-h: 52px;
+      grid-template:
+        "top top top" auto
+        "tools stage side" minmax(0, 1fr)
+        "tools status side" auto
+        / 72px minmax(0, 1fr) 320px;
+
+      & > .side-panel {
+        grid-area: side;
+      }
+
+      & > .statusbar {
+        grid-area: status;
+      }
+    }
+  }
+}

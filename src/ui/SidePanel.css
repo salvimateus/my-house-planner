@@ -1,0 +1,97 @@
+@layer components {
+  .side-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-left: 1px solid var(--line);
+    background: var(--surface);
+    contain: layout style;
+  }
+
+  .side-tabs {
+    display: flex;
+    gap: 2px;
+    margin: 10px 12px 0;
+    padding: 3px;
+    border-radius: 14px;
+    background: var(--sunken);
+  }
+
+  .side-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: var(--tap);
+    padding: 0 0.25rem;
+    border-radius: 11px;
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition:
+      background-color var(--dur-fast) var(--ease-state),
+      color var(--dur-fast) var(--ease-state),
+      box-shadow var(--dur-fast) var(--ease-state);
+
+    @media (hover: hover) {
+      &:hover:not(:disabled, [aria-pressed="true"]) {
+        color: var(--ink);
+      }
+    }
+
+    &[aria-pressed="true"] {
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: var(--shadow-sm);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  .side-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .side-head {
+    padding: 1rem 1.25rem 0.5rem;
+  }
+
+  .side-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .side-hint {
+    margin-top: 0.25rem;
+    color: var(--ink-2);
+    font-size: 0.875rem;
+  }
+
+  .side-content {
+    padding: 0.5rem 1.25rem 1.5rem;
+    animation: panel-in var(--dur-pop) var(--ease-enter);
+  }
+
+  .panel-fieldset {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+    border: 0;
+  }
+
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      translate: 0 6px;
+    }
+  }
+}

@@ -1,0 +1,115 @@
+@layer components {
+  .menu-trigger {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: var(--tap);
+    height: var(--tap);
+    border-radius: 12px;
+    color: var(--ink);
+    transition:
+      background-color var(--dur-fast) var(--ease-state),
+      scale 160ms var(--ease-state);
+
+    & svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    @media (hover: hover) {
+      &:hover {
+        background: color-mix(in oklch, var(--ink) 7%, transparent);
+      }
+    }
+
+    &:active {
+      scale: 0.94;
+      transition-duration: 60ms;
+    }
+  }
+
+  .menu-pop {
+    position: fixed;
+    inset: calc(env(safe-area-inset-top) + var(--topbar-h, 52px) + 4px) auto auto
+      calc(env(safe-area-inset-left) + 8px);
+    width: min(300px, calc(100vw - 16px));
+    max-height: calc(100dvh - var(--topbar-h, 52px) - 16px);
+    margin: 0;
+    padding: 6px;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    translate: 0 -6px;
+    scale: 0.98;
+    transform-origin: top left;
+    transition:
+      opacity var(--dur-exit) var(--ease-exit),
+      translate var(--dur-exit) var(--ease-exit),
+      scale var(--dur-exit) var(--ease-exit),
+      display var(--dur-exit) allow-discrete,
+      overlay var(--dur-exit) allow-discrete;
+
+    &:popover-open {
+      opacity: 1;
+      translate: 0 0;
+      scale: 1;
+      transition-duration: var(--dur-pop);
+      transition-timing-function: var(--ease-enter);
+
+      @starting-style {
+        opacity: 0;
+        translate: 0 -6px;
+        scale: 0.98;
+      }
+    }
+  }
+
+  .menu-group {
+    display: grid;
+    padding-block: 4px;
+
+    & + & {
+      border-top: 1px solid var(--line);
+    }
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 0.75rem;
+    border-radius: 12px;
+    font-size: 0.9375rem;
+    font-weight: 550;
+    text-align: start;
+    transition: background-color var(--dur-color) var(--ease-state);
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: var(--brand-tint);
+      }
+    }
+
+    &:active:not(:disabled) {
+      background: var(--brand-soft);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  .menu-icon {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    color: var(--ink-2);
+  }
+}

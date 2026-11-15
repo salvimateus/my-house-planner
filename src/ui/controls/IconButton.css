@@ -1,0 +1,96 @@
+@layer components {
+  .icon-btn {
+    --ib-bg: transparent;
+    --ib-fg: var(--ink);
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: var(--tap);
+    height: var(--tap);
+    border-radius: 12px;
+    background: var(--ib-bg);
+    color: var(--ib-fg);
+    transition:
+      background-color var(--dur-fast) var(--ease-state),
+      color var(--dur-fast) var(--ease-state),
+      translate 160ms var(--ease-state),
+      scale 160ms var(--ease-state);
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        --ib-bg: color-mix(in oklch, var(--ink) 7%, transparent);
+      }
+    }
+
+    &:active:not(:disabled) {
+      translate: 0 1px;
+      scale: 0.94;
+      transition-duration: 60ms;
+    }
+
+    &:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+    }
+
+    &[aria-pressed="true"] {
+      --ib-bg: var(--select-soft);
+      --ib-fg: var(--select-strong);
+    }
+  }
+
+  .icon-btn-glyph {
+    display: inline-flex;
+
+    & svg {
+      width: 22px;
+      height: 22px;
+    }
+  }
+
+  .icon-btn-surface {
+    --ib-bg: var(--surface);
+    border: 1px solid var(--line);
+  }
+
+  .icon-btn-floating {
+    --ib-bg: var(--surface);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid color-mix(in oklch, var(--line) 80%, transparent);
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        --ib-bg: color-mix(in oklch, var(--surface) 92%, var(--ink));
+      }
+    }
+  }
+
+  .icon-btn-primary {
+    --ib-bg: var(--brand-strong);
+    --ib-fg: oklch(1 0 0);
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        --ib-bg: color-mix(in oklch, var(--brand-strong) 86%, black);
+      }
+    }
+  }
+
+  .icon-btn-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--danger-strong);
+    color: oklch(1 0 0);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+  }
+}

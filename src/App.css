@@ -1,0 +1,79 @@
+/* biome-ignore-all lint/complexity/noImportantStyles: the in-app "reduced motion" preference must win over every component transition. */
+@layer components {
+  :root {
+    --tap: 44px;
+    --radius-sm: 10px;
+    --radius-lg: 22px;
+    --brand-soft: color-mix(in oklch, var(--brand) 14%, var(--surface));
+    --brand-tint: color-mix(in oklch, var(--brand) 7%, var(--paper));
+    --select-strong: color-mix(in oklch, var(--select) 70%, black);
+    --select-soft: color-mix(in oklch, var(--select) 11%, var(--surface));
+    --danger-strong: color-mix(in oklch, var(--danger) 70%, black);
+    --danger-soft: color-mix(in oklch, var(--danger) 9%, var(--surface));
+    --line-strong: color-mix(in oklch, var(--line) 65%, var(--ink-2));
+    --sunken: color-mix(in oklch, var(--paper) 70%, var(--line));
+    --shadow-sm: 0 1px 2px oklch(0.2 0.02 85 / 0.08), 0 2px 8px oklch(0.2 0.02 85 / 0.06);
+    --shadow-lg: 0 18px 48px oklch(0.2 0.02 85 / 0.18), 0 2px 6px oklch(0.2 0.02 85 / 0.08);
+    --dur-color: 80ms;
+    --dur-fast: 120ms;
+    --dur-pop: 200ms;
+    --dur-modal: 280ms;
+    --dur-exit: 180ms;
+  }
+
+  .app-root {
+    position: relative;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .screen-enter {
+    height: 100%;
+    animation: screen-in var(--dur-modal) var(--ease-enter);
+  }
+
+  @keyframes screen-in {
+    from {
+      opacity: 0;
+      translate: 0 8px;
+    }
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .dev-loading {
+    padding: 2rem;
+    color: var(--ink-2);
+  }
+}
+
+@layer utilities {
+  :root[data-motion="reduced"] *,
+  :root[data-motion="reduced"] *::before,
+  :root[data-motion="reduced"] *::after,
+  :root[data-motion="reduced"] ::backdrop {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@layer components {
+  .spin {
+    animation: spin 900ms linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      rotate: 1turn;
+    }
+  }
+}

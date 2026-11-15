@@ -1,0 +1,42 @@
+@layer components {
+  .settings {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .settings-section {
+    display: grid;
+    gap: 0.625rem;
+
+    & + & {
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--line);
+    }
+  }
+
+  .settings-h3 {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .settings-fieldset {
+    display: grid;
+    gap: 0.75rem;
+    min-width: 0;
+    border: 0;
+  }
+
+  .settings-pair {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+    gap: 0.75rem;
+  }
+
+  .settings-note {
+    color: var(--ink-2);
+    font-size: 0.875rem;
+  }
+}

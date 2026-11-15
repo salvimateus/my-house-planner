@@ -1,0 +1,114 @@
+@layer components {
+  .measure {
+    display: grid;
+    gap: 0.375rem;
+    min-width: 0;
+  }
+
+  .measure-label {
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .measure-field {
+    display: flex;
+    align-items: stretch;
+    min-height: calc(var(--tap) + 2px);
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    background: var(--surface);
+    transition:
+      border-color var(--dur-fast) var(--ease-state),
+      box-shadow var(--dur-fast) var(--ease-state);
+
+    &:focus-within {
+      border-color: var(--select);
+      box-shadow: 0 0 0 3px color-mix(in oklch, var(--select) 22%, transparent);
+    }
+
+    .measure-invalid & {
+      border-color: var(--danger-strong);
+      box-shadow: 0 0 0 3px color-mix(in oklch, var(--danger) 18%, transparent);
+    }
+  }
+
+  .measure-step {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: var(--tap);
+    color: var(--ink-2);
+    border-radius: 13px;
+    transition:
+      background-color var(--dur-fast) var(--ease-state),
+      scale 160ms var(--ease-state);
+
+    & svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background: color-mix(in oklch, var(--ink) 6%, transparent);
+        color: var(--ink);
+      }
+    }
+
+    &:active:not(:disabled) {
+      scale: 0.9;
+      transition-duration: 60ms;
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  }
+
+  .measure-box {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .measure-input {
+    width: 100%;
+    min-width: 3ch;
+    max-width: 8ch;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 1.0625rem;
+    font-weight: 650;
+    text-align: end;
+
+    &:focus-visible {
+      outline: none;
+    }
+
+    &:disabled {
+      opacity: 0.45;
+    }
+  }
+
+  .measure-unit {
+    color: var(--ink-2);
+    font-size: 0.9375rem;
+  }
+
+  .measure-error {
+    color: var(--danger-strong);
+    font-size: 0.8125rem;
+    font-weight: 550;
+  }
+
+  .measure-hint {
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+  }
+}

@@ -1,0 +1,68 @@
+@layer components {
+  .chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 36px;
+    padding: 0 0.875rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.875rem;
+    font-weight: 550;
+    white-space: nowrap;
+    transition:
+      background-color var(--dur-fast) var(--ease-state),
+      border-color var(--dur-fast) var(--ease-state),
+      color var(--dur-fast) var(--ease-state),
+      translate 160ms var(--ease-state);
+
+    /* 44 px hit area around the 36 px pill; on touch screens the pill itself grows. */
+    &::after {
+      content: "";
+      position: absolute;
+      inset: -4px 0;
+    }
+
+    @media (pointer: coarse) {
+      min-height: var(--tap);
+    }
+
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        border-color: var(--ink-2);
+      }
+    }
+
+    &:active:not(:disabled) {
+      translate: 0 1px;
+      transition-duration: 60ms;
+    }
+
+    &[aria-pressed="true"] {
+      border-color: var(--select-strong);
+      background: var(--select-soft);
+      color: var(--select-strong);
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  .chip-icon {
+    display: inline-flex;
+
+    & svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .chip-text {
+    font-variant-numeric: tabular-nums;
+  }
+}
