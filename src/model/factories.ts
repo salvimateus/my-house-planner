@@ -1,4 +1,7 @@
-// placeholder: WP1a
+import { OPENING_SPECS } from '../catalog/openingSpecs.ts';
+import { presetFor } from '../catalog/roomPresets.ts';
+import { DEFAULT_LOT, DEFAULT_STRUCTURE } from './defaults.ts';
+import { newId } from './ids.ts';
 import type {
   Area,
   AreaKind,
@@ -15,29 +18,94 @@ import type {
   Shape,
   Vec,
 } from './types.ts';
+import { FORMAT, SCHEMA_VERSION } from './types.ts';
 
 export type OpeningHost = Pick<Opening, 'axis' | 'line' | 'at'>;
 
-export function createProject(_input: NewProjectInput): ProjectDoc {
-  throw new Error('placeholder: WP1a');
+export const DEFAULT_PROJECT_NAME = 'Minha casa';
+
+const roundVec = (p: Vec): Vec => ({ x: Math.round(p.x), y: Math.round(p.y) });
+
+export function createProject(input: NewProjectInput): ProjectDoc {
+  const now = new Date().toISOString();
+  const walled = input.walled;
+  return {
+    format: FORMAT,
+    schemaVersion: SCHEMA_VERSION,
+    id: newId(),
+    name: input.name.trim() || DEFAULT_PROJECT_NAME,
+    createdAt: now,
+    updatedAt: now,
+    lot: {
+      width: Math.round(input.width),
+      depth: Math.round(input.depth),
+      frontSide: input.frontSide,
+      cornerSide: input.cornerSide,
+      boundaryWalls: { top: walled, right: walled, bottom: walled, left: walled },
+      sidewalkWidth: DEFAULT_LOT.sidewalkWidth,
+      northDeg: DEFAULT_LOT.northDeg,
+      ground: { ...DEFAULT_LOT.ground },
+    },
+    structure: { ...DEFAULT_STRUCTURE },
+    areas: [],
+    openBoundaries: [],
+    openings: [],
+    items: [],
+    rulers: [],
+  };
 }
 
-export function createArea(_kind: AreaKind, _preset: RoomPresetId, _shape: Shape): Area {
-  throw new Error('placeholder: WP1a');
+/** The caller passes a normalized shape. */
+export function createArea(kind: AreaKind, preset: RoomPresetId, shape: Shape): Area {
+  const p = presetFor(preset);
+  return {
+    id: newId(),
+    kind,
+    preset,
+    name: p.label,
+    shape: shape.map((ring) => ring.map(roundVec)),
+    fill: { ...p.fill },
+    labelOffset: null,
+  };
 }
 
-export function createOpening(_type: OpeningType, _host: OpeningHost): Opening {
-  throw new Error('placeholder: WP1a');
+export function createOpening(type: OpeningType, host: OpeningHost): Opening {
+  const spec = OPENING_SPECS[type];
+  return {
+    id: newId(),
+    type,
+    axis: host.axis,
+    line: Math.round(host.line),
+    at: Math.round(host.at),
+    width: spec.defaultWidth,
+    height: spec.height,
+    sill: spec.sill,
+    hinge: 'start',
+    side: 1,
+  };
 }
 
-export function createItem(_type: ItemTypeId, _at: Vec, _size: { w: Mm; d: Mm }): Item {
-  throw new Error('placeholder: WP1a');
+/** `size` comes from the catalog in the UI layer; the model never imports the Vite registry. */
+export function createItem(type: ItemTypeId, at: Vec, size: { w: Mm; d: Mm }): Item {
+  return {
+    id: newId(),
+    type,
+    variant: null,
+    x: Math.round(at.x),
+    y: Math.round(at.y),
+    w: Math.round(size.w),
+    d: Math.round(size.d),
+    rotation: 0,
+    color: null,
+    label: null,
+    mirrored: false,
+  };
 }
 
-export function createFreeRuler(_a: Vec, _b: Vec): Ruler {
-  throw new Error('placeholder: WP1a');
+export function createFreeRuler(a: Vec, b: Vec): Ruler {
+  return { id: newId(), mode: 'free', a: roundVec(a), b: roundVec(b) };
 }
 
-export function createFitRuler(_origin: Vec, _axis: Axis): Ruler {
-  throw new Error('placeholder: WP1a');
+export function createFitRuler(origin: Vec, axis: Axis): Ruler {
+  return { id: newId(), mode: 'fit', origin: roundVec(origin), axis };
 }
