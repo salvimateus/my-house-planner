@@ -70,11 +70,13 @@ function handleAt(
   if (!handler || !handles?.length) return null;
   const mouse = p.pointerType === 'mouse';
   const reach = (mouse ? tuning.touch.mouseHandlePx : tuning.touch.handlePx) / 2 + (mouse ? 4 : 8);
+  // Touch icon handles (door flips) get a 44 px hit area.
+  const reachFor = (h: Handle) => (!mouse && h.shape === 'icon' ? Math.max(22, reach) : reach);
   let best: Handle | null = null;
-  let bestD = reach;
+  let bestD = Number.POSITIVE_INFINITY;
   for (const h of handles) {
     const d = Math.hypot(h.x - p.screen.x, h.y - p.screen.y);
-    if (d <= bestD) {
+    if (d <= reachFor(h) && d < bestD) {
       best = h;
       bestD = d;
     }

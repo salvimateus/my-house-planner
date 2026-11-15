@@ -3,6 +3,7 @@ import { itemDef, openingDef } from '../../catalog/registry.ts';
 import type { Ghost as GhostShape } from '../../geometry/types.ts';
 import { useRenderContext } from '../../render/RenderContext.ts';
 import { useDoc } from '../../store/docStore.ts';
+import { useScene } from '../../store/selectors.ts';
 import { useUi } from '../../store/uiStore.ts';
 
 /** Placement preview from `uiStore.transient.ghost`, in world space (the overlay world group). */
@@ -52,7 +53,19 @@ function OpeningGhost({
   ghost: Extract<GhostShape, { kind: 'opening' }>;
 }): ReactElement {
   const ctx = useRenderContext();
-  const thickness = useDoc((s) => s.doc?.structure.external ?? 200);
+  const fallback = useDoc((s) => s.doc?.structure.external ?? 200);
+  const { runs } = useScene();
+  // The snapped run gives the real thickness: internal walls and the muro are thinner.
+  const run = ghost.snapped
+    ? runs.find(
+        (r) =>
+          r.axis === ghost.axis &&
+          (r.line + r.offset === ghost.line || r.line === ghost.line) &&
+          ghost.at >= r.start &&
+          ghost.at <= r.end,
+      )
+    : undefined;
+  const thickness = run?.thickness ?? fallback;
   const c = ghost.snapped
     ? ghost.axis === 'h'
       ? { x: ghost.at, y: ghost.line }

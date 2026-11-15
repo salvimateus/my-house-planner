@@ -22,6 +22,9 @@ function useCoarsePointer(): boolean {
   );
 }
 
+const ICON_TOUCH_PX = 36;
+const ICON_GLYPH_TOUCH_PX = 20;
+
 const ICONS = { rotate: RotateCw, 'flip-hinge': FlipHorizontal2, 'flip-side': FlipVertical2 };
 
 const sameIds = (a: Handle[], b: Handle[]) =>
@@ -66,6 +69,9 @@ export function Handles(): ReactElement | null {
   if (handles.length === 0) return null;
   const size = coarse ? tuning.touch.handlePx : tuning.touch.mouseHandlePx;
   const half = size / 2;
+  // Icon handles: 36 px on touch, the mouse size plus a ring on desktop.
+  const iconR = coarse ? ICON_TOUCH_PX / 2 : half + 4;
+  const glyph = coarse ? ICON_GLYPH_TOUCH_PX : size * 0.75;
 
   return (
     <g className="overlay-handles">
@@ -85,14 +91,14 @@ export function Handles(): ReactElement | null {
             {h.shape === 'square' ? (
               <rect x={-half} y={-half} width={size} height={size} rx={3} />
             ) : (
-              <circle r={Icon ? half + 4 : half} />
+              <circle r={Icon ? iconR : half} />
             )}
             {Icon ? (
               <Icon
-                x={-half * 0.75}
-                y={-half * 0.75}
-                width={size * 0.75}
-                height={size * 0.75}
+                x={-glyph / 2}
+                y={-glyph / 2}
+                width={glyph}
+                height={glyph}
                 className="overlay-handle-icon"
                 aria-hidden="true"
               />
