@@ -1,0 +1,20 @@
+# Reference config. The Worker is deployed through the Cloudflare API with the same settings.
+name = "minha-casinha-plantas"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[[r2_buckets]]
+binding = "PLANS"
+bucket_name = "minha-casinha-prd"
+
+# 30 writes per minute per client IP.
+[[ratelimits]]
+name = "WRITE_LIMIT"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 30
+  period = 60
+
+# GALLERY_KEY is a secret. Set it with `wrangler secret put GALLERY_KEY`; never commit it.
