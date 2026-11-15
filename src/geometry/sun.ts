@@ -619,19 +619,48 @@ export function sunSummary(model: SunModel, date: SunDate, northDeg: number): Ro
 // Sun path around the lot
 
 export interface SunArc {
-  /** Pieces of the day's path, each with its middle time as a 0..1 fraction of the day. */
-  pieces: { d: string; t: number }[];
+  center: Vec;
+  radius: Mm;
   times: SunTimes;
+  /** Unwrapped bearings (azimuth + north, degrees) from sunrise to sunset, one per sample. */
+  bearings: number[];
+  /** Cumulative turn in degrees at each sample; the last value is the whole path. */
+  cum: number[];
+  /** Pieces of the drawn path, each with its middle as a 0..1 fraction of the path length. */
+  pieces: { d: string; t: number }[];
   /** Unit plan directions toward the sun at sunrise and sunset. */
   rise: Vec;
   set: Vec;
 }
 
-const ARC_SAMPLE_MIN = 1;
+/** Dense enough that one step never turns near 180° even when the sun passes by the zenith. */
+const ARC_SAMPLE_MIN = 0.5;
+/** One SVG arc command covers at most this turn. */
+const ARC_MAX_TURN = 120;
+
+const bearingVec = (b: number): Vec => ({ x: Math.sin(b * RAD), y: -Math.cos(b * RAD) });
+
+/** Bearing at a length fraction of the path, interpolated between samples. */
+function bearingAtFraction(arc: Pick<SunArc, 'bearings' | 'cum'>, f: number): number {
+  const { bearings, cum } = arc;
+  const total = cum[cum.length - 1] ?? 0;
+  if (!total || bearings.length < 2) return bearings[0] ?? 0;
+  const target = Math.min(1, Math.max(0, f)) * total;
+  let lo = 0;
+  let hi = cum.length - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (cum[mid]! <= target) lo = mid;
+    else hi = mid;
+  }
+  const span = cum[hi]! - cum[lo]!;
+  const k = span > 0 ? (target - cum[lo]!) / span : 0;
+  return bearings[lo]! + (bearings[hi]! - bearings[lo]!) * k;
+}
 
 /**
- * The day's sun azimuths drawn on a circle around `center`. Samples join with circle arcs in the
- * direction of the azimuth change, so a sun that passes near the zenith still turns the right way.
+ * The day's sun azimuths drawn on a circle around `center`. The bearings are unwrapped, so the path is
+ * continuous, and its pieces split by length, so the color runs evenly along it.
  */
 export function sunArc(
   date: SunDate,
@@ -641,41 +670,62 @@ export function sunArc(
   pieceCount = 24,
 ): SunArc {
   const times = sunTimes(date);
-  const span = times.sunset - times.sunrise;
-  const bearingAt = (t: number) => sunPosition(date, t).azimuth + northDeg;
-  const at = (b: number) => ({
-    x: Math.round(center.x + Math.sin(b * RAD) * radius),
-    y: Math.round(center.y - Math.cos(b * RAD) * radius),
-  });
+  const bearings: number[] = [];
+  const cum: number[] = [];
+  const n = Math.max(1, Math.ceil((times.sunset - times.sunrise) / ARC_SAMPLE_MIN));
+  for (let i = 0; i <= n; i++) {
+    const t = times.sunrise + ((times.sunset - times.sunrise) * i) / n;
+    let b = sunPosition(date, t).azimuth + northDeg;
+    const prev = bearings[i - 1];
+    if (prev !== undefined) b = prev + ((((b - prev) % 360) + 540) % 360) - 180;
+    bearings.push(b);
+    cum.push(prev === undefined ? 0 : cum[i - 1]! + Math.abs(b - prev));
+  }
+  const total = cum[cum.length - 1]!;
+  const at = (b: number) => {
+    const v = bearingVec(b);
+    return `${Math.round(center.x + v.x * radius)} ${Math.round(center.y + v.y * radius)}`;
+  };
   const pieces: { d: string; t: number }[] = [];
   for (let k = 0; k < pieceCount; k++) {
-    const t0 = times.sunrise + (span * k) / pieceCount;
-    const t1 = times.sunrise + (span * (k + 1)) / pieceCount;
-    let prev = bearingAt(t0);
-    const p0 = at(prev);
-    let d = `M${p0.x} ${p0.y}`;
-    for (let t = t0 + ARC_SAMPLE_MIN; t <= t1 + 1e-6; t = Math.min(t + ARC_SAMPLE_MIN, t1 + 1)) {
-      const tt = Math.min(t, t1);
-      const b = bearingAt(tt);
-      const delta = ((((b - prev) % 360) + 540) % 360) - 180;
-      const p = at(b);
-      d += `A${radius} ${radius} 0 0 ${delta >= 0 ? 1 : 0} ${p.x} ${p.y}`;
-      prev = b;
-      if (tt >= t1) break;
+    const l0 = (total * k) / pieceCount;
+    const l1 = (total * (k + 1)) / pieceCount;
+    const stops = [bearingAtFraction({ bearings, cum }, k / pieceCount)];
+    for (let i = 0; i < cum.length; i++) if (cum[i]! > l0 && cum[i]! < l1) stops.push(bearings[i]!);
+    stops.push(bearingAtFraction({ bearings, cum }, (k + 1) / pieceCount));
+    let d = `M${at(stops[0]!)}`;
+    let from = stops[0]!;
+    for (let i = 1; i < stops.length; i++) {
+      const b = stops[i]!;
+      const last = i === stops.length - 1;
+      const next = stops[i + 1];
+      const turn = b - from;
+      const sameWay = next !== undefined && Math.sign(next - b) === Math.sign(turn);
+      if (!last && sameWay && Math.abs(next - from) <= ARC_MAX_TURN) continue;
+      if (turn !== 0) d += `A${radius} ${radius} 0 0 ${turn > 0 ? 1 : 0} ${at(b)}`;
+      from = b;
     }
     pieces.push({ d, t: (k + 0.5) / pieceCount });
   }
   return {
-    pieces,
+    center,
+    radius,
     times,
-    rise: sunDirection(sunPosition(date, times.sunrise).azimuth, northDeg),
-    set: sunDirection(sunPosition(date, times.sunset).azimuth, northDeg),
+    bearings,
+    cum,
+    pieces,
+    rise: bearingVec(bearings[0]!),
+    set: bearingVec(bearings[bearings.length - 1]!),
   };
 }
 
-/** Distance from the center of a w × d box to its edge along the unit direction `dir`. */
-export function boxExit(w: Mm, d: Mm, dir: Vec): Mm {
-  const ax = Math.abs(dir.x) > 1e-9 ? w / 2 / Math.abs(dir.x) : Infinity;
-  const ay = Math.abs(dir.y) > 1e-9 ? d / 2 / Math.abs(dir.y) : Infinity;
-  return Math.min(ax, ay);
+/**
+ * Sun disc on the path at a constant speed from sunrise to sunset, so it never jumps, even when the
+ * real azimuth swings fast near the zenith. It rests at the matching end before sunrise and after sunset.
+ */
+export function sunArcPoint(arc: SunArc, minutes: number): Vec {
+  const { sunrise, sunset } = arc.times;
+  const f = sunset > sunrise ? (minutes - sunrise) / (sunset - sunrise) : 0;
+  const v = bearingVec(bearingAtFraction(arc, f));
+  return { x: arc.center.x + v.x * arc.radius, y: arc.center.y + v.y * arc.radius };
 }

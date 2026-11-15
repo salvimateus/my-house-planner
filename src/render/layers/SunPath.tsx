@@ -1,13 +1,11 @@
 import { type ReactElement, useId, useLayoutEffect, useMemo, useRef } from 'react';
-import { boxExit, formatClock, sunArc, sunDirection, sunPosition } from '../../geometry/sun.ts';
+import { formatClock, sunArc, sunArcPoint, sunDirection, sunPosition } from '../../geometry/sun.ts';
 import type { Lot, Vec } from '../../model/types.ts';
 import { camera, cameraStore } from '../../store/cameraStore.ts';
 import { sunStore, useSun } from '../../store/sunStore.ts';
 
 /** Arc distance beyond the lot half diagonal. */
 const ARC_GAP = 4000;
-/** At the zenith the disc comes this close, as a fraction of the arc radius. */
-const ZENITH_FRACTION = 0.6;
 /** Screen px. */
 const DISC_R = 9;
 const GLOW_R = 22;
@@ -32,8 +30,8 @@ const shortClock = (m: number) => formatClock(m).replace(/^0/, '');
 type Anchor = 'start' | 'middle' | 'end';
 const anchorFor = (dir: Vec): Anchor => (dir.x > 0.3 ? 'start' : dir.x < -0.3 ? 'end' : 'middle');
 
-const place = (el: SVGGElement | null, p: Vec, mmpp: number) =>
-  el?.setAttribute('transform', `translate(${p.x} ${p.y}) scale(${mmpp})`);
+const place = (el: SVGGElement | null, p: Vec, scale: number) =>
+  el?.setAttribute('transform', `translate(${p.x} ${p.y}) scale(${scale})`);
 
 /**
  * The day's sun path on a circle around the lot, the sun disc on it (closer to the lot when higher),
@@ -63,6 +61,7 @@ export function SunPath({ lot }: { lot: Lot }): ReactElement {
   const edgeText = useRef<SVGTextElement>(null);
   const labels = useRef<(SVGGElement | null)[]>([]);
   const northTick = useRef<SVGGElement>(null);
+  const glowEl = useRef<SVGCircleElement>(null);
 
   useLayoutEffect(() => {
     const at = (dir: Vec, r: number): Vec => ({
@@ -96,23 +95,15 @@ export function SunPath({ lot }: { lot: Lot }): ReactElement {
       }
       place(northTick.current, at(north, radius), mmpp);
 
-      let dir: Vec;
-      let r: number;
-      if (night) {
-        dir = st.minutes < sunrise ? arc.rise : arc.set;
-        r = radius;
-      } else {
-        dir = sunDirection(pos.azimuth, lot.northDeg);
-        const lift = Math.min(1, Math.max(0, pos.elevation / 90));
-        const clear = boxExit(lot.width, lot.depth, dir) + (GLOW_R + 4) * mmpp;
-        r = Math.max(clear, radius * (1 - (1 - ZENITH_FRACTION) * lift));
-      }
-      const p = at(dir, r);
+      const p = sunArcPoint(arc, st.minutes);
+      // Height reads as size and glow: a higher sun is a bit larger and brighter.
+      const lift = night ? 0 : Math.min(1, Math.max(0, pos.elevation / 90));
       const g = disc.current;
       if (g) {
-        place(g, p, mmpp);
+        place(g, p, mmpp * (0.8 + 0.5 * lift));
         g.setAttribute('opacity', night ? '0.35' : '1');
       }
+      glowEl.current?.setAttribute('opacity', (0.55 + 0.45 * lift).toFixed(3));
 
       const mark = edge.current;
       const svg = g?.ownerSVGElement;
@@ -165,7 +156,7 @@ export function SunPath({ lot }: { lot: Lot }): ReactElement {
       offSun();
       offCam();
     };
-  }, [arc, ends, center, radius, north, lot.width, lot.depth, lot.northDeg]);
+  }, [arc, ends, center, radius, north]);
 
   const glow = `${uid}-glow`;
   return (
@@ -212,7 +203,7 @@ export function SunPath({ lot }: { lot: Lot }): ReactElement {
         </g>
       ))}
       <g ref={disc} className="sun-path-disc">
-        <circle r={GLOW_R} fill={`url(#${glow})`} />
+        <circle ref={glowEl} r={GLOW_R} fill={`url(#${glow})`} />
         <circle r={DISC_R} className="sun-path-sun" />
       </g>
       <g ref={edge} className="sun-path-edge" visibility="hidden">
