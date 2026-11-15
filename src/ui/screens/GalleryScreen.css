@@ -71,12 +71,13 @@
       outline-offset: 2px;
     }
 
-    /* Seen: dimmed, and back to full strength while the owner points at it or works in it. */
-    & :is(.plan-thumb, .gallery-card-text) {
-      transition: opacity var(--dur-fast) var(--ease-state);
-    }
+    /*
+     * Seen: the whole card dims, and comes back while the owner points at it, works in it, or
+     * has its menu or delete dialog open. The open menu sits in the top layer, out of the fade.
+     */
+    transition: opacity var(--dur-fast) var(--ease-state);
 
-    &[data-seen="seen"]:not(:hover, :focus-within) :is(.plan-thumb, .gallery-card-text) {
+    &[data-seen="seen"]:not(:hover, :focus-within, [data-active], :has(:popover-open)) {
       opacity: 0.55;
     }
 
@@ -249,6 +250,87 @@
       &:hover:not(:disabled) {
         color: var(--ink);
       }
+    }
+  }
+
+  .gallery-card[data-fresh] {
+    animation:
+      gallery-card-in 360ms var(--ease-enter) both,
+      gallery-card-pulse 1200ms var(--ease-state) 200ms;
+  }
+
+  @keyframes gallery-card-in {
+    from {
+      opacity: 0;
+      translate: 0 -8px;
+    }
+  }
+
+  @keyframes gallery-card-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+    35% {
+      box-shadow: 0 0 0 4px color-mix(in oklch, var(--brand) 70%, transparent);
+    }
+  }
+
+  .gallery-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--ink-2);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .gallery-live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--line-strong);
+
+    [data-status="live"] > & {
+      background: var(--success);
+      box-shadow: 0 0 0 3px color-mix(in oklch, var(--success) 25%, transparent);
+    }
+  }
+
+  .gallery-chip {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: var(--on-primary);
+    box-shadow: var(--shadow-lg);
+    font-size: 0.875rem;
+    font-weight: 700;
+    translate: -50% 8px;
+    animation: gallery-chip-in 200ms var(--ease-enter) both;
+
+    & svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+  }
+
+  @keyframes gallery-chip-in {
+    from {
+      opacity: 0;
+      translate: -50% 0;
     }
   }
 }

@@ -114,6 +114,20 @@ const isRemotePlan = (v: unknown): v is RemotePlan => {
   );
 };
 
+/** One plan entry from the Worker, cleaned; null when it is not valid. */
+export function toRemotePlan(v: unknown): RemotePlan | null {
+  if (!isRemotePlan(v)) return null;
+  return {
+    device: v.device,
+    project: v.project,
+    name: typeof v.name === 'string' ? v.name : '',
+    lotWidthM: Number(v.lotWidthM) || 0,
+    lotDepthM: Number(v.lotDepthM) || 0,
+    updatedAt: v.updatedAt,
+    bytes: Number(v.bytes) || 0,
+  };
+}
+
 /** The received plans, newest first. */
 export async function listPlans(key: string): Promise<RemotePlan[]> {
   const res = await authed('/v1/plans', key);
@@ -125,15 +139,7 @@ export async function listPlans(key: string): Promise<RemotePlan[]> {
   }
   const plans = (data as { plans?: unknown })?.plans;
   if (!Array.isArray(plans)) throw new GalleryApiError('server');
-  return plans.filter(isRemotePlan).map((p) => ({
-    device: p.device,
-    project: p.project,
-    name: typeof p.name === 'string' ? p.name : '',
-    lotWidthM: Number(p.lotWidthM) || 0,
-    lotDepthM: Number(p.lotDepthM) || 0,
-    updatedAt: p.updatedAt,
-    bytes: Number(p.bytes) || 0,
-  }));
+  return plans.map(toRemotePlan).filter((p): p is RemotePlan => p !== null);
 }
 
 const planPath = (device: string, project: string) =>
@@ -153,7 +159,14 @@ async function readUsage(res: Response): Promise<Usage> {
   } catch {
     throw new GalleryApiError('server');
   }
-  if (!data || typeof data !== 'object') throw new GalleryApiError('server');
+  const usage = toUsage(data);
+  if (!usage) throw new GalleryApiError('server');
+  return usage;
+}
+
+/** A usage object from the Worker, cleaned; null when it is not an object. */
+export function toUsage(data: unknown): Usage | null {
+  if (!data || typeof data !== 'object') return null;
   const u = data as Record<string, unknown>;
   return {
     month: typeof u.month === 'string' ? u.month : '',

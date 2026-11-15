@@ -1,5 +1,6 @@
 import {
   ArrowLeft,
+  ArrowUp,
   Check,
   Download,
   EllipsisVertical,
@@ -24,6 +25,7 @@ import {
   type Usage,
 } from '../../collect/api.ts';
 import { clearGalleryKey, getGalleryKey, setGalleryKey } from '../../collect/galleryKey.ts';
+import { type LiveStatus, startLive } from '../../collect/live.ts';
 import {
   planId,
   readSeen,
@@ -106,6 +108,8 @@ function GalleryCard({
   index,
   galleryKey,
   seen,
+  fresh,
+  active,
   leaving,
   onStale,
   onSeen,
@@ -117,6 +121,10 @@ function GalleryCard({
   index: number;
   galleryKey: string;
   seen: SeenState;
+  /** Just arrived over the live socket: it enters with a short highlight. */
+  fresh: boolean;
+  /** Its delete dialog is open: the card stays at full strength. */
+  active: boolean;
   leaving: boolean;
   onStale(): void;
   onSeen(plan: RemotePlan): void;
@@ -206,6 +214,8 @@ function GalleryCard({
       className="gallery-card"
       data-index={index}
       data-seen={seen}
+      data-active={active ? 'true' : undefined}
+      data-fresh={fresh ? 'true' : undefined}
       data-leaving={leaving ? 'true' : undefined}
       tabIndex={-1}
       onAnimationEnd={(e) => {
@@ -434,6 +444,9 @@ interface Group {
 }
 
 const PAGE_SIZE = 48;
+const FRESH_MS = 1600;
+const CHIP_SCROLL_PX = 80;
+const LEAVE_FALLBACK_MS = 600;
 
 /** The list comes newest first, so each device's first plan orders the groups. */
 function groupOrder(plans: RemotePlan[]): RemotePlan[] {
@@ -481,7 +494,13 @@ export default function GalleryScreen(): ReactElement {
   const [leaving, setLeaving] = useState<ReadonlySet<string>>(() => new Set());
   const [usage, setUsage] = useState<Usage | null>(null);
   const [recounting, setRecounting] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<LiveStatus | null>(null);
+  const [fresh, setFresh] = useState<ReadonlySet<string>>(() => new Set());
+  const [announce, setAnnounce] = useState('');
+  const [chip, setChip] = useState(0);
   const innerRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const plansRef = useRef<RemotePlan[] | null>(null);
   const seq = useRef(0);
 
   const updateSeen = useCallback((fn: (map: SeenMap) => void) => {
@@ -543,6 +562,7 @@ export default function GalleryScreen(): ReactElement {
   }, [refresh]);
 
   const all = view.kind === 'ready' ? view.plans : null;
+  plansRef.current = all;
   const ordered = useMemo(() => (all ? groupOrder(all) : []), [all]);
   const groups = useMemo(() => groupShown(ordered.slice(0, shown)), [ordered, shown]);
   const remaining = Math.max(0, ordered.length - shown);
@@ -586,18 +606,92 @@ export default function GalleryScreen(): ReactElement {
     );
   }, []);
 
+  /** The exit animation removes the card; the timer covers a card that never animates. */
+  const dropPlan = useCallback(
+    (p: RemotePlan) => {
+      for (const k of planCache.keys()) if (k.startsWith(`${planId(p)}/`)) planCache.delete(k);
+      updateSeen((map) => {
+        delete map[planId(p)];
+      });
+      setLeaving((prev) => new Set(prev).add(cacheKey(p)));
+      window.setTimeout(() => removePlan(p), LEAVE_FALLBACK_MS);
+    },
+    [updateSeen, removePlan],
+  );
+
+  useEffect(() => {
+    if (!key) return;
+    const stop = startLive(key, {
+      onStatus: setLiveStatus,
+      onUsage: setUsage,
+      onBadKey: forget,
+      onResync: () => {
+        loadUsage(key);
+        listPlans(key).then(showPlans, (err: unknown) => {
+          if (isUnauthorized(err)) forget();
+        });
+      },
+      onPlan: (plan) => {
+        const current = plansRef.current;
+        if (!current) return;
+        const id = planId(plan);
+        const existed = current.some((p) => planId(p) === id);
+        for (const k of planCache.keys()) if (k.startsWith(`${id}/`)) planCache.delete(k);
+        setView((v) =>
+          v.kind === 'ready'
+            ? { kind: 'ready', plans: [plan, ...v.plans.filter((p) => planId(p) !== id)] }
+            : v,
+        );
+        // A new card at the top must not push the last shown one under "Mostrar mais".
+        if (!existed) setShown((n) => n + 1);
+        const k = cacheKey(plan);
+        setFresh((prev) => new Set(prev).add(k));
+        window.setTimeout(() => {
+          setFresh((prev) => {
+            const next = new Set(prev);
+            next.delete(k);
+            return next;
+          });
+        }, FRESH_MS);
+        const name = plan.name || 'Sem nome';
+        setAnnounce(existed ? `Planta atualizada: ${name}` : `Nova planta recebida: ${name}`);
+        if ((mainRef.current?.scrollTop ?? 0) > CHIP_SCROLL_PX) setChip((n) => n + 1);
+      },
+      onDeleted: (device, project) => {
+        const p = plansRef.current?.find((x) => x.device === device && x.project === project);
+        if (p) dropPlan(p);
+      },
+    });
+    return () => {
+      stop();
+      setLiveStatus(null);
+    };
+  }, [key, forget, loadUsage, showPlans, dropPlan]);
+
+  useEffect(() => {
+    const main = mainRef.current;
+    if (!main || chip === 0) return;
+    const onScroll = () => {
+      if (main.scrollTop <= CHIP_SCROLL_PX) setChip(0);
+    };
+    main.addEventListener('scroll', onScroll, { passive: true });
+    return () => main.removeEventListener('scroll', onScroll);
+  }, [chip]);
+
+  const scrollToTop = () => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    mainRef.current?.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+    setChip(0);
+  };
+
   const confirmDelete = async () => {
     const p = deleting;
     if (!p || !key || deleteBusy) return;
     setDeleteBusy(true);
     try {
       await deletePlan(key, p.device, p.project);
-      for (const k of planCache.keys()) if (k.startsWith(`${planId(p)}/`)) planCache.delete(k);
-      updateSeen((map) => {
-        delete map[planId(p)];
-      });
       setDeleting(null);
-      setLeaving((prev) => new Set(prev).add(cacheKey(p)));
+      dropPlan(p);
       toast('Planta excluída', { tone: 'success' });
       loadUsage(key);
     } catch (err) {
@@ -626,7 +720,7 @@ export default function GalleryScreen(): ReactElement {
   };
 
   return (
-    <main className="gallery">
+    <main ref={mainRef} className="gallery">
       <header className="gallery-top">
         <IconButton
           label="Voltar ao início"
@@ -639,6 +733,12 @@ export default function GalleryScreen(): ReactElement {
             <span className="gallery-count">{unread === 1 ? '1 nova' : `${unread} novas`}</span>
           ) : null}
         </h1>
+        {key && liveStatus ? (
+          <span className="gallery-live" data-status={liveStatus}>
+            <span className="gallery-live-dot" aria-hidden="true" />
+            {liveStatus === 'live' ? 'Ao vivo' : 'Reconectando…'}
+          </span>
+        ) : null}
         {key ? (
           <div className="gallery-top-actions">
             <Button
@@ -655,7 +755,16 @@ export default function GalleryScreen(): ReactElement {
             </Button>
           </div>
         ) : null}
+        {chip > 0 ? (
+          <button type="button" className="gallery-chip" onClick={scrollToTop}>
+            {chip === 1 ? '1 nova planta' : `${chip} novas plantas`}
+            <ArrowUp aria-hidden="true" />
+          </button>
+        ) : null}
       </header>
+      <p className="sr-only" aria-live="polite">
+        {announce}
+      </p>
 
       <div ref={innerRef} className="gallery-inner">
         {key && usage && view.kind !== 'key' ? (
@@ -704,6 +813,8 @@ export default function GalleryScreen(): ReactElement {
                       index={index}
                       galleryKey={key}
                       seen={seenStateOf(seen, plan)}
+                      fresh={fresh.has(cacheKey(plan))}
+                      active={deleting === plan}
                       leaving={leaving.has(cacheKey(plan))}
                       onStale={forget}
                       onSeen={markSeen}
