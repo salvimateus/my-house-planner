@@ -61,7 +61,7 @@ export async function importProjectText(
   opts: { suffix: string; label?: string },
 ): Promise<void> {
   const { doc, repairs } = parseProject(text, { newId: true, isKnownMaterial });
-  await openDocAsCopy({ ...doc, name: nameWithSuffix(doc.name, opts.suffix) });
+  if (!(await openDocAsCopy({ ...doc, name: nameWithSuffix(doc.name, opts.suffix) }))) return;
   toast(opts.label && repairs.length === 0 ? opts.label : repairSummary(repairs), {
     tone: repairs.length ? 'info' : 'success',
     durationMs: repairs.length ? 9000 : undefined,

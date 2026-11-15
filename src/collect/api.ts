@@ -63,10 +63,11 @@ export async function postPlan(
   return res.status;
 }
 
-async function authed(path: string, key: string): Promise<Response> {
+async function authed(path: string, key: string, method = 'GET'): Promise<Response> {
   let res: Response;
   try {
     res = await fetch(`${PLANS_API}${path}`, {
+      method,
       headers: { Authorization: `Bearer ${key}` },
       credentials: 'omit',
       cache: 'no-store',
@@ -114,12 +115,17 @@ export async function listPlans(key: string): Promise<RemotePlan[]> {
   }));
 }
 
+const planPath = (device: string, project: string) =>
+  `/v1/plans/${encodeURIComponent(device)}/${encodeURIComponent(project)}`;
+
+/** Deletes one received plan. A plan that is already gone also counts as deleted. */
+export async function deletePlan(key: string, device: string, project: string): Promise<void> {
+  await authed(planPath(device, project), key, 'DELETE');
+}
+
 /** The project JSON text of one received plan. */
 export async function fetchPlanText(key: string, device: string, project: string): Promise<string> {
-  const res = await authed(
-    `/v1/plans/${encodeURIComponent(device)}/${encodeURIComponent(project)}`,
-    key,
-  );
+  const res = await authed(planPath(device, project), key);
   try {
     return await res.text();
   } catch {

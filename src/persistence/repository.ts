@@ -7,7 +7,7 @@ import { MAX_NAME_CHARS, parseProject } from '../model/codec.ts';
 import { createProject } from '../model/factories.ts';
 import type { Id, NewProjectInput, ProjectDoc, ProjectMeta } from '../model/types.ts';
 import { docStore } from '../store/docStore.ts';
-import { uiStore } from '../store/uiStore.ts';
+import { type Screen, uiStore } from '../store/uiStore.ts';
 import { toast } from '../ui/controls/Toast.tsx';
 import { flushAutosave, markClean, persistDoc } from './autosave.ts';
 import {
@@ -21,6 +21,7 @@ import {
   PersistenceError,
   StorageWriteError,
 } from './db.ts';
+import { askLeaveTemporary } from './leavePrompt.ts';
 import { acquireProjectLock, type ProjectLock, waitForProjectLock } from './projectLock.ts';
 import { reportWriteError, resetEditCount } from './storageGuard.ts';
 import { notifyGalleryChanged, onGalleryChanged } from './tabSync.ts';
@@ -35,6 +36,9 @@ interface Current {
 }
 
 let current: Current | null = null;
+
+/** The doc a temporary plan opened with: any other doc means the user changed it. */
+let temporaryBase: ProjectDoc | null = null;
 
 export const isKnownMaterial = (id: string): boolean => MATERIALS.has(id);
 
@@ -108,11 +112,57 @@ async function applyView(id: Id): Promise<void> {
   if (meta) uiStore.getState().setLayers(meta.view.layers);
 }
 
-/** Saves pending edits and lets the lock go, without leaving the current screen. */
-async function closeCurrent(): Promise<void> {
+function temporaryEdited(): boolean {
+  const { doc, gesture } = docStore.getState();
+  return gesture !== null || (doc !== null && doc !== temporaryBase);
+}
+
+/** A temporary plan as a new stored project: a new id, and " (galeria)" only on a name clash. */
+async function temporaryAsProject(): Promise<ProjectDoc | null> {
+  const { doc, gesture } = docStore.getState();
+  const source = gesture?.base ?? doc;
+  if (!source) return null;
+  const taken = new Set((await listProjectMeta().catch(() => [])).map((m) => m.name));
+  const name = taken.has(source.name) ? nameWithSuffix(source.name, ' (galeria)') : source.name;
+  return { ...source, name };
+}
+
+/** Drops the temporary plan, after the user chose what to do with its edits. */
+async function closeTemporary(): Promise<boolean> {
+  if (temporaryEdited()) {
+    const choice = await askLeaveTemporary();
+    if (choice === 'cancel') return false;
+    if (choice === 'save') {
+      const doc = await temporaryAsProject();
+      if (doc) {
+        const now = new Date().toISOString();
+        try {
+          await persistDoc(
+            { ...sanitizeDoc(doc, true), createdAt: now, updatedAt: now },
+            { thumb: true },
+          );
+        } catch (err) {
+          reportWriteError(err instanceof StorageWriteError && err.quota);
+          return false;
+        }
+        toast(`“${doc.name}” foi salva como nova ideia.`, { tone: 'success' });
+      }
+    }
+  }
+  temporaryBase = null;
+  docStore.getState().close();
+  return true;
+}
+
+/**
+ * Saves pending edits and lets the lock go, without leaving the current screen. False when the
+ * user keeps a temporary plan open.
+ */
+async function closeCurrent(): Promise<boolean> {
+  if (docStore.getState().ephemeral) return closeTemporary();
   if (!current) {
     docStore.getState().close();
-    return;
+    return true;
   }
   await flushAutosave();
   const { lock, waiter } = current;
@@ -120,6 +170,7 @@ async function closeCurrent(): Promise<void> {
   waiter?.abort();
   lock.release();
   docStore.getState().close();
+  return true;
 }
 
 function enterEditor(doc: ProjectDoc, lock: ProjectLock, readOnly: boolean): void {
@@ -135,9 +186,9 @@ function enterEditor(doc: ProjectDoc, lock: ProjectLock, readOnly: boolean): voi
   emit({ type: 'project-opened', projectId: doc.id });
 }
 
-/** Saves a doc that this tab just made, then opens it for editing. */
-async function openFresh(doc: ProjectDoc): Promise<void> {
-  await closeCurrent();
+/** Saves a doc that this tab just made, then opens it for editing. False when cancelled. */
+async function openFresh(doc: ProjectDoc): Promise<boolean> {
+  if (!(await closeCurrent())) return false;
   try {
     await persistDoc(doc, { thumb: true });
   } catch (err) {
@@ -146,6 +197,35 @@ async function openFresh(doc: ProjectDoc): Promise<void> {
   }
   const lock = await acquireProjectLock(doc.id);
   enterEditor(doc, lock, false);
+  return true;
+}
+
+/**
+ * Opens a doc in memory only: no storage, no autosave, no lock, no last-opened pointer and no
+ * upload. "Salvar como nova ideia" turns it into a stored project.
+ */
+export async function openTemporary(doc: ProjectDoc): Promise<boolean> {
+  if (!(await closeCurrent())) return false;
+  const temp = sanitizeDoc(doc, true);
+  temporaryBase = temp;
+  markClean(temp);
+  resetEditCount();
+  docStore.getState().load(temp, { ephemeral: true });
+  const ui = uiStore.getState();
+  ui.setSaveStatus('idle');
+  ui.setScreen('editor');
+  emit({ type: 'project-opened', projectId: temp.id });
+  return true;
+}
+
+/** Stores the open temporary plan, with its edits, as a new project and keeps editing it. */
+async function saveTemporaryAsIdea(): Promise<void> {
+  const doc = await temporaryAsProject();
+  if (!doc) return;
+  temporaryBase = null;
+  docStore.getState().close();
+  await openDocAsCopy(doc);
+  toast(`“${doc.name}” foi salva como nova ideia.`, { tone: 'success' });
 }
 
 const isEmptyPlan = (doc: ProjectDoc): boolean =>
@@ -166,7 +246,7 @@ async function readStored(id: Id): Promise<ProjectDoc> {
 
 export async function openProject(id: Id): Promise<void> {
   const doc = await readStored(id);
-  await closeCurrent();
+  if (!(await closeCurrent())) return;
   const lock = await acquireProjectLock(id);
   await applyView(id);
   enterEditor(doc, lock, !lock.granted);
@@ -226,11 +306,14 @@ export async function newProject(input: NewProjectInput): Promise<void> {
   await openFresh(createProject(input));
 }
 
-/** Opens any doc (import, share link, template, "Abrir uma cópia") as a new project. */
-export async function openDocAsCopy(doc: ProjectDoc): Promise<void> {
+/**
+ * Opens any doc (import, share link, template, "Abrir uma cópia") as a new project. False when
+ * the user keeps a temporary plan open.
+ */
+export async function openDocAsCopy(doc: ProjectDoc): Promise<boolean> {
   const now = new Date().toISOString();
   const copy = { ...sanitizeDoc(doc, true), createdAt: now, updatedAt: now };
-  await openFresh(copy);
+  return openFresh(copy);
 }
 
 /** Copy of the read-only plan, named so the two are easy to tell apart. */
@@ -246,6 +329,10 @@ const IDEA_SUFFIX = /\s·\sideia\s\d+$/;
 export async function duplicateCurrentAsIdea(): Promise<void> {
   const doc = docStore.getState().doc;
   if (!doc) return;
+  if (docStore.getState().ephemeral) {
+    await saveTemporaryAsIdea();
+    return;
+  }
   if (!docStore.getState().readOnly) await flushAutosave();
   const base = doc.name.replace(IDEA_SUFFIX, '').trim() || doc.name;
   const taken = new Set((await listProjectMeta().catch(() => [])).map((m) => m.name));
@@ -295,7 +382,9 @@ export async function deleteProject(id: Id): Promise<void> {
   notifyGalleryChanged();
 }
 
-export async function closeProject(): Promise<void> {
-  await closeCurrent();
-  uiStore.getState().setScreen('start');
+/** Leaves the editor for `to`. False when the user keeps a temporary plan open. */
+export async function closeProject(to: Screen = 'start'): Promise<boolean> {
+  if (!(await closeCurrent())) return false;
+  uiStore.getState().setScreen(to);
+  return true;
 }

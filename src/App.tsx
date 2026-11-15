@@ -8,6 +8,7 @@ import { handleIncomingShare } from './io/shareLink.ts';
 import { startAutosave } from './persistence/autosave.ts';
 import { PersistenceBanners } from './persistence/PersistenceBanners.tsx';
 import { closeProject } from './persistence/repository.ts';
+import { docStore } from './store/docStore.ts';
 import { type Screen, uiStore, useUi } from './store/uiStore.ts';
 import { AppShell } from './ui/AppShell.tsx';
 import { ToastHost, toast } from './ui/controls/Toast.tsx';
@@ -71,9 +72,16 @@ function onPopState(): void {
   }
   const ui = uiStore.getState();
   if (ui.screen === 'editor') {
-    void closeProject().catch((err: unknown) =>
-      toast(errorMessage(err, 'Não foi possível fechar a planta.'), { tone: 'error' }),
-    );
+    // Back from a temporary plan returns to the gallery it came from.
+    const to = docStore.getState().ephemeral ? 'gallery' : 'start';
+    void closeProject(to)
+      .then((left) => {
+        // The user kept the plan: the back step already left history, so add it again.
+        if (!left) window.history.pushState({ [HISTORY_KEY]: 'editor' }, '');
+      })
+      .catch((err: unknown) =>
+        toast(errorMessage(err, 'Não foi possível fechar a planta.'), { tone: 'error' }),
+      );
   } else if (ui.screen === 'wizard' || ui.screen === 'gallery') {
     ui.setScreen('start');
   }

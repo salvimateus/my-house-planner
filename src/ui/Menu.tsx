@@ -58,8 +58,7 @@ const GROUPS: Entry[][] = [
       label: 'Nova planta',
       icon: Plus,
       run: async () => {
-        await closeProject();
-        uiStore.getState().setScreen('wizard');
+        if (await closeProject()) uiStore.getState().setScreen('wizard');
       },
     },
     { label: 'Abrir arquivo…', icon: FolderOpen, run: () => pickProjectFile() },

@@ -3,15 +3,14 @@ import { parseProject, serializeProject } from '../model/codec.ts';
 import type { Id, ProjectDoc } from '../model/types.ts';
 import { onDocSaved, onUserEdit } from '../persistence/autosave.ts';
 import { listProjectMeta, loadProjectRecord } from '../persistence/db.ts';
+import { docStore } from '../store/docStore.ts';
 import { TEMPLATES } from '../templates/index.ts';
 import { ID_PATTERN, postPlan, type UploadMeta } from './api.ts';
 import { hasGalleryKey } from './galleryKey.ts';
 
 const STATE_KEY = 'casinha:collect';
-const THROTTLE_MS = 10 * 60_000;
-/** A hide flush skips the throttle, so the last version is not lost; this cap stops tab-switch spam. */
-const HIDE_GAP_MS = 2 * 60_000;
-const PREPARE_DELAY_MS = 1500;
+const THROTTLE_MS = 5 * 60_000;
+const PREPARE_DELAY_MS = 1000;
 const BACKFILL_DELAY_MS = 5000;
 const BACKFILL_GAP_MS = 1500;
 const BACKFILL_MAX = 20;
@@ -22,7 +21,7 @@ const BACKOFF_START_MS = 10 * 60_000;
 const BACKOFF_MAX_MS = 6 * 60 * 60_000;
 
 interface Sent {
-  /** SHA-256 of the uploaded content. */
+  /** Sync hash of the uploaded content (`contentKey`). */
   h: string;
   at: number;
 }
@@ -39,7 +38,6 @@ interface CollectState {
 }
 
 interface Prepared {
-  seq: number;
   hash: string;
   body: Uint8Array<ArrayBuffer>;
   meta: UploadMeta;
@@ -112,9 +110,24 @@ async function gzip(text: string): Promise<Uint8Array<ArrayBuffer>> {
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
+/**
+ * Two FNV-1a 32-bit passes with different seeds. Sync, so the hide flush can use it while the
+ * page closes; it only tells changed content from unchanged content.
+ */
+function quickHash(text: string): string {
+  let a = 0x811c9dc5;
+  let b = 0x01000193 ^ 0x5bd1e995;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    a = Math.imul(a ^ c, 0x01000193);
+    b = Math.imul(b ^ c, 0x01000193) ^ (b >>> 15);
+  }
+  return `${(a >>> 0).toString(36)}.${(b >>> 0).toString(36)}.${text.length.toString(36)}`;
+}
+
 /** The plan content, without the save time: the same plan saved twice has the same hash. */
-const contentHash = (doc: ProjectDoc): Promise<string> =>
-  sha256(JSON.stringify({ ...doc, updatedAt: '' }));
+const contentHash = (doc: ProjectDoc): string =>
+  quickHash(JSON.stringify({ ...doc, updatedAt: '' }));
 
 /** The drawing alone, without the fields that each copy of a template changes. */
 const drawingHash = (doc: ProjectDoc): Promise<string> =>
@@ -154,16 +167,16 @@ async function isEdited(doc: ProjectDoc, state: CollectState): Promise<boolean> 
 // ---------------------------------------------------------------------------
 // Upload
 
+/** The last stored copy of each plan this session saved. */
 const latest = new Map<Id, ProjectDoc>();
-const seqs = new Map<Id, number>();
+/** The newest gzip body of each dirty plan, ready for a hide flush. */
 const prepared = new Map<Id, Prepared>();
 const prepareTimers = new Map<Id, number>();
 const uploadTimers = new Map<Id, number>();
 const lastAttempt = new Map<Id, number>();
-const lastHideSend = new Map<Id, number>();
+/** The content hash that the last hide flush sent, so `pagehide` after `visibilitychange` is a no-op. */
+const hideSent = new Map<Id, string>();
 const inFlight = new Set<Id>();
-
-const seqOf = (id: Id): number => seqs.get(id) ?? 0;
 
 function active(): boolean {
   return import.meta.env.PROD && !hasGalleryKey();
@@ -177,8 +190,23 @@ function whenIdle(task: () => void): void {
   }
 }
 
+/** The open plan in the editor, edits included, even before autosave writes them. */
+function openDoc(): ProjectDoc | null {
+  const { doc, gesture, ephemeral, readOnly } = docStore.getState();
+  // A temporary gallery plan is never the user's work; a read-only tab is not the editor of it.
+  if (!doc || ephemeral || readOnly) return null;
+  return gesture?.base ?? doc;
+}
+
+/** The newest content of a plan this tab knows, without a wait. */
+function currentDoc(id: Id): ProjectDoc | null {
+  const open = openDoc();
+  if (open?.id === id) return open;
+  return latest.get(id) ?? null;
+}
+
 async function loadDoc(id: Id): Promise<ProjectDoc | null> {
-  const mem = latest.get(id);
+  const mem = currentDoc(id);
   if (mem) return mem;
   try {
     const raw = await loadProjectRecord(id);
@@ -189,48 +217,54 @@ async function loadDoc(id: Id): Promise<ProjectDoc | null> {
   }
 }
 
+/** When the user last changed each plan in this tab; autosave may not have stored it yet. */
+const editedAt = new Map<Id, string>();
+
+function metaOf(doc: ProjectDoc, device: string): UploadMeta {
+  const edit = editedAt.get(doc.id) ?? '';
+  return {
+    device,
+    project: doc.id,
+    name: doc.name,
+    widthM: doc.lot.width / 1000,
+    depthM: doc.lot.depth / 1000,
+    // ISO strings: the later one sorts last.
+    updatedAt: [doc.updatedAt, edit].sort()[1]!,
+  };
+}
+
 /** Null when the plan is gone or does not count as edited. */
 async function prepare(id: Id): Promise<Prepared | null> {
-  const seq = seqOf(id);
   const doc = await loadDoc(id);
   if (!doc || !ID_PATTERN.test(doc.id)) return null;
   const state = readState();
   if (!(await isEdited(doc, state))) return null;
-  const text = serializeProject(doc);
-  const [hash, body] = await Promise.all([contentHash(doc), gzip(text)]);
   const p: Prepared = {
-    seq,
-    hash,
-    body,
-    meta: {
-      device: state.device,
-      project: doc.id,
-      name: doc.name,
-      widthM: doc.lot.width / 1000,
-      depthM: doc.lot.depth / 1000,
-      updatedAt: doc.updatedAt,
-    },
+    hash: contentHash(doc),
+    body: await gzip(serializeProject(doc)),
+    meta: metaOf(doc, state.device),
   };
   prepared.set(id, p);
   return p;
 }
 
-function clearDirty(id: Id, seq: number): void {
-  // A save that landed during the upload keeps the plan dirty.
-  if (seqOf(id) !== seq) return;
+/** Clears the dirty flag only when the sent content is still the newest one. */
+function clearDirtyIf(id: Id, hash: string): void {
+  const cur = currentDoc(id);
+  if (cur && contentHash(cur) !== hash) return;
   update((s) => {
     delete s.dirty[id];
   });
 }
 
-function onStatus(id: Id, p: Prepared, status: number): void {
+function onStatus(id: Id, hash: string, status: number): void {
   if (status >= 200 && status < 300) {
     update((s) => {
-      s.sent[id] = { h: p.hash, at: Date.now() };
+      s.sent[id] = { h: hash, at: Date.now() };
       s.backoffMs = 0;
       s.backoffUntil = 0;
     });
-    clearDirty(id, p.seq);
+    clearDirtyIf(id, hash);
   } else if (status === 429) {
     update((s) => {
       s.backoffMs = Math.min(BACKOFF_MAX_MS, s.backoffMs ? s.backoffMs * 2 : BACKOFF_START_MS);
@@ -240,45 +274,26 @@ function onStatus(id: Id, p: Prepared, status: number): void {
   // Other failures keep the plan dirty: a later save or session tries again.
 }
 
-/** True when the request went out. */
-async function upload(
-  id: Id,
-  keepalive: boolean,
-  budget = { left: KEEPALIVE_MAX_BYTES },
-): Promise<boolean> {
+/** The throttled path. True when the request went out. */
+async function upload(id: Id): Promise<boolean> {
   if (!active() || inFlight.has(id)) return false;
-  const state = readState();
-  if (state.backoffUntil > Date.now()) return false;
+  if (readState().backoffUntil > Date.now()) return false;
   inFlight.add(id);
   try {
-    const p = keepalive ? prepared.get(id) : await prepare(id);
+    const p = await prepare(id);
     if (!p) {
-      if (!keepalive) clearDirty(id, seqOf(id));
+      update((s) => {
+        delete s.dirty[id];
+      });
       return false;
     }
-    if (keepalive && p.seq !== seqOf(id)) return false;
-    if (state.sent[id]?.h === p.hash) {
-      clearDirty(id, p.seq);
+    if (readState().sent[id]?.h === p.hash || p.body.byteLength > MAX_BODY_BYTES) {
+      // Unchanged, or too big for the Worker: a later, changed version can go.
+      clearDirtyIf(id, p.hash);
       return false;
-    }
-    if (p.body.byteLength > MAX_BODY_BYTES) {
-      // The Worker refuses it; a later, smaller version can go.
-      clearDirty(id, p.seq);
-      return false;
-    }
-    if (keepalive) {
-      if (p.body.byteLength > budget.left) return false;
-      budget.left -= p.body.byteLength;
-      lastHideSend.set(id, Date.now());
     }
     lastAttempt.set(id, Date.now());
-    const send = postPlan(p.meta, p.body, keepalive);
-    if (keepalive) {
-      // The page may close before the answer: do not wait for it.
-      void send.then((status) => onStatus(id, p, status)).catch(() => undefined);
-      return true;
-    }
-    onStatus(id, p, await send.catch(() => 0));
+    onStatus(id, p.hash, await postPlan(p.meta, p.body, false).catch(() => 0));
     return true;
   } catch {
     return false;
@@ -302,7 +317,7 @@ function schedule(id: Id): void {
     window.setTimeout(() => {
       whenIdle(() => {
         uploadTimers.delete(id);
-        void upload(id, false).then(() => {
+        void upload(id).then(() => {
           if (readState().dirty[id] && active()) schedule(id);
         });
       });
@@ -316,40 +331,86 @@ function prepareSoon(id: Id): void {
     id,
     window.setTimeout(() => {
       prepareTimers.delete(id);
-      whenIdle(() => void prepare(id).catch(() => undefined));
+      void prepare(id).catch(() => undefined);
     }, PREPARE_DELAY_MS),
   );
 }
 
-function flushHidden(ids: Iterable<Id>): void {
+/**
+ * Sends the newest content of every dirty plan with `keepalive`, the open plan first. It runs
+ * fully sync up to each `fetch`: nothing async can finish while the page closes.
+ */
+function flushHidden(): void {
   if (!active()) return;
   const state = readState();
-  const budget = { left: KEEPALIVE_MAX_BYTES };
-  const now = Date.now();
+  if (state.backoffUntil > Date.now()) return;
+  const open = openDoc();
+  const dirty = Object.keys(state.dirty);
+  const ids =
+    open && dirty.includes(open.id) ? [open.id, ...dirty.filter((id) => id !== open.id)] : dirty;
+  let left = KEEPALIVE_MAX_BYTES;
   for (const id of ids) {
-    if (!state.dirty[id]) continue;
-    if (now - (lastHideSend.get(id) ?? 0) < HIDE_GAP_MS) continue;
-    void upload(id, true, budget);
+    if (!state.edited[id] && !prepared.has(id)) continue;
+    const doc = currentDoc(id);
+    const hash = doc ? contentHash(doc) : prepared.get(id)?.hash;
+    if (!hash || state.sent[id]?.h === hash || hideSent.get(id) === hash) continue;
+    let body: Uint8Array<ArrayBuffer> | null = null;
+    let meta: UploadMeta | null = null;
+    const ready = prepared.get(id);
+    if (ready && ready.hash === hash) {
+      body = ready.body;
+      meta = ready.meta;
+    } else if (doc && doc.areas.length > 0 && ID_PATTERN.test(doc.id)) {
+      // The last edit is newer than the gzip body: plain JSON, which the Worker also takes.
+      const raw = encoder.encode(serializeProject(doc));
+      if (raw.byteLength <= left) {
+        body = raw;
+        meta = metaOf(doc, state.device);
+      }
+    }
+    if ((!body || body.byteLength > left) && ready) {
+      // Too big as plain JSON: the newest gzip body is still better than nothing.
+      body = ready.body;
+      meta = ready.meta;
+    }
+    if (!body || !meta || body.byteLength > left) continue;
+    left -= body.byteLength;
+    const sentHash = body === ready?.body ? ready.hash : hash;
+    hideSent.set(id, sentHash);
+    lastAttempt.set(id, Date.now());
+    postPlan(meta, body, true).then(
+      (status) => onStatus(id, sentHash, status),
+      () => undefined,
+    );
   }
+}
+
+function onEdit(id: Id): void {
+  if (!active()) return;
+  const open = openDoc();
+  if (!open || open.id !== id) return;
+  editedAt.set(id, new Date().toISOString());
+  update((s) => {
+    s.edited[id] = 1;
+    if (open.areas.length > 0) s.dirty[id] = 1;
+  });
+  if (open.areas.length === 0) return;
+  prepareSoon(id);
+  schedule(id);
 }
 
 function onSaved(doc: ProjectDoc): void {
   if (!active()) return;
   latest.set(doc.id, doc);
-  seqs.set(doc.id, seqOf(doc.id) + 1);
   if (!readState().edited[doc.id] || doc.areas.length === 0) return;
-  update((s) => {
-    s.dirty[doc.id] = 1;
-  });
-  if (document.visibilityState === 'hidden') {
-    // The last save of a closing page: send it at once, while the page still runs.
-    void prepare(doc.id)
-      .then(() => flushHidden([doc.id]))
-      .catch(() => undefined);
-    return;
+  // A save of a plan that is not open (a rename on the start screen) is an edit too.
+  if (openDoc()?.id !== doc.id) {
+    update((s) => {
+      s.dirty[doc.id] = 1;
+    });
+    prepareSoon(doc.id);
+    schedule(doc.id);
   }
-  prepareSoon(doc.id);
-  schedule(doc.id);
 }
 
 const sleep = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
@@ -378,7 +439,7 @@ async function backfill(): Promise<void> {
       schedule(id);
       continue;
     }
-    if (await upload(id, false)) {
+    if (await upload(id)) {
       sent += 1;
       await sleep(BACKFILL_GAP_MS);
     }
@@ -392,19 +453,13 @@ export function startCollect(): () => void {
   if (!import.meta.env.PROD || started) return () => undefined;
   started = true;
   readState();
-  const offEdit = onUserEdit((id) => {
-    if (!active()) return;
-    update((s) => {
-      s.edited[id] = 1;
-    });
-  });
+  const offEdit = onUserEdit(onEdit);
   const offSaved = onDocSaved((doc) => onSaved(doc));
   const onHide = () => {
-    if (document.visibilityState === 'hidden') flushHidden(Object.keys(readState().dirty));
+    if (document.visibilityState === 'hidden') flushHidden();
   };
-  const onPageHide = () => flushHidden(Object.keys(readState().dirty));
   document.addEventListener('visibilitychange', onHide);
-  window.addEventListener('pagehide', onPageHide);
+  window.addEventListener('pagehide', flushHidden);
   const backfillTimer = window.setTimeout(
     () => whenIdle(() => void backfill().catch(() => undefined)),
     BACKFILL_DELAY_MS,
@@ -414,7 +469,7 @@ export function startCollect(): () => void {
     offEdit();
     offSaved();
     document.removeEventListener('visibilitychange', onHide);
-    window.removeEventListener('pagehide', onPageHide);
+    window.removeEventListener('pagehide', flushHidden);
     window.clearTimeout(backfillTimer);
     for (const t of uploadTimers.values()) window.clearTimeout(t);
     for (const t of prepareTimers.values()) window.clearTimeout(t);

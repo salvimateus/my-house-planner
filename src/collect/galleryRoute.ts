@@ -12,8 +12,11 @@ async function check(): Promise<void> {
   history.replaceState(history.state, '', `${location.pathname}${location.search}`);
   const ui = uiStore.getState();
   if (ui.screen === 'gallery') return;
-  if (ui.screen === 'editor') await closeProject();
-  uiStore.getState().setScreen('gallery');
+  if (ui.screen === 'editor') {
+    await closeProject('gallery');
+    return;
+  }
+  ui.setScreen('gallery');
 }
 
 let started = false;

@@ -90,8 +90,8 @@ export async function persistDoc(doc: ProjectDoc, opts: { thumb: boolean }): Pro
 
 /** The doc that a save would write now: the gesture base while a drag is live. */
 function saveTarget(flush: boolean): ProjectDoc | null {
-  const { doc, readOnly, gesture } = docStore.getState();
-  if (!doc || readOnly) return null;
+  const { doc, readOnly, ephemeral, gesture } = docStore.getState();
+  if (!doc || readOnly || ephemeral) return null;
   if (gesture) return flush ? gesture.base : null;
   return doc;
 }
@@ -201,7 +201,8 @@ export function startAutosave(): () => void {
       const committed = s.doc !== prev.doc && s.gesture === null && prev.gesture === null;
       const gestureEnded =
         prev.gesture !== null && s.gesture === null && s.doc !== prev.gesture.base;
-      if (committed || gestureEnded) {
+      // A temporary plan is not the user's own work: it never reaches the edit listeners.
+      if ((committed || gestureEnded) && !s.ephemeral) {
         noteEdit();
         notify(editListeners, s.doc.id);
       }

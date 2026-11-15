@@ -14,10 +14,12 @@ export interface DocState {
   gesture: { base: ProjectDoc; label: string } | null;
   lastLabel: string | null;
   readOnly: boolean;
+  /** A temporary plan (gallery view): kept in memory only, never saved, locked or uploaded. */
+  ephemeral: boolean;
 }
 
 export interface DocActions {
-  load(doc: ProjectDoc): void;
+  load(doc: ProjectDoc, opts?: { ephemeral?: boolean }): void;
   close(): void;
   setReadOnly(v: boolean): void;
   commit(label: string, recipe: Recipe): void;
@@ -37,12 +39,29 @@ export const docStore = createStore<DocState & DocActions>()((set, get) => ({
   gesture: null,
   lastLabel: null,
   readOnly: false,
+  ephemeral: false,
 
-  load: (doc) =>
-    set({ doc, past: [], future: [], gesture: null, lastLabel: null, readOnly: false }),
+  load: (doc, opts) =>
+    set({
+      doc,
+      past: [],
+      future: [],
+      gesture: null,
+      lastLabel: null,
+      readOnly: false,
+      ephemeral: opts?.ephemeral ?? false,
+    }),
 
   close: () =>
-    set({ doc: null, past: [], future: [], gesture: null, lastLabel: null, readOnly: false }),
+    set({
+      doc: null,
+      past: [],
+      future: [],
+      gesture: null,
+      lastLabel: null,
+      readOnly: false,
+      ephemeral: false,
+    }),
 
   setReadOnly: (readOnly) => set({ readOnly }),
 

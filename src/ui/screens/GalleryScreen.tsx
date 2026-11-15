@@ -1,15 +1,42 @@
-import { ArrowLeft, Copy, Download, LoaderCircle, LogOut, RefreshCw, WifiOff } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  Download,
+  EllipsisVertical,
+  Eye,
+  EyeOff,
+  LoaderCircle,
+  LogOut,
+  RefreshCw,
+  Trash,
+  WifiOff,
+} from 'lucide-react';
 import type { FormEvent, ReactElement } from 'react';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { fetchPlanText, GalleryApiError, listPlans, type RemotePlan } from '../../collect/api.ts';
+import {
+  deletePlan,
+  fetchPlanText,
+  GalleryApiError,
+  listPlans,
+  type RemotePlan,
+} from '../../collect/api.ts';
 import { clearGalleryKey, getGalleryKey, setGalleryKey } from '../../collect/galleryKey.ts';
+import {
+  planId,
+  readSeen,
+  type SeenMap,
+  type SeenState,
+  seenStateOf,
+  writeSeen,
+} from '../../collect/seenPlans.ts';
 import { downloadFile } from '../../export/share.ts';
-import { importProjectText, PROJECT_FILE_EXT, projectFileSlug } from '../../io/projectFile.ts';
+import { PROJECT_FILE_EXT, projectFileSlug } from '../../io/projectFile.ts';
 import { parseProject } from '../../model/codec.ts';
-import { isKnownMaterial } from '../../persistence/repository.ts';
+import { isKnownMaterial, openTemporary } from '../../persistence/repository.ts';
 import { renderThumbSvg } from '../../render/thumb.ts';
 import { uiStore } from '../../store/uiStore.ts';
 import { Button } from '../controls/Button.tsx';
+import { Dialog } from '../controls/Dialog.tsx';
 import { IconButton } from '../controls/IconButton.tsx';
 import { toast } from '../controls/Toast.tsx';
 import { relativeTime, Thumb } from './StartScreen.tsx';
@@ -65,16 +92,38 @@ function useNoIndex(): void {
   }, []);
 }
 
+const STATE_TAG: Record<SeenState, string | null> = {
+  new: 'Nova',
+  updated: 'Nova versão',
+  seen: null,
+};
+
 function GalleryCard({
   plan,
+  index,
   galleryKey,
+  seen,
+  leaving,
   onStale,
+  onSeen,
+  onToggleSeen,
+  onDelete,
+  onLeft,
 }: {
   plan: RemotePlan;
+  index: number;
   galleryKey: string;
+  seen: SeenState;
+  leaving: boolean;
   onStale(): void;
+  onSeen(plan: RemotePlan): void;
+  onToggleSeen(plan: RemotePlan): void;
+  onDelete(plan: RemotePlan): void;
+  onLeft(plan: RemotePlan): void;
 }): ReactElement {
   const ref = useRef<HTMLLIElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+  const popId = useId();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [busy, setBusy] = useState<'open' | 'download' | null>(null);
 
@@ -108,7 +157,9 @@ function GalleryCard({
     if (busy) return;
     setBusy(kind);
     try {
-      await task((await loadPlan(galleryKey, plan)).text);
+      const { text } = await loadPlan(galleryKey, plan);
+      onSeen(plan);
+      await task(text);
     } catch (err) {
       if (isUnauthorized(err)) {
         onStale();
@@ -127,13 +178,10 @@ function GalleryCard({
     }
   };
 
-  const openCopy = () =>
-    withText('open', (text) =>
-      importProjectText(text, {
-        suffix: ' (galeria)',
-        label: 'Cópia aberta. A planta da galeria não muda.',
-      }),
-    );
+  const openPlan = () =>
+    withText('open', async (text) => {
+      await openTemporary(parseProject(text, { isKnownMaterial }).doc);
+    });
 
   const download = () =>
     withText('download', async (text) => {
@@ -141,37 +189,123 @@ function GalleryCard({
       downloadFile(new File([text], name, { type: 'application/json' }));
     });
 
+  const pick = (fn: () => void) => {
+    popRef.current?.hidePopover();
+    fn();
+  };
+
+  const name = plan.name || 'Sem nome';
+  const tag = STATE_TAG[seen];
   const lot = lotLabel(plan);
   return (
-    <li ref={ref} className="gallery-card">
+    <li
+      ref={ref}
+      className="gallery-card"
+      data-index={index}
+      data-seen={seen}
+      data-leaving={leaving ? 'true' : undefined}
+      tabIndex={-1}
+      onAnimationEnd={(e) => {
+        if (leaving && e.target === e.currentTarget) onLeft(plan);
+      }}
+    >
       <Thumb svg={loaded?.thumbSvg ?? ''} />
-      <div className="gallery-card-text">
-        <span className="gallery-card-name">{plan.name || 'Sem nome'}</span>
-        <span className="gallery-card-meta">
-          {lot ? `${lot} · ` : ''}editada {relativeTime(plan.updatedAt)}
-        </span>
+      <div className="gallery-card-head">
+        <div className="gallery-card-text">
+          <span className="gallery-card-name">
+            {name}
+            {seen === 'seen' ? <span className="sr-only"> (vista)</span> : null}
+          </span>
+          <span className="gallery-card-meta">
+            {lot ? `${lot} · ` : ''}editada {relativeTime(plan.updatedAt)}
+          </span>
+        </div>
+        {tag ? <span className="gallery-tag">{tag}</span> : null}
+        <button
+          type="button"
+          className="plan-card-more"
+          popoverTarget={`${popId}-more`}
+          aria-label={`Mais opções para ${name}`}
+        >
+          <EllipsisVertical aria-hidden="true" />
+        </button>
+        <div ref={popRef} id={`${popId}-more`} popover="auto" className="plan-card-pop">
+          <button
+            type="button"
+            className="plan-card-action"
+            onClick={() => pick(() => onToggleSeen(plan))}
+          >
+            {seen === 'seen' ? <EyeOff aria-hidden="true" /> : <Check aria-hidden="true" />}
+            {seen === 'seen' ? 'Marcar como não vista' : 'Marcar como vista'}
+          </button>
+          <button
+            type="button"
+            className="plan-card-action plan-card-danger"
+            onClick={() => pick(() => onDelete(plan))}
+          >
+            <Trash aria-hidden="true" />
+            Excluir
+          </button>
+        </div>
       </div>
       <div className="gallery-card-actions">
         <Button
           size="sm"
           variant="primary"
-          icon={busy === 'open' ? <LoaderCircle className="spin" /> : <Copy />}
-          disabled={busy !== null}
-          onClick={openCopy}
+          icon={busy === 'open' ? <LoaderCircle className="spin" /> : <Eye />}
+          disabled={busy !== null || leaving}
+          onClick={openPlan}
         >
-          Abrir cópia
+          Abrir
         </Button>
         <Button
           size="sm"
           variant="secondary"
           icon={busy === 'download' ? <LoaderCircle className="spin" /> : <Download />}
-          disabled={busy !== null}
+          disabled={busy !== null || leaving}
           onClick={download}
         >
           Baixar JSON
         </Button>
       </div>
     </li>
+  );
+}
+
+function DeleteDialog({
+  target,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  target: RemotePlan | null;
+  busy: boolean;
+  onCancel(): void;
+  onConfirm(): void;
+}): ReactElement {
+  return (
+    <Dialog
+      open={target !== null}
+      onClose={onCancel}
+      title="Excluir esta planta da galeria?"
+      size="sm"
+      description="Ela será apagada do armazenamento. Se a pessoa editar a planta de novo, ela volta."
+      footer={
+        <>
+          <Button variant="ghost" onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button
+            variant="danger"
+            icon={busy ? <LoaderCircle className="spin" /> : <Trash />}
+            disabled={busy}
+            onClick={onConfirm}
+          >
+            Excluir
+          </Button>
+        </>
+      }
+    />
   );
 }
 
@@ -245,18 +379,31 @@ type View =
 
 interface Group {
   device: string;
-  plans: RemotePlan[];
+  plans: { plan: RemotePlan; index: number }[];
 }
 
+const PAGE_SIZE = 48;
+
 /** The list comes newest first, so each device's first plan orders the groups. */
-function groupByDevice(plans: RemotePlan[]): Group[] {
+function groupOrder(plans: RemotePlan[]): RemotePlan[] {
   const groups = new Map<string, RemotePlan[]>();
   for (const p of plans) {
     const list = groups.get(p.device);
     if (list) list.push(p);
     else groups.set(p.device, [p]);
   }
-  return [...groups].map(([device, list]) => ({ device, plans: list }));
+  return [...groups.values()].flat();
+}
+
+/** Consecutive plans of one device share a header, also across a page boundary. */
+function groupShown(plans: RemotePlan[]): Group[] {
+  const groups: Group[] = [];
+  plans.forEach((plan, index) => {
+    const last = groups[groups.length - 1];
+    if (last && last.device === plan.device) last.plans.push({ plan, index });
+    else groups.push({ device: plan.device, plans: [{ plan, index }] });
+  });
+  return groups;
 }
 
 function SkeletonGrid(): ReactElement {
@@ -275,7 +422,35 @@ export default function GalleryScreen(): ReactElement {
   const [view, setView] = useState<View>(() =>
     getGalleryKey() ? { kind: 'loading' } : { kind: 'key' },
   );
+  const [seen, setSeen] = useState<SeenMap>(readSeen);
+  const [shown, setShown] = useState(PAGE_SIZE);
+  const [focusIndex, setFocusIndex] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState<RemotePlan | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [leaving, setLeaving] = useState<ReadonlySet<string>>(() => new Set());
+  const innerRef = useRef<HTMLDivElement>(null);
   const seq = useRef(0);
+
+  const updateSeen = useCallback((fn: (map: SeenMap) => void) => {
+    setSeen((prev) => {
+      const next = { ...prev };
+      fn(next);
+      writeSeen(next);
+      return next;
+    });
+  }, []);
+
+  const showPlans = useCallback(
+    (plans: RemotePlan[]) => {
+      const live = new Set(plans.map(planId));
+      updateSeen((map) => {
+        for (const id of Object.keys(map)) if (!live.has(id)) delete map[id];
+      });
+      setLeaving(new Set());
+      setView({ kind: 'ready', plans });
+    },
+    [updateSeen],
+  );
 
   const forget = useCallback(() => {
     clearGalleryKey();
@@ -290,7 +465,7 @@ export default function GalleryScreen(): ReactElement {
       setView({ kind: 'loading' });
       listPlans(k).then(
         (plans) => {
-          if (n === seq.current) setView({ kind: 'ready', plans });
+          if (n === seq.current) showPlans(plans);
         },
         (err: unknown) => {
           if (n !== seq.current) return;
@@ -299,7 +474,7 @@ export default function GalleryScreen(): ReactElement {
         },
       );
     },
-    [forget],
+    [forget, showPlans],
   );
 
   useEffect(() => {
@@ -307,7 +482,71 @@ export default function GalleryScreen(): ReactElement {
     if (k) refresh(k);
   }, [refresh]);
 
-  const groups = useMemo(() => (view.kind === 'ready' ? groupByDevice(view.plans) : []), [view]);
+  const all = view.kind === 'ready' ? view.plans : null;
+  const ordered = useMemo(() => (all ? groupOrder(all) : []), [all]);
+  const groups = useMemo(() => groupShown(ordered.slice(0, shown)), [ordered, shown]);
+  const remaining = Math.max(0, ordered.length - shown);
+  const unread = useMemo(
+    () => ordered.filter((p) => seenStateOf(seen, p) !== 'seen').length,
+    [ordered, seen],
+  );
+
+  // After "Mostrar mais", the focus goes to the first new card, so the reader goes on from there.
+  useEffect(() => {
+    if (focusIndex === null) return;
+    innerRef.current?.querySelector<HTMLElement>(`[data-index="${focusIndex}"]`)?.focus();
+    setFocusIndex(null);
+  }, [focusIndex]);
+
+  const markSeen = useCallback(
+    (p: RemotePlan) =>
+      updateSeen((map) => {
+        map[planId(p)] = p.updatedAt;
+      }),
+    [updateSeen],
+  );
+
+  const toggleSeen = useCallback(
+    (p: RemotePlan) =>
+      updateSeen((map) => {
+        if (seenStateOf(map, p) === 'seen') delete map[planId(p)];
+        else map[planId(p)] = p.updatedAt;
+      }),
+    [updateSeen],
+  );
+
+  const removePlan = useCallback((p: RemotePlan) => {
+    setLeaving((prev) => {
+      const next = new Set(prev);
+      next.delete(cacheKey(p));
+      return next;
+    });
+    setView((v) =>
+      v.kind === 'ready' ? { kind: 'ready', plans: v.plans.filter((x) => x !== p) } : v,
+    );
+  }, []);
+
+  const confirmDelete = async () => {
+    const p = deleting;
+    if (!p || !key || deleteBusy) return;
+    setDeleteBusy(true);
+    try {
+      await deletePlan(key, p.device, p.project);
+      for (const k of planCache.keys()) if (k.startsWith(`${planId(p)}/`)) planCache.delete(k);
+      updateSeen((map) => {
+        delete map[planId(p)];
+      });
+      setDeleting(null);
+      setLeaving((prev) => new Set(prev).add(cacheKey(p)));
+      toast('Planta excluída', { tone: 'success' });
+    } catch (err) {
+      setDeleting(null);
+      if (isUnauthorized(err)) forget();
+      else toast('Não foi possível excluir. Tente de novo.', { tone: 'error' });
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
 
   const leave = () => {
     forget();
@@ -322,7 +561,12 @@ export default function GalleryScreen(): ReactElement {
           icon={<ArrowLeft />}
           onClick={() => uiStore.getState().setScreen('start')}
         />
-        <h1 className="gallery-title">Galeria</h1>
+        <h1 className="gallery-title">
+          Galeria
+          {key && all && unread > 0 ? (
+            <span className="gallery-count">{unread === 1 ? '1 nova' : `${unread} novas`}</span>
+          ) : null}
+        </h1>
         {key ? (
           <div className="gallery-top-actions">
             <Button
@@ -341,13 +585,13 @@ export default function GalleryScreen(): ReactElement {
         ) : null}
       </header>
 
-      <div className="gallery-inner">
+      <div ref={innerRef} className="gallery-inner">
         {view.kind === 'key' || !key ? (
           <KeyForm
             onEnter={(k, plans) => {
               seq.current += 1;
               setKey(k);
-              setView({ kind: 'ready', plans });
+              showPlans(plans);
             }}
           />
         ) : view.kind === 'loading' ? (
@@ -366,24 +610,56 @@ export default function GalleryScreen(): ReactElement {
             <p className="start-empty-title">Nenhuma planta recebida ainda.</p>
           </div>
         ) : (
-          groups.map((g) => (
-            <section
-              key={g.device}
-              className="gallery-group"
-              aria-label={`Aparelho ${g.device.slice(0, 6)}`}
-            >
-              <h2 className="start-h2">
-                Aparelho <span className="gallery-device">{g.device.slice(0, 6)}</span>
-              </h2>
-              <ul className="plan-grid">
-                {g.plans.map((p) => (
-                  <GalleryCard key={cacheKey(p)} plan={p} galleryKey={key} onStale={forget} />
-                ))}
-              </ul>
-            </section>
-          ))
+          <>
+            {groups.map((g) => (
+              <section
+                key={`${g.device}-${g.plans[0]!.index}`}
+                className="gallery-group"
+                aria-label={`Aparelho ${g.device.slice(0, 6)}`}
+              >
+                <h2 className="start-h2">
+                  Aparelho <span className="gallery-device">{g.device.slice(0, 6)}</span>
+                </h2>
+                <ul className="plan-grid">
+                  {g.plans.map(({ plan, index }) => (
+                    <GalleryCard
+                      key={cacheKey(plan)}
+                      plan={plan}
+                      index={index}
+                      galleryKey={key}
+                      seen={seenStateOf(seen, plan)}
+                      leaving={leaving.has(cacheKey(plan))}
+                      onStale={forget}
+                      onSeen={markSeen}
+                      onToggleSeen={toggleSeen}
+                      onDelete={setDeleting}
+                      onLeft={removePlan}
+                    />
+                  ))}
+                </ul>
+              </section>
+            ))}
+            {remaining > 0 ? (
+              <Button
+                className="gallery-more"
+                onClick={() => {
+                  setFocusIndex(shown);
+                  setShown((n) => n + PAGE_SIZE);
+                }}
+              >
+                Mostrar mais ({remaining})
+              </Button>
+            ) : null}
+          </>
         )}
       </div>
+
+      <DeleteDialog
+        target={deleting}
+        busy={deleteBusy}
+        onCancel={() => setDeleting(null)}
+        onConfirm={() => void confirmDelete()}
+      />
     </main>
   );
 }

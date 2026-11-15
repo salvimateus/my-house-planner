@@ -3,8 +3,10 @@ import {
   CircleAlert,
   Copy,
   Download,
+  Eye,
   FileUp,
   HardDrive,
+  Lightbulb,
   Lock,
   RefreshCw,
   Smartphone,
@@ -21,7 +23,8 @@ import { Dialog } from '../ui/controls/Dialog.tsx';
 import { toast } from '../ui/controls/Toast.tsx';
 import { flushAutosave } from './autosave.ts';
 import { userMessageOf } from './db.ts';
-import { openReadOnlyCopy } from './repository.ts';
+import { answerLeavePrompt, useLeavePrompt } from './leavePrompt.ts';
+import { duplicateCurrentAsIdea, openReadOnlyCopy } from './repository.ts';
 import { dismissBanner, type StorageBanner, useGuard } from './storageGuard.ts';
 import './PersistenceBanners.css';
 
@@ -98,6 +101,60 @@ function ReadOnlyBanner(): ReactElement | null {
     >
       Esta planta está aberta em outra aba. Você está vendo uma versão só para leitura.
     </Banner>
+  );
+}
+
+function SaveIdeaButton(): ReactElement {
+  const [busy, setBusy] = useState(false);
+  const save = () => {
+    setBusy(true);
+    duplicateCurrentAsIdea()
+      .catch((err: unknown) =>
+        toast(userMessageOf(err, 'Não foi possível salvar a planta.'), { tone: 'error' }),
+      )
+      .finally(() => setBusy(false));
+  };
+  return (
+    <Button size="sm" variant="primary" icon={<Lightbulb />} disabled={busy} onClick={save}>
+      Salvar como nova ideia
+    </Button>
+  );
+}
+
+function TemporaryBanner(): ReactElement | null {
+  const temporary = useDoc((s) => s.ephemeral && s.doc !== null);
+  const screen = useUi((s) => s.screen);
+  if (!temporary || screen !== 'editor') return null;
+  return (
+    <Banner icon={<Eye />} tone="warn" actions={<SaveIdeaButton />}>
+      Planta da galeria: nada é salvo
+    </Banner>
+  );
+}
+
+function LeaveConfirm(): ReactElement {
+  const open = useLeavePrompt();
+  return (
+    <Dialog
+      open={open}
+      onClose={() => answerLeavePrompt('cancel')}
+      title="Sair sem salvar?"
+      size="sm"
+      description="Você mudou esta planta da galeria. As mudanças só ficam se você salvar uma nova ideia."
+      footer={
+        <>
+          <Button variant="ghost" onClick={() => answerLeavePrompt('cancel')}>
+            Cancelar
+          </Button>
+          <Button variant="secondary" onClick={() => answerLeavePrompt('discard')}>
+            Descartar
+          </Button>
+          <Button variant="primary" onClick={() => answerLeavePrompt('save')}>
+            Salvar como nova ideia
+          </Button>
+        </>
+      }
+    />
   );
 }
 
@@ -246,10 +303,12 @@ export function PersistenceBanners(): ReactElement {
     <>
       <div className="pbanners" data-screen={screen}>
         <ReadOnlyBanner />
+        <TemporaryBanner />
         <StorageBanners />
         <UpdateBanner />
       </div>
       <ShareConfirm />
+      <LeaveConfirm />
       <DropOverlay />
     </>
   );
