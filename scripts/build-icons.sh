@@ -5,7 +5,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 logo="$root/docs/images/logo.svg"
-bg="#B8532E"
+bg="#1A3263"
 
 mkdir -p "$root/public/icons"
 

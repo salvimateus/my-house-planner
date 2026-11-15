@@ -15,7 +15,7 @@
 
   .walkway-draft-dot {
     r: calc(6px * var(--mmpp, 1));
-    fill: var(--surface);
+    fill: var(--plan-surface);
     stroke: var(--select);
     stroke-width: 2.5px;
     vector-effect: non-scaling-stroke;
@@ -27,7 +27,7 @@
     &[data-last="true"] {
       r: calc(9px * var(--mmpp, 1));
       fill: var(--select);
-      stroke: var(--surface);
+      stroke: var(--plan-surface);
     }
   }
 
@@ -132,7 +132,7 @@
     animation: overlay-in 140ms var(--ease-enter);
 
     & circle {
-      fill: var(--surface);
+      fill: var(--plan-surface);
       stroke: var(--select);
       stroke-width: 1.5px;
       fill-opacity: 0.92;

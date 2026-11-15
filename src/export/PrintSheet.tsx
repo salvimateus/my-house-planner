@@ -15,7 +15,8 @@ export const SHEET_SUBTITLE = 'Estudo preliminar de planta baixa';
 export const SHEET_DISCLAIMER =
   'Estudo feito no app Minha Casinha, uma ferramenta não profissional. Medidas e áreas são aproximadas: valide o projeto com um(a) arquiteto(a) ou engenheiro(a).';
 
-const BRAND = '#B8532E';
+const BRAND = '#1A3263';
+const BRAND_ACCENT = '#FAB95B';
 const BRAND_LIGHT = '#FFF8EE';
 const RULE = '#C9CCD2';
 const FRAME = '#8C8F86';
@@ -28,6 +29,7 @@ interface Colors {
   rule: string;
   brand: string;
   brandLight: string;
+  brandAccent: string;
   frame: string;
 }
 
@@ -40,6 +42,7 @@ function colorsOf(ctx: RenderContext): Colors {
     rule: RULE,
     brand: c(BRAND),
     brandLight: BRAND_LIGHT,
+    brandAccent: c(BRAND_ACCENT),
     frame: FRAME,
   };
 }
@@ -86,7 +89,7 @@ function LogoMark({ x, y, size, c }: { x: number; y: number; size: number; c: Co
       <path
         d="M14 30.5 32 16l18 14.5V48a2 2 0 0 1-2 2H16a2 2 0 0 1-2-2Z"
         fill={c.brandLight}
-        stroke={c.brandLight}
+        stroke={c.brandAccent}
         strokeWidth={3}
         strokeLinejoin="round"
       />

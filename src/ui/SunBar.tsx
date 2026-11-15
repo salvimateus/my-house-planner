@@ -22,6 +22,24 @@ import {
 } from '../store/sunStore.ts';
 import './SunBar.css';
 
+const SUMMARY_KEY = 'casinha:sun-summary-open';
+
+function readSummaryOpen(): boolean {
+  try {
+    return localStorage.getItem(SUMMARY_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeSummaryOpen(open: boolean): void {
+  try {
+    localStorage.setItem(SUMMARY_KEY, open ? '1' : '0');
+  } catch {
+    // Storage blocked: the choice lasts for this session only.
+  }
+}
+
 const SPAN = SUN_MAX_MINUTES - SUN_MIN_MINUTES;
 const pct = (m: number) =>
   `${(Math.min(1, Math.max(0, (m - SUN_MIN_MINUTES) / SPAN)) * 100).toFixed(1)}%`;
@@ -109,7 +127,7 @@ export function SunBar({ compact }: { compact: boolean }): ReactElement {
   const close = useSun((s) => s.close);
   const doc = useDoc((s) => s.doc);
   const scene = useScene();
-  const [open, setOpen] = useState(!compact);
+  const [open, setOpen] = useState(readSummaryOpen);
   const panelId = useId();
 
   const times = useMemo(() => sunTimes(date), [date]);
@@ -216,7 +234,11 @@ export function SunBar({ compact }: { compact: boolean }): ReactElement {
             aria-controls={open ? panelId : undefined}
             aria-label="Sol nos cômodos"
             title="Sol nos cômodos"
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => {
+              const next = !open;
+              setOpen(next);
+              writeSummaryOpen(next);
+            }}
           >
             {open ? <ChevronDown aria-hidden="true" /> : <ChevronUp aria-hidden="true" />}
             {compact ? null : <span>Cômodos</span>}
