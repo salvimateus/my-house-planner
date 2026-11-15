@@ -16,6 +16,12 @@
     &:empty {
       display: none;
     }
+
+    /* Centered on the canvas: the rail and the side panel take --shell-side-w on the right. */
+    @media (width >= 900px) {
+      inset-inline-end: var(--shell-side-w, 0px);
+      width: min(560px, calc(100% - var(--shell-side-w, 0px) - 16px));
+    }
   }
 
   .pbanner {
