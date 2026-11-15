@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import type { ToolId } from '../editor/tools/types.ts';
 import { useDoc } from '../store/docStore.ts';
 import { type SheetId, type UiState, uiStore, useUi } from '../store/uiStore.ts';
@@ -80,6 +81,8 @@ const TOOL_TAB_LABEL: Record<ToolId, string> = {
   paint: 'Pintar',
 };
 
+const scrollMemory = new Map<PanelId | null, number>();
+
 type Tab = { key: 'tool' | 'inspector' | 'layers' | 'health'; label: string; id: PanelId | null };
 
 export function SidePanel(): ReactElement {
@@ -97,6 +100,13 @@ export function SidePanel(): ReactElement {
   const isActive = (t: Tab) =>
     t.key === 'tool' ? active === toolPanel : active === t.id && t.id !== toolPanel;
   const hint = panelHint(active);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  // Each panel comes back where it was, so the catalog keeps its place after a visit to the inspector.
+  useLayoutEffect(() => {
+    const el = bodyRef.current;
+    if (el) el.scrollTop = scrollMemory.get(active) ?? 0;
+  }, [active]);
 
   return (
     <aside className="side-panel" aria-label="Painel">
@@ -114,7 +124,11 @@ export function SidePanel(): ReactElement {
           </button>
         ))}
       </nav>
-      <div className="side-body">
+      <div
+        ref={bodyRef}
+        className="side-body"
+        onScroll={(e) => scrollMemory.set(active, e.currentTarget.scrollTop)}
+      >
         <header className="side-head">
           <h2 className="side-title">{panelTitle(active, selection)}</h2>
           {hint ? <p className="side-hint">{hint}</p> : null}

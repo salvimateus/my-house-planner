@@ -2,11 +2,13 @@ import { itemDef } from '../../catalog/registry.ts';
 import { hitTest } from '../../geometry/hitTest.ts';
 import { snapItem } from '../../geometry/snap.ts';
 import { emit } from '../../juice/events.ts';
+import { tuning } from '../../juice/tuning.ts';
 import { FINE_STEP } from '../../model/defaults.ts';
 import { createItem } from '../../model/factories.ts';
 import type { Item, ItemTypeId, Mm, Vec } from '../../model/types.ts';
 import { markPlaced } from '../../render/layers/ItemsLayer.tsx';
 import { EMPTY_TRANSIENT } from '../../store/uiStore.ts';
+import { toast } from '../../ui/controls/Toast.tsx';
 import {
   backRotation,
   clampToLotBox,
@@ -15,7 +17,7 @@ import {
   nearestFace,
 } from '../select/item.ts';
 import { tolPxFor, toolContext } from '../toolContext.ts';
-import { selectTool } from './select.ts';
+import { handlerForSelection, selectTool } from './select.ts';
 import type { PointerInput, Tool, ToolContext } from './types.ts';
 
 /** Auto-orientation looks for a wall this close to the placement point. */
@@ -56,8 +58,8 @@ export interface PlaceOptions {
 }
 
 /**
- * Commits a new catalog item at a world point, selects it, switches to the select tool so its
- * handles show, and lowers the phone sheet to peek. Returns null in read-only mode.
+ * Commits a new catalog item at a world point and selects it, with the catalog still open for the
+ * next one. Returns null in read-only mode.
  */
 export function placeItem(
   type: ItemTypeId,
@@ -95,12 +97,36 @@ export function placeItem(
   markPlaced([item.id]);
   ctx.ui.setTransient(EMPTY_TRANSIENT);
   if (ctx.getUi().pendingItem) ctx.ui.setPending({ item: null });
-  if (ctx.getUi().tool !== 'select') ctx.ui.setTool('select');
-  ctx.ui.select({ kind: 'item', ids: [item.id] });
-  ctx.ui.setSheet('inspector', 'peek');
+  keepCatalog(ctx, () => ctx.ui.select({ kind: 'item', ids: [item.id] }));
   ctx.feedback.place();
   emit({ type: 'item-placed', itemId: item.id });
+  hintContinueOnce();
   return item;
+}
+
+const HINT_KEY = 'casinha:hint-catalog-continue';
+
+function hintContinueOnce(): void {
+  try {
+    if (localStorage.getItem(HINT_KEY)) return;
+    localStorage.setItem(HINT_KEY, '1');
+  } catch {
+    // Storage blocked: the hint may show again next session.
+  }
+  toast('Toque em outro móvel para continuar colocando.');
+}
+
+/**
+ * Runs a selection change without leaving the catalog: the shell opens the inspector on every
+ * new selection, so the catalog comes back at its snap. The inspector stays one tap away.
+ */
+export function keepCatalog(ctx: ToolContext, fn: () => void): void {
+  const before = ctx.getUi().sheet;
+  fn();
+  const after = ctx.getUi().sheet;
+  if (before.id === 'catalog' && after.id !== 'catalog' && ctx.getUi().tool === 'item') {
+    ctx.ui.setSheet('catalog', before.snap);
+  }
 }
 
 /** Tap on a catalog card: the item lands at the center of the view. */
@@ -140,13 +166,22 @@ function itemHit(p: PointerInput, ctx: ToolContext): boolean {
   return hit?.kind === 'item';
 }
 
+/** A handle of the current selection or an item under the pointer: the select tool owns it. */
+function selectTarget(p: PointerInput, ctx: ToolContext): boolean {
+  const handles = handlerForSelection(ctx.getUi().selection)?.getHandles?.(ctx) ?? [];
+  const mouse = p.pointerType === 'mouse';
+  const reach = (mouse ? tuning.touch.mouseHandlePx : tuning.touch.handlePx) / 2 + (mouse ? 4 : 8);
+  if (handles.some((h) => Math.hypot(h.x - p.screen.x, h.y - p.screen.y) <= reach)) return true;
+  return itemHit(p, ctx);
+}
+
 let delegated = false;
 let placing = false;
 
 /**
  * Objects tool, active while the catalog is open. With a pending item, a tap or a drag places it
- * at the pointer. Without one, a tap or a drag on an item works as in the select tool, and the
- * select tool takes over once the gesture ends.
+ * at the pointer. Without one, items and their handles work as in the select tool, and the
+ * catalog stays open; a tap on an empty spot clears the selection.
  */
 export const itemTool: Tool = {
   id: 'item',
@@ -164,15 +199,13 @@ export const itemTool: Tool = {
       placeItem(pending.type, pending.variant, p.world, { snap: !p.alt }, ctx);
       return;
     }
-    if (!itemHit(p, ctx)) return;
-    ctx.ui.setTool('select');
-    selectTool.onTap?.(p, ctx);
+    if (selectTarget(p, ctx)) keepCatalog(ctx, () => selectTool.onTap?.(p, ctx));
+    else if (ctx.getUi().selection) ctx.ui.select(null);
   },
 
   onLongPress(p, ctx) {
     if (ctx.getUi().pendingItem || !itemHit(p, ctx)) return;
-    ctx.ui.setTool('select');
-    selectTool.onLongPress?.(p, ctx);
+    keepCatalog(ctx, () => selectTool.onLongPress?.(p, ctx));
   },
 
   onDragStart(p, ctx) {
@@ -185,8 +218,10 @@ export const itemTool: Tool = {
       showPlacementGhost(pending.type, pending.variant, p.world, !p.alt, ctx);
       return true;
     }
-    if (!itemHit(p, ctx)) return false;
-    delegated = selectTool.onDragStart?.(p, ctx) ?? false;
+    if (!selectTarget(p, ctx)) return false;
+    keepCatalog(ctx, () => {
+      delegated = selectTool.onDragStart?.(p, ctx) ?? false;
+    });
     return delegated;
   },
 
@@ -205,10 +240,8 @@ export const itemTool: Tool = {
     }
     if (!delegated) return;
     delegated = false;
-    selectTool.onDragEnd?.(p, start, ctx);
-    ctx.ui.setTool('select');
+    keepCatalog(ctx, () => selectTool.onDragEnd?.(p, start, ctx));
   },
-
   onCancel(ctx) {
     if (delegated) selectTool.onCancel?.(ctx);
     delegated = false;

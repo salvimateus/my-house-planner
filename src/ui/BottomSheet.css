@@ -111,6 +111,38 @@
     color: var(--ink-2);
   }
 
+  /* Switch between the catalog and the inspector of the item just placed. */
+  .sheet-switch {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 36px;
+    padding: 0 0.75rem;
+    border: 1px solid var(--select-strong);
+    border-radius: 999px;
+    background: var(--select-soft);
+    color: var(--select-strong);
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: translate 160ms var(--ease-state);
+
+    & svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    &:active {
+      translate: 0 1px;
+      transition-duration: 60ms;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--select);
+      outline-offset: 2px;
+    }
+  }
+
   .sheet-body {
     display: grid;
     gap: 0.75rem;

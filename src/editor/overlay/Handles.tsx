@@ -44,7 +44,7 @@ export function Handles(): ReactElement | null {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: doc and tick are the recompute triggers
   const handles = useMemo<Handle[]>(() => {
-    if (tool !== 'select') return [];
+    if (tool !== 'select' && tool !== 'item') return [];
     return handlerForSelection(selection)?.getHandles?.(toolContext) ?? [];
   }, [selection, tool, doc, tick]);
 
@@ -55,7 +55,9 @@ export function Handles(): ReactElement | null {
     if (handles.length === 0) return;
     return camera.subscribe(() => {
       const next =
-        tool === 'select' ? (handlerForSelection(selection)?.getHandles?.(toolContext) ?? []) : [];
+        tool === 'select' || tool === 'item'
+          ? (handlerForSelection(selection)?.getHandles?.(toolContext) ?? [])
+          : [];
       if (!sameIds(next, current.current)) {
         bump();
         return;

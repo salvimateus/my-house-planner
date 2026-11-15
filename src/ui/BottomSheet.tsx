@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, SlidersHorizontal, Sofa, X } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { reducedMotion } from '../juice/tween.ts';
@@ -17,6 +17,7 @@ const SNAPS: SheetSnap[] = ['peek', 'half', 'full'];
 export function BottomSheet(): ReactElement {
   const sheet = useUi((s) => s.sheet);
   const selection = useUi((s) => s.selection);
+  const tool = useUi((s) => s.tool);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const markerRefs = useRef<Record<SheetSnap, HTMLDivElement | null>>({
     peek: null,
@@ -121,6 +122,29 @@ export function BottomSheet(): ReactElement {
               )}
               <span className="sr-only">{expanded ? 'Recolher painel' : 'Abrir painel'}</span>
             </button>
+            {shownId === 'catalog' && selection?.kind === 'item' ? (
+              <button
+                type="button"
+                className="sheet-switch"
+                onClick={() => uiStore.getState().setSheet('inspector', 'half')}
+              >
+                <SlidersHorizontal aria-hidden="true" />
+                Ajustar
+              </button>
+            ) : null}
+            {shownId === 'inspector' && tool === 'item' ? (
+              <button
+                type="button"
+                className="sheet-switch"
+                onClick={() => {
+                  const ui = uiStore.getState();
+                  ui.setSheet('catalog', ui.sheet.snap);
+                }}
+              >
+                <Sofa aria-hidden="true" />
+                Objetos
+              </button>
+            ) : null}
             <IconButton
               label="Fechar painel"
               icon={<X />}
