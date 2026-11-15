@@ -114,7 +114,7 @@ function LabelText({ ctx, text, fill }: { ctx: RenderContext; text: string; fill
       textAnchor="middle"
       fill={fill}
       fontSize={screen ? undefined : FONT}
-      fontWeight={screen ? undefined : 600}
+      fontWeight={screen ? undefined : 'bold'}
       fontFamily={screen ? undefined : 'Inter, sans-serif'}
     >
       {text}
