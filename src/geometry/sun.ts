@@ -1,7 +1,7 @@
 import { OPENING_SPECS } from '../catalog/openingSpecs.ts';
 import type { Id, Item, Mm, OpeningType, ProjectDoc, RoomPresetId, Vec } from '../model/types.ts';
-import { toRings, unionMask } from './rectilinear.ts';
-import { pointInRegion, pointInShape, regionPath } from './shape.ts';
+import { toRings, unionDifferenceMask, unionMask } from './rectilinear.ts';
+import { pointInRegion, regionPath } from './shape.ts';
 import type { CatalogLookup, CellMask, Rect, Region, Scene, WallSegment } from './types.ts';
 
 export interface SunSite {
@@ -154,8 +154,19 @@ export interface SunWindow {
   inward: Vec;
   sill: Mm;
   head: Mm;
-  /** Depth of the covered area outside the window, 0 when the outside is open. */
-  coverDepth: Mm;
+  /** Sample points on the outer wall face, about every 100 mm along the width. */
+  samples: Vec[];
+  /** Obstacles on the outer side of the window, in reach of a low sun. */
+  obstacles: Obstacle[];
+}
+
+/**
+ * Box that keeps the sun off a window. A solid box shades the wall below `h - d · tan(elevation)`;
+ * a roof (covered area) stops rays that climb to `h` while still under it.
+ */
+export interface Obstacle extends Rect {
+  h: Mm;
+  roof: boolean;
 }
 
 export interface SunRoom {
@@ -328,6 +339,25 @@ export function deriveSunModel(
     prisms.push(...canopy(t.at, t.size, top));
   }
 
+  const roomShapes = doc.areas.filter((a) => a.kind === 'room').map((a): Region => [a.shape]);
+  const solidMask = unionMask([...roomShapes, ...scene.wallRects]);
+  const obstacles: Obstacle[] = maskRects(solidMask).map((r) => ({
+    ...r,
+    h: SUN_HEIGHTS.roof,
+    roof: false,
+  }));
+  const covered = doc.areas.filter((a) => a.kind === 'covered').map((a): Region => [a.shape]);
+  if (covered.length) {
+    const coverMask = unionDifferenceMask(covered, [toRings(solidMask)]);
+    for (const r of maskRects(coverMask)) obstacles.push({ ...r, h: SUN_HEIGHTS.roof, roof: true });
+  }
+  if (scene.boundaryGeom.length) {
+    for (const r of maskRects(unionMask([scene.boundaryGeom]))) {
+      obstacles.push({ ...r, h: SUN_HEIGHTS.muro, roof: false });
+    }
+  }
+  for (const h of ctx.houses) obstacles.push({ ...h, h: SUN_HEIGHTS.neighbor, roof: false });
+
   const areaById = new Map(doc.areas.map((a) => [a.id, a]));
   const windows: SunWindow[] = [];
   for (const o of doc.openings) {
@@ -341,22 +371,34 @@ export function deriveSunModel(
     const roomSide: 1 | -1 | 0 = plus?.kind === 'room' ? 1 : minus?.kind === 'room' ? -1 : 0;
     if (!roomSide) continue;
     const room = roomSide === 1 ? plus! : minus!;
-    const outside = roomSide === 1 ? minus : plus;
     const c = seg.line + seg.offset;
     const lo = o.at - o.width / 2;
     const hi = o.at + o.width / 2;
     const inward = o.axis === 'h' ? { x: 0, y: roomSide } : { x: roomSide, y: 0 };
-    let coverDepth = 0;
-    if (outside?.kind === 'covered') {
-      const start = seg.thickness / 2 + 10;
-      const probe = (k: number): Vec =>
-        o.axis === 'h'
-          ? { x: o.at, y: c - roomSide * (start + k) }
-          : { x: c - roomSide * (start + k), y: o.at };
-      let k = 0;
-      while (k < 30_000 && pointInShape(probe(k), outside.shape)) k += 100;
-      coverDepth = k;
+    const face = c - roomSide * (seg.thickness / 2 + 1);
+    const count = Math.max(1, Math.round(o.width / WINDOW_SAMPLE));
+    const samples: Vec[] = [];
+    for (let k = 0; k < count; k++) {
+      const along = lo + ((k + 0.5) * o.width) / count;
+      samples.push(o.axis === 'h' ? { x: along, y: face } : { x: face, y: along });
     }
+    // Only boxes beyond the outer face and within reach of a sun at the lowest patch elevation.
+    const reach = SUN_HEIGHTS.neighbor / Math.tan(MIN_PATCH_ELEV * RAD);
+    const mid = samples[Math.floor(samples.length / 2)]!;
+    const near = obstacles.filter((ob) => {
+      const outMax =
+        o.axis === 'h'
+          ? roomSide === 1
+            ? face - ob.y0
+            : ob.y1 - face
+          : roomSide === 1
+            ? face - ob.x0
+            : ob.x1 - face;
+      if (outMax <= 0) return false;
+      const dx = Math.max(ob.x0 - mid.x, 0, mid.x - ob.x1);
+      const dy = Math.max(ob.y0 - mid.y, 0, mid.y - ob.y1);
+      return Math.hypot(dx, dy) <= reach;
+    });
     windows.push({
       roomId: room.id,
       a: o.axis === 'h' ? { x: lo, y: c } : { x: c, y: lo },
@@ -364,7 +406,8 @@ export function deriveSunModel(
       inward,
       sill: o.sill,
       head: o.sill + o.height,
-      coverDepth,
+      samples,
+      obstacles: near,
     });
   }
 
@@ -448,29 +491,106 @@ function shadowHull(pr: Prism, away: Vec, cot: number): Vec[] {
   return convexHull(pts);
 }
 
-/**
- * Floor polygon lit through a window, or null when the sun is behind the wall or under the cover roof.
- * `beam` widens it to the floor under the light, from the wall on, so a low sun that lands on the far
- * wall still counts as sun in the room.
- */
-function patchOf(w: SunWindow, away: Vec, elevation: number, beam = false): Vec[] | null {
-  const facing = away.x * w.inward.x + away.y * w.inward.y;
-  if (facing <= 0.02) return null;
-  const tan = Math.tan(Math.max(MIN_PATCH_ELEV, elevation) * RAD);
-  let top = w.head;
-  if (w.coverDepth > 0) {
-    // A ray from height z must leave the covered area before it climbs to the cover roof.
-    top = Math.min(top, SUN_HEIGHTS.roof - (w.coverDepth * tan) / facing);
+/** Window width per light sample. */
+const WINDOW_SAMPLE: Mm = 100;
+
+type Span = [number, number];
+
+function cutSpan(spans: Span[], a: number, b: number): Span[] {
+  if (b <= a) return spans;
+  const out: Span[] = [];
+  for (const [s0, s1] of spans) {
+    if (b <= s0 || a >= s1) out.push([s0, s1]);
+    else {
+      if (a > s0) out.push([s0, a]);
+      if (b < s1) out.push([b, s1]);
+    }
   }
-  if (top <= w.sill) return null;
-  const s0 = beam ? 0 : w.sill / tan;
-  const s1 = top / tan;
-  return convexHull([
-    { x: w.a.x + away.x * s0, y: w.a.y + away.y * s0 },
-    { x: w.b.x + away.x * s0, y: w.b.y + away.y * s0 },
-    { x: w.b.x + away.x * s1, y: w.b.y + away.y * s1 },
-    { x: w.a.x + away.x * s1, y: w.a.y + away.y * s1 },
-  ]);
+  return out;
+}
+
+/** Lit heights of the window at one sample: rays toward the sun tested against each obstacle box. */
+function litSpans(w: SunWindow, p: Vec, dir: Vec, tan: number): Span[] {
+  let spans: Span[] = [[w.sill, w.head]];
+  for (const ob of w.obstacles) {
+    let t0 = 0;
+    let t1 = Infinity;
+    if (Math.abs(dir.x) < 1e-9) {
+      if (p.x <= ob.x0 || p.x >= ob.x1) continue;
+    } else {
+      const a = (ob.x0 - p.x) / dir.x;
+      const b = (ob.x1 - p.x) / dir.x;
+      t0 = Math.max(t0, Math.min(a, b));
+      t1 = Math.min(t1, Math.max(a, b));
+    }
+    if (Math.abs(dir.y) < 1e-9) {
+      if (p.y <= ob.y0 || p.y >= ob.y1) continue;
+    } else {
+      const a = (ob.y0 - p.y) / dir.y;
+      const b = (ob.y1 - p.y) / dir.y;
+      t0 = Math.max(t0, Math.min(a, b));
+      t1 = Math.min(t1, Math.max(a, b));
+    }
+    if (t1 <= t0) continue;
+    if (ob.roof) spans = cutSpan(spans, ob.h - t1 * tan, ob.h - t0 * tan);
+    else spans = cutSpan(spans, -Infinity, ob.h - t0 * tan);
+    if (!spans.length) break;
+  }
+  return spans;
+}
+
+interface WindowLight {
+  /** Floor quads, one per run of samples with the same lit heights. */
+  polys: Vec[][];
+  /** Lit glass seen from the sun, mm². */
+  aperture: number;
+}
+
+/** Light through a window: the lit part of each sample, projected onto the floor. Null when the sun is behind the wall. */
+function windowLight(w: SunWindow, away: Vec, elevation: number): WindowLight | null {
+  const facing = away.x * w.inward.x + away.y * w.inward.y;
+  if (facing <= 0.02 || !w.samples.length) return null;
+  const tan = Math.tan(Math.max(MIN_PATCH_ELEV, elevation) * RAD);
+  const cosElev = Math.cos(elevation * RAD);
+  const dir = { x: -away.x, y: -away.y };
+  const n = w.samples.length;
+  const step = { x: (w.b.x - w.a.x) / n, y: (w.b.y - w.a.y) / n };
+  const segWidth = Math.hypot(step.x, step.y);
+  const polys: Vec[][] = [];
+  let aperture = 0;
+  let runStart = 0;
+  let runSpans: Span[] = [];
+  const same = (a: Span[], b: Span[]) =>
+    a.length === b.length &&
+    a.every((x, i) => Math.abs(x[0] - b[i]![0]) < 5 && Math.abs(x[1] - b[i]![1]) < 5);
+  const flush = (k0: number, k1: number, spans: Span[]) => {
+    const a = { x: w.a.x + step.x * k0, y: w.a.y + step.y * k0 };
+    const b = { x: w.a.x + step.x * k1, y: w.a.y + step.y * k1 };
+    for (const [z0, z1] of spans) {
+      const s0 = z0 / tan;
+      const s1 = z1 / tan;
+      polys.push(
+        convexHull([
+          { x: a.x + away.x * s0, y: a.y + away.y * s0 },
+          { x: b.x + away.x * s0, y: b.y + away.y * s0 },
+          { x: b.x + away.x * s1, y: b.y + away.y * s1 },
+          { x: a.x + away.x * s1, y: a.y + away.y * s1 },
+        ]),
+      );
+    }
+  };
+  for (let k = 0; k < n; k++) {
+    const spans = litSpans(w, w.samples[k]!, dir, tan);
+    for (const [z0, z1] of spans) aperture += (z1 - z0) * segWidth * facing * cosElev;
+    if (k === 0) runSpans = spans;
+    else if (!same(spans, runSpans)) {
+      flush(runStart, k, runSpans);
+      runStart = k;
+      runSpans = spans;
+    }
+  }
+  flush(runStart, n, runSpans);
+  return { polys, aperture };
 }
 
 export interface SunFrame {
@@ -497,9 +617,11 @@ export function sunFrame(
   let shadowD = '';
   for (const pr of model.prisms) shadowD += polyD(shadowHull(pr, away, cot));
   for (const w of model.windows) {
-    const poly = patchOf(w, away, position.elevation);
-    if (!poly) continue;
-    patches.set(w.roomId, (patches.get(w.roomId) ?? '') + polyD(poly));
+    const light = windowLight(w, away, position.elevation);
+    if (!light?.polys.length) continue;
+    let d = patches.get(w.roomId) ?? '';
+    for (const poly of light.polys) d += polyD(poly);
+    patches.set(w.roomId, d);
   }
   return { position, day: true, shadowD, patches };
 }
@@ -566,7 +688,7 @@ function polyArea(pts: Vec[]): number {
 }
 
 export const SUMMARY_STEP = 15;
-/** Lit floor below this (mm²) does not count as sun in the room. */
+/** Lit floor, or lit glass seen from the sun, below this (mm²) does not count as sun in the room. */
 const MIN_LIT_AREA = 150_000;
 
 export interface RoomSun {
@@ -596,13 +718,19 @@ export function sunSummary(model: SunModel, date: SunDate, northDeg: number): Ro
     if (!wins.length) return { id: room.id, name: room.name, preset: room.preset, ranges };
     let open: [number, number] | null = null;
     for (const s of samples) {
+      // Glass area counts too: a low sun that lands on the far wall is still sun in the room.
       let lit = 0;
+      let glass = 0;
       for (const w of wins) {
-        const poly = patchOf(w, s.away, s.elev, true);
-        if (!poly) continue;
-        for (const r of room.rects) lit += polyArea(clipToRect(poly, r));
-        if (lit >= MIN_LIT_AREA) break;
+        const light = windowLight(w, s.away, s.elev);
+        if (!light) continue;
+        glass += light.aperture;
+        for (const poly of light.polys) {
+          for (const r of room.rects) lit += polyArea(clipToRect(poly, r));
+        }
+        if (lit >= MIN_LIT_AREA || glass >= MIN_LIT_AREA) break;
       }
+      lit = Math.max(lit, glass);
       if (lit >= MIN_LIT_AREA) {
         const end = Math.min(sunset, s.t + SUMMARY_STEP);
         if (open && open[1] >= s.t) open[1] = end;
