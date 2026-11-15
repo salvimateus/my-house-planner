@@ -1,0 +1,341 @@
+@layer components {
+  .sun-bar {
+    --sun-night: oklch(0.36 0.07 265);
+    --sun-dawn: oklch(0.8 0.12 60);
+    --sun-day: oklch(0.88 0.14 90);
+    --sun-gold: oklch(0.78 0.16 75);
+    --sun-gold-strong: oklch(0.5 0.12 65);
+    position: absolute;
+    right: calc(12px + env(safe-area-inset-right));
+    bottom: calc(12px + var(--tap) + 10px);
+    z-index: 11;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: min(380px, calc(100% - 24px));
+    padding: 8px;
+    border: 1px solid color-mix(in oklch, var(--line) 80%, transparent);
+    border-radius: 18px;
+    background: color-mix(in oklch, var(--surface) 94%, transparent);
+    box-shadow: var(--shadow-lg);
+    color: var(--ink);
+    backdrop-filter: blur(10px);
+    animation: sun-bar-in var(--dur-modal) var(--ease-enter);
+
+    &[data-compact] {
+      gap: 4px;
+      right: calc(12px + var(--tap) + 8px + env(safe-area-inset-right));
+      left: calc(12px + env(safe-area-inset-left));
+      bottom: calc(var(--sheet-peek) + 12px);
+      width: auto;
+      padding: 6px;
+      border-radius: 16px;
+      transition: translate var(--dur-modal) var(--ease-state);
+
+      .shell-stage[data-sheet="hidden"] & {
+        translate: 0 var(--sheet-peek);
+      }
+    }
+  }
+
+  @keyframes sun-bar-in {
+    from {
+      opacity: 0;
+      translate: 0 8px;
+    }
+  }
+
+  .sun-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .sun-btn {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 6px;
+    border-radius: 11px;
+    color: var(--ink);
+    font-size: 0.8125rem;
+    font-weight: 650;
+    transition:
+      background-color var(--dur-fast) var(--ease-state),
+      scale 160ms var(--ease-state);
+
+    & svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    @media (hover: hover) {
+      &:hover {
+        background: color-mix(in oklch, var(--ink) 7%, transparent);
+      }
+    }
+
+    &:active {
+      scale: 0.94;
+      transition-duration: 60ms;
+    }
+  }
+
+  .sun-play {
+    background: var(--sun-gold);
+    color: oklch(0.25 0.05 60);
+
+    & svg {
+      fill: currentColor;
+    }
+
+    @media (hover: hover) {
+      &:hover {
+        background: color-mix(in oklch, var(--sun-gold) 88%, var(--ink));
+      }
+    }
+  }
+
+  .sun-clock {
+    flex: none;
+    min-width: 3.1rem;
+    font-size: 1.0625rem;
+    font-weight: 750;
+    letter-spacing: -0.01em;
+    text-align: right;
+  }
+
+  .sun-range {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 36px;
+    margin: 0;
+    background: transparent;
+    appearance: none;
+    cursor: pointer;
+    touch-action: pan-y;
+
+    --sun-track: linear-gradient(
+      to right,
+      var(--sun-night) 0 calc(var(--sun-rise) - 2%),
+      var(--sun-dawn) var(--sun-rise),
+      var(--sun-day) calc(var(--sun-rise) + 12%),
+      var(--sun-day) calc(var(--sun-set) - 12%),
+      var(--sun-dawn) var(--sun-set),
+      var(--sun-night) calc(var(--sun-set) + 2%) 100%
+    );
+
+    &::-webkit-slider-runnable-track {
+      height: 10px;
+      border-radius: 999px;
+      background: var(--sun-track);
+    }
+
+    &::-moz-range-track {
+      height: 10px;
+      border-radius: 999px;
+      background: var(--sun-track);
+    }
+
+    &::-webkit-slider-thumb {
+      width: 22px;
+      height: 22px;
+      margin-top: -6px;
+      border: 3px solid var(--surface);
+      border-radius: 50%;
+      background: var(--sun-gold-strong);
+      box-shadow: var(--shadow-sm);
+      appearance: none;
+    }
+
+    &::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border: 3px solid var(--surface);
+      border-radius: 50%;
+      background: var(--sun-gold-strong);
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  .sun-compass {
+    flex: none;
+    width: 36px;
+    height: 36px;
+  }
+
+  .sun-compass-ring {
+    fill: color-mix(in oklch, var(--sun-day) 35%, var(--surface));
+    stroke: var(--line-strong);
+    stroke-width: 1;
+  }
+
+  .sun-compass-needle {
+    fill: var(--danger);
+  }
+
+  .sun-compass-n {
+    fill: var(--ink-2);
+    font-size: 7px;
+    font-weight: 750;
+  }
+
+  .sun-compass-ray {
+    stroke: var(--sun-gold-strong);
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    stroke-dasharray: 1.5 2;
+  }
+
+  .sun-compass-sun {
+    fill: var(--sun-gold);
+    stroke: var(--sun-gold-strong);
+    stroke-width: 1;
+  }
+
+  .sun-compass-night {
+    fill: var(--sun-night);
+  }
+
+  .sun-status {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    &[data-night] {
+      color: var(--sun-night);
+    }
+  }
+
+  .sun-seasons {
+    display: flex;
+    gap: 4px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .sun-chip {
+    display: inline-flex;
+    flex: 1 1 auto;
+    align-items: baseline;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    height: 30px;
+    padding: 0 8px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.75rem;
+    font-weight: 650;
+    line-height: 28px;
+    white-space: nowrap;
+    transition:
+      background-color var(--dur-fast) var(--ease-state),
+      border-color var(--dur-fast) var(--ease-state);
+
+    &[aria-pressed="true"] {
+      border-color: var(--sun-gold-strong);
+      background: color-mix(in oklch, var(--sun-gold) 30%, var(--surface));
+      color: oklch(0.32 0.08 60);
+    }
+
+    .sun-bar[data-compact] & {
+      padding: 0 5px;
+      font-size: 0.71875rem;
+    }
+  }
+
+  .sun-chip-date {
+    color: var(--ink-2);
+    font-size: 0.6875rem;
+    font-weight: 550;
+  }
+
+  .sun-summary {
+    max-height: min(40vh, 320px);
+    padding: 4px 6px 8px;
+    border-bottom: 1px solid var(--line);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    font-size: 0.8125rem;
+
+    .sun-bar[data-compact] & {
+      max-height: min(30vh, 200px);
+    }
+  }
+
+  .sun-summary-title {
+    margin: 0 0 4px;
+    font-size: 0.8125rem;
+    font-weight: 750;
+  }
+
+  .sun-summary-list {
+    display: grid;
+    gap: 3px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--ink-2);
+
+    & li {
+      padding-left: 14px;
+      text-indent: -14px;
+
+      &::before {
+        content: "";
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        margin-right: 6px;
+        border-radius: 50%;
+        background: var(--line-strong);
+        text-indent: 0;
+      }
+
+      &[data-sun]::before {
+        background: var(--sun-gold);
+        box-shadow: 0 0 0 2px color-mix(in oklch, var(--sun-gold) 30%, transparent);
+      }
+    }
+
+    & strong {
+      color: var(--ink);
+      font-weight: 650;
+    }
+  }
+
+  .sun-tip {
+    display: flex;
+    gap: 6px;
+    margin: 8px 0 0;
+    padding: 6px 8px;
+    border-radius: 10px;
+    background: color-mix(in oklch, var(--sun-day) 28%, var(--surface));
+    color: oklch(0.34 0.06 70);
+    line-height: 1.35;
+
+    & svg {
+      flex: none;
+      width: 16px;
+      height: 16px;
+      margin-top: 1px;
+    }
+  }
+}

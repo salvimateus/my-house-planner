@@ -11,6 +11,7 @@ import { LabelsLayer } from './layers/LabelsLayer.tsx';
 import { LotLayer } from './layers/LotLayer.tsx';
 import { OpeningsLayer } from './layers/OpeningsLayer.tsx';
 import { RulersLayer } from './layers/RulersLayer.tsx';
+import { SunLayer } from './layers/SunLayer.tsx';
 import { WallsLayer } from './layers/WallsLayer.tsx';
 import { PatternDefs } from './PatternDefs.tsx';
 import { type RenderContext, RenderContextProvider } from './RenderContext.ts';
@@ -66,6 +67,7 @@ export function SceneLayers({ data, ctx }: { data: SceneData; ctx: RenderContext
         />
         <OpeningsLayer />
         <ItemsLayer />
+        {ctx.mode === 'screen' ? <SunLayer /> : null}
         <LabelsLayer areas={doc.areas} derived={scene.areas} ctx={ctx} />
         <DimensionsLayer areas={doc.areas} derived={scene.areas} ctx={ctx} />
         <RulersLayer />
