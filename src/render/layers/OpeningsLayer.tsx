@@ -194,7 +194,7 @@ const OpeningNode = memo(function OpeningNode({
             textAnchor="middle"
             fill={ctx.theme.halo}
             fontSize={12}
-            fontWeight={800}
+            fontWeight={ctx.mode === 'screen' ? 800 : 'bold'}
             fontFamily="Inter, sans-serif"
           >
             !
@@ -251,7 +251,7 @@ function OpeningLabel({
     y: ty,
     textAnchor: 'middle' as const,
     fontSize: LABEL_FONT,
-    fontWeight: 500,
+    fontWeight: ctx.mode === 'screen' ? 500 : 'normal',
     fontFamily: ctx.mode === 'screen' ? undefined : 'Inter, sans-serif',
   };
   const style =
@@ -265,9 +265,11 @@ function OpeningLabel({
       className={ctx.mode === 'screen' ? 'opening-label' : undefined}
       style={style}
     >
+      {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: SVG text is not focusable; the halo is a visual duplicate. */}
       <text
         {...font}
         className={ctx.mode === 'screen' ? 'scene-text' : undefined}
+        aria-hidden="true"
         fill={ctx.theme.halo}
         stroke={ctx.theme.halo}
         strokeWidth={2.5}

@@ -29,11 +29,12 @@ export const toolPanelId = (tool: ToolId): PanelId | null => TOOL_PANEL[tool];
 export const panelSnapFor = (id: PanelId | null): 'peek' | 'half' =>
   id === 'build' || id === 'ruler' ? 'peek' : 'half';
 
-const TITLES: Record<Exclude<PanelId, 'inspector'>, { title: string; hint: string }> = {
+const TITLES: Record<Exclude<PanelId, 'inspector'>, { title: string; hint: string | null }> = {
   build: { title: 'Construir', hint: 'Arraste no terreno para desenhar um cômodo.' },
   openings: { title: 'Portas e janelas', hint: 'Escolha um modelo e toque numa parede.' },
   catalog: { title: 'Objetos', hint: 'Escolha um móvel e toque na planta para colocar.' },
-  ruler: { title: 'Régua', hint: 'Toque num espaço para medir, ou arraste entre dois pontos.' },
+  // The ruler panel body already explains both ways to measure.
+  ruler: { title: 'Régua', hint: null },
   paint: { title: 'Pintar', hint: 'Escolha uma cor ou textura e toque num cômodo.' },
   layers: { title: 'Camadas', hint: 'Mostre ou esconda partes do desenho.' },
   health: { title: 'Saúde da planta', hint: 'Dicas para a sua planta ficar boa de morar.' },

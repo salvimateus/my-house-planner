@@ -55,11 +55,6 @@
       letter-spacing: 0.4em;
     }
 
-    & .ctx-lot-line {
-      stroke-width: calc(var(--mmpp) * 1px);
-      stroke-dasharray: calc(var(--mmpp) * 6px) calc(var(--mmpp) * 5px);
-    }
-
     & .area-edge-covered {
       stroke-width: calc(var(--mmpp) * 1.25px);
       stroke-dasharray: calc(var(--mmpp) * 7px) calc(var(--mmpp) * 4px);

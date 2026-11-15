@@ -316,23 +316,32 @@ export function defaultFrontage(lot: TreeLot): Frontage {
 }
 
 /**
- * Keeps every tree clear of ramps, gates and the trees before it in the list: a tree in the way moves to
- * the nearest free spot on its side (spacing `treeGap`), or goes away when no spot is free. Returns the
- * same lot when nothing changes.
+ * Keeps every tree clear of ramps, gates and the other trees. Trees already in a free spot stay; a tree
+ * in the way then moves to the nearest free spot on its side (spacing `treeGap`), or goes away when no
+ * spot is free. Returns the same lot when nothing changes.
  */
 export function clearTreesFromRamps(lot: Lot, openings: readonly Opening[] = []): Lot {
-  const kept: StreetTree[] = [];
-  let changed = false;
-  for (const t of lot.frontage.trees) {
-    const at = freeTreeSpot(lot, t.side, t.at, t.size, openings, t.id, kept);
-    if (at === null) {
-      changed = true;
-      continue;
-    }
-    if (at !== t.at) changed = true;
-    kept.push(at === t.at ? t : { ...t, at });
+  const trees = lot.frontage.trees;
+  const stay: StreetTree[] = [];
+  const blocked = new Set<Id>();
+  for (const t of trees) {
+    if (freeTreeSpot(lot, t.side, t.at, t.size, openings, t.id, stay) === t.at) stay.push(t);
+    else blocked.add(t.id);
   }
-  return changed ? { ...lot, frontage: { ...lot.frontage, trees: kept } } : lot;
+  if (blocked.size === 0) return lot;
+  // Moved trees go last, so they never push out a tree that did not have to move.
+  const placed = new Map<Id, StreetTree>(stay.map((t) => [t.id, t]));
+  const taken = [...stay];
+  for (const t of trees) {
+    if (!blocked.has(t.id)) continue;
+    const at = freeTreeSpot(lot, t.side, t.at, t.size, openings, t.id, taken);
+    if (at === null) continue;
+    const moved = { ...t, at };
+    placed.set(t.id, moved);
+    taken.push(moved);
+  }
+  const kept = trees.flatMap((t) => placed.get(t.id) ?? []);
+  return { ...lot, frontage: { ...lot.frontage, trees: kept } };
 }
 
 interface GateInfo {

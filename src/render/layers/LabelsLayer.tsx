@@ -58,7 +58,8 @@ function ScreenLabel({ name, areaText, d, ctx }: LabelProps): ReactElement {
   );
   return (
     <g className="area-label" transform={`translate(${label.x} ${label.y})`} style={style}>
-      <text className="scene-text scene-halo" textAnchor="middle">
+      {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: SVG text is not focusable; the halo is a visual duplicate. */}
+      <text className="scene-text scene-halo" textAnchor="middle" aria-hidden="true">
         {lines}
       </text>
       <text className="scene-text" textAnchor="middle" fill={ctx.theme.label}>
@@ -82,6 +83,7 @@ function PrintLabel({ name, areaText, d, ctx }: LabelProps): ReactElement {
   const { theme } = ctx;
   const font = { fontFamily: 'Inter, sans-serif', textAnchor: 'middle' as const };
   const halo = {
+    'aria-hidden': true,
     fill: theme.halo,
     stroke: theme.halo,
     strokeLinejoin: 'round' as const,

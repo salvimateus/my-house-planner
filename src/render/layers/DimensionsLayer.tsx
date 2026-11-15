@@ -113,7 +113,12 @@ export const DimensionsLayer = memo(function DimensionsLayer({
             const style = { '--len': e.length, '--span': span, '--in': e.inward } as CSSProperties;
             return (
               <g key={key} className="dim" transform={frameOf(e)} style={style}>
-                <text className="scene-text dim-text scene-halo" textAnchor="middle">
+                {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: SVG text is not focusable; the halo is a visual duplicate. */}
+                <text
+                  className="scene-text dim-text scene-halo"
+                  textAnchor="middle"
+                  aria-hidden="true"
+                >
                   {text}
                 </text>
                 <text className="scene-text dim-text" textAnchor="middle" fill={theme.dim}>
@@ -131,8 +136,10 @@ export const DimensionsLayer = memo(function DimensionsLayer({
           };
           return (
             <g key={key} transform={frameOf(e)}>
+              {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: SVG text is not focusable; the halo is a visual duplicate. */}
               <text
                 {...font}
+                aria-hidden="true"
                 fill={theme.halo}
                 stroke={theme.halo}
                 strokeWidth={size * 0.3}

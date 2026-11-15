@@ -111,7 +111,12 @@ function LotSize({
     const style = { '--out': out } as CSSProperties;
     return (
       <g transform={transform} className="lot-size" style={style}>
-        <text className="scene-text lot-size-text scene-halo" textAnchor="middle">
+        {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: SVG text is not focusable; the halo is a visual duplicate. */}
+        <text
+          className="scene-text lot-size-text scene-halo"
+          textAnchor="middle"
+          aria-hidden="true"
+        >
           {children}
         </text>
         <text className="scene-text lot-size-text" textAnchor="middle" fill={theme.dim}>
@@ -132,8 +137,10 @@ function LotSize({
   };
   return (
     <g transform={transform}>
+      {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: SVG text is not focusable; the halo is a visual duplicate. */}
       <text
         {...common}
+        aria-hidden="true"
         fill={theme.halo}
         stroke={theme.halo}
         strokeWidth={size * 0.3}

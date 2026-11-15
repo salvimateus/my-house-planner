@@ -1,9 +1,17 @@
 @layer components {
+  /* Lives in the top layer (popover), so it always paints over the canvas controls
+     and the bottom sheet; the offsets keep it clear of them as well. */
   .toast-host {
+    --toast-toolbar-h: 61px;
+    --toast-peek: 64px;
+    --toast-statusbar-h: 40px;
     position: fixed;
-    inset: auto 0 calc(env(safe-area-inset-bottom) + 72px);
-    margin: 0 auto;
-    width: min(480px, calc(100% - 24px));
+    inset: auto calc(12px + var(--tap) + 8px + env(safe-area-inset-right))
+      calc(env(safe-area-inset-bottom) + var(--toast-toolbar-h) + var(--toast-peek) + 12px)
+      calc(12px + env(safe-area-inset-left));
+    margin: 0;
+    width: auto;
+    max-width: 480px;
     padding: 0;
     border: 0;
     background: transparent;
@@ -11,7 +19,9 @@
     pointer-events: none;
 
     @media (width >= 900px) {
-      inset-block-end: 48px;
+      inset: auto 0 calc(var(--toast-statusbar-h) + 12px + var(--tap) + 12px);
+      margin: 0 auto;
+      width: min(480px, calc(100% - 24px));
     }
   }
 
