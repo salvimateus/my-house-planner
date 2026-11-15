@@ -273,3 +273,56 @@ export function projection(path: string, ctx: RenderContext): ReactElement {
     ...arcStroke(ctx),
   });
 }
+
+export const MOTOR_FILL = '#3A3F47';
+export const MOTOR_LID = '#8A929E';
+
+/** Gate motor seen from above: a dark box spanning `x0..x1` along the wall and `y0..y1` across it. */
+export function motorBox(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  ctx: RenderContext,
+): ReactElement {
+  const lx = Math.min(x0, x1);
+  const hx = Math.max(x0, x1);
+  const ly = Math.min(y0, y1);
+  const hy = Math.max(y0, y1);
+  const r = Math.min(24, (hx - lx) / 4, (hy - ly) / 4);
+  const inset = Math.min(hx - lx, hy - ly) * 0.24;
+  const body =
+    `M${n(lx + r)} ${n(ly)}H${n(hx - r)}Q${n(hx)} ${n(ly)} ${n(hx)} ${n(ly + r)}` +
+    `V${n(hy - r)}Q${n(hx)} ${n(hy)} ${n(hx - r)} ${n(hy)}H${n(lx + r)}` +
+    `Q${n(lx)} ${n(hy)} ${n(lx)} ${n(hy - r)}V${n(ly + r)}Q${n(lx)} ${n(ly)} ${n(lx + r)} ${n(ly)}Z`;
+  return createElement(
+    'g',
+    null,
+    createElement('path', {
+      key: 'body',
+      d: body,
+      fill: mono(ctx, MOTOR_FILL),
+      stroke: ctx.theme.door,
+      strokeLinejoin: 'round',
+      ...outlineStroke(ctx),
+    }),
+    createElement('path', {
+      key: 'lid',
+      d: rectPath(lx + inset, ly + inset, hx - inset, hy - inset),
+      fill: 'none',
+      stroke: mono(ctx, MOTOR_LID),
+      strokeLinejoin: 'round',
+      ...fineStroke(ctx),
+    }),
+  );
+}
+
+/** Toothed rack along x at `y`, teeth pointing toward `side`. */
+export function rackPath(x0: number, x1: number, y: number, side: 1 | -1, pitch = 150): string {
+  const lo = Math.min(x0, x1);
+  const hi = Math.max(x0, x1);
+  const tooth = side * Math.min(18, pitch * 0.25);
+  let d = `M${n(lo)} ${n(y)}L${n(hi)} ${n(y)}`;
+  for (let x = lo + pitch / 2; x < hi; x += pitch) d += `M${n(x)} ${n(y)}L${n(x)} ${n(y + tooth)}`;
+  return d;
+}

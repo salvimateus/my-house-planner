@@ -5,11 +5,16 @@ import {
   dashedLine,
   fineStroke,
   gateFill,
+  motorBox,
   outlineStroke,
+  rackPath,
   rectPath,
 } from './openingKit.ts';
 
-/** Sliding gate: a thick panel in the gap, the slide arrow and, dashed, where the panel parks. */
+/**
+ * Electric sliding gate: a thick panel in the gap with its rack, the motor on the inner side at the
+ * parking end, the slide arrow and, dashed, where the panel parks.
+ */
 function SlidingGateSymbol({
   width,
   thickness,
@@ -28,6 +33,10 @@ function SlidingGateSymbol({
   const parkFrom = dir * half;
   const ay = side * (t2 + Math.min(260, width * 0.08));
   const reach = width * 0.16;
+  const rackY = side * (panel / 2 + 6);
+  const motorNear = side * (panel / 2 + 24);
+  const motorEnd = dir * (half - Math.min(60, width * 0.02));
+  const motorLen = Math.min(340, width * 0.12);
   return (
     <g>
       {park > 1 ? (
@@ -47,6 +56,14 @@ function SlidingGateSymbol({
         {...outlineStroke(ctx)}
       />
       <path
+        d={rackPath(-half + 60, half - 60, rackY, side)}
+        fill="none"
+        stroke={theme.door}
+        strokeLinecap="round"
+        {...fineStroke(ctx)}
+      />
+      {motorBox(motorEnd, motorNear, motorEnd - dir * motorLen, motorNear + side * 190, ctx)}
+      <path
         d={arrowPath(-dir * reach, dir * reach, ay, Math.min(120, width * 0.04))}
         fill="none"
         stroke={theme.swingArc}
@@ -60,7 +77,7 @@ function SlidingGateSymbol({
 
 export default defineOpening({
   type: 'gate-sliding',
-  label: 'Portão de correr',
+  label: 'Portão eletrônico de correr',
   tip: 'Portão de garagem que corre ao lado do muro. Precisa de muro livre do lado.',
   Symbol: SlidingGateSymbol,
 });
