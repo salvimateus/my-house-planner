@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-/** Casinha mark: a house outline with a floor plan inside. Decorative: the name sits next to it. */
+/** Minha Casinha mark: a house outline with a floor plan inside. Decorative: the name sits next to it. */
 export function Logo({ size = 56 }: { size?: number }): ReactElement {
   return (
     <svg className="logo" width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">

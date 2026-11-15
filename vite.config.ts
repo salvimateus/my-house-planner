@@ -12,8 +12,8 @@ export default defineConfig({
       devOptions: { enabled: false },
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Casinha',
-        short_name: 'Casinha',
+        name: 'Minha Casinha',
+        short_name: 'Minha Casinha',
         description: 'Desenhe a planta baixa da sua casa no celular ou no computador.',
         lang: 'pt-BR',
         theme_color: THEME_COLOR,

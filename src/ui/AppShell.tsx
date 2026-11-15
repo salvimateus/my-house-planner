@@ -63,7 +63,7 @@ export function AppShell(): ReactElement {
 
   return (
     <div className="shell" data-layout={wide ? 'wide' : 'compact'}>
-      <h1 className="sr-only">{docName} · Casinha</h1>
+      <h1 className="sr-only">{docName} · Minha Casinha</h1>
       <TopBar wide={wide} />
       <main
         className="shell-stage"

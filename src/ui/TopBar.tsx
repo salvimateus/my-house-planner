@@ -105,7 +105,7 @@ export function TopBar({ wide }: { wide: boolean }): ReactElement {
       <Menu />
       {wide ? (
         <span className="topbar-brand" aria-hidden="true">
-          Casinha
+          Minha Casinha
         </span>
       ) : null}
       <div className="topbar-title">

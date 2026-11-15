@@ -12,12 +12,12 @@ const AUTHOR_URL = 'https://github.com/salvimateus';
 export function AboutDialog(): ReactElement {
   const open = useUi((s) => s.dialog === 'about');
   return (
-    <Dialog open={open} onClose={uiStore.getState().closeDialog} title="Sobre o Casinha">
+    <Dialog open={open} onClose={uiStore.getState().closeDialog} title="Sobre o app">
       <div className="about">
         <div className="about-hero">
           <Logo size={52} />
           <div>
-            <p className="about-name">Casinha</p>
+            <p className="about-name">Minha Casinha</p>
             <p className="about-tag">Desenhe a planta da sua casa, sem ser arquiteto.</p>
           </div>
         </div>
@@ -59,8 +59,8 @@ export function AboutDialog(): ReactElement {
         </section>
 
         <p className="about-disclaimer">
-          O Casinha serve para estudar ideias. As medidas e áreas são aproximadas: valide o projeto
-          com um(a) arquiteto(a) ou engenheiro(a) antes de construir.
+          O app Minha Casinha serve para estudar ideias. As medidas e áreas são aproximadas: valide
+          o projeto com um(a) arquiteto(a) ou engenheiro(a) antes de construir.
         </p>
 
         <p className="about-foot">

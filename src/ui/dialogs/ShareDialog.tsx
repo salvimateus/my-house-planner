@@ -106,7 +106,7 @@ export function ShareDialog(): ReactElement {
   };
 
   const sendLink = async (url: string) => {
-    const outcome = await shareLink(url, title, `Planta “${title}” feita no Casinha`);
+    const outcome = await shareLink(url, title, `Planta “${title}” feita no app Minha Casinha`);
     if (outcome === null) await copyLink(url);
   };
 
@@ -117,7 +117,7 @@ export function ShareDialog(): ReactElement {
       open={open}
       onClose={close}
       title="Compartilhar planta"
-      description="Envie a planta para outra pessoa abrir e continuar no Casinha."
+      description="Envie a planta para outra pessoa abrir e continuar no app Minha Casinha."
       size="md"
     >
       {doc ? (
@@ -125,8 +125,8 @@ export function ShareDialog(): ReactElement {
           <section className="share-section">
             <h3 className="share-h3">Arquivo da planta</h3>
             <p className="share-note">
-              Um arquivo “.casinha.json” que abre no Casinha em qualquer aparelho. É o jeito mais
-              seguro de enviar e de guardar uma cópia.
+              Um arquivo “.casinha.json” que abre no app Minha Casinha em qualquer aparelho. É o
+              jeito mais seguro de enviar e de guardar uma cópia.
             </p>
             <div className="share-actions">
               <Button variant="primary" icon={<Share2 />} onClick={() => void shareFile()}>

@@ -21,7 +21,7 @@ const isRecord = (v: unknown): v is RawDoc =>
 
 export function migrate(raw: unknown): unknown {
   if (!isRecord(raw) || raw.format !== FORMAT) {
-    throw new CodecError('Este arquivo não é uma planta do Casinha.');
+    throw new CodecError('Este arquivo não é uma planta do app Minha Casinha.');
   }
   let version = Number(raw.schemaVersion);
   if (!Number.isInteger(version) || version < 1) {
@@ -29,7 +29,7 @@ export function migrate(raw: unknown): unknown {
   }
   if (version > SCHEMA_VERSION) {
     throw new CodecError(
-      'Esta planta foi feita numa versão mais nova do Casinha. Recarregue a página e tente de novo.',
+      'Esta planta foi feita numa versão mais nova do app Minha Casinha. Recarregue a página e tente de novo.',
     );
   }
   let doc: RawDoc = raw;

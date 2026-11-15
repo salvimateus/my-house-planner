@@ -290,7 +290,7 @@ export function StartScreen(): ReactElement {
       <div className="start-inner">
         <header className="start-hero">
           <Logo size={64} />
-          <h1 className="start-title">Casinha</h1>
+          <h1 className="start-title">Minha Casinha</h1>
           <p className="start-tagline">Desenhe a planta da sua casa, sem ser arquiteto.</p>
           <div className="start-cta">
             <Button

@@ -85,7 +85,7 @@ async function decodeShareHash(hash: string): Promise<string> {
     const version = /^#plan=(\d+)\./.exec(hash)?.[1];
     if (version && Number(version) > 1) {
       throw new PersistenceError(
-        'Este link foi feito numa versão mais nova do Casinha. Recarregue a página e tente de novo.',
+        'Este link foi feito numa versão mais nova do app Minha Casinha. Recarregue a página e tente de novo.',
       );
     }
     throw new PersistenceError(BROKEN_LINK);

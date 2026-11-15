@@ -82,13 +82,14 @@ export function serializeProject(doc: ProjectDoc): string {
 }
 
 export function parseProject(text: string, opts: ParseOptions = {}): ParseResult {
-  if (typeof text !== 'string') throw new CodecError('Este arquivo não é uma planta do Casinha.');
+  if (typeof text !== 'string')
+    throw new CodecError('Este arquivo não é uma planta do app Minha Casinha.');
   if (text.length > MAX_FILE_CHARS) throw new CodecError('Arquivo grande demais para uma planta.');
   let raw: unknown;
   try {
     raw = JSON.parse(text);
   } catch {
-    throw new CodecError('Este arquivo não é uma planta do Casinha.');
+    throw new CodecError('Este arquivo não é uma planta do app Minha Casinha.');
   }
   const parsed = projectSchema.safeParse(migrate(raw));
   if (!parsed.success) throw new CodecError('A planta tem dados inválidos e não pode ser aberta.');

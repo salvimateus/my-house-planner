@@ -118,7 +118,7 @@ const GROUPS: Entry[][] = [
       icon: CircleQuestionMark,
       run: () => uiStore.getState().openDialog('about'),
     },
-    { label: 'Sobre o Casinha', icon: Info, run: () => uiStore.getState().openDialog('about') },
+    { label: 'Sobre o app', icon: Info, run: () => uiStore.getState().openDialog('about') },
   ],
 ];
 
