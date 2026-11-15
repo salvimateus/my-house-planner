@@ -302,7 +302,7 @@ export function LotWizard(): ReactElement {
                 {PRESETS.map(([f, d]) => (
                   <li key={`${f}x${d}`}>
                     <Chip
-                      selected={shownFront === toMm(f) && shownDepth === toMm(d)}
+                      selected={frontDraft === toMm(f) && depthDraft === toMm(d)}
                       onClick={() => applyPreset(f, d)}
                       aria-label={`${f} por ${d} metros`}
                     >
