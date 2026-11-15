@@ -387,7 +387,46 @@ function buildGeometry(lot: Lot): ContextGeom {
     );
     paint(g, sectorPts(c, Rc - service, Rc, a2, a1), 'grass');
     paint(g, sectorPts(c, Rc - CURB, Rc, a2, a1), 'curb');
-    g.joints.push(...chain(arcPts(c, Rc - service, a2, a1)));
+    const r = Rc - service;
+    g.joints.push(...chain(arcPts(c, r, a2, a1)));
+    if (paved <= 0) return;
+
+    // Slab joints through the corner, clipped to the paving: the front rows and the corner-street
+    // columns cross in the corner square, and each grid continues on its own side. `u` runs from the curb line into the block.
+    const atU = (u: Mm) => xcurb + sigma * u;
+    const circleY = (u: Mm): Mm | null => {
+      const d = r * r - (u - Rc) ** 2;
+      return d >= 0 ? c.y + Math.sqrt(d) : null;
+    };
+    const circleU = (y: Mm): Mm | null => {
+      const d = r * r - (y - c.y) ** 2;
+      return d >= 0 ? Rc - Math.sqrt(d) : null;
+    };
+    const rows = Math.max(1, Math.round(paved / SLAB_SIZE));
+    const xa = Math.min(atU(0), atU(Rc));
+    const xz = Math.max(atU(0), atU(Rc));
+    for (let x = Math.ceil(xa / SLAB_SIZE) * SLAB_SIZE; x < xz; x += SLAB_SIZE) {
+      const u = sigma * (x - xcurb);
+      // Beside the lot corner the corner-street columns continue instead.
+      const end = u >= s && u < Rc ? circleY(u) : null;
+      if (end === null) continue;
+      const y1 = Math.min(D + paved, end);
+      if (y1 > D) line(g.joints, { x, y: D }, { x, y: y1 });
+    }
+    for (let k = 1; k < rows; k++) {
+      const y = D + (paved * k) / rows;
+      const u0 = circleU(y);
+      if (u0 !== null && u0 < Rc) line(g.joints, { x: atU(u0), y }, { x: atU(Rc), y });
+    }
+    for (let y = Math.ceil((yc - Rc) / SLAB_SIZE) * SLAB_SIZE; y < D; y += SLAB_SIZE) {
+      const u0 = Math.max(s - paved, circleU(y) ?? s);
+      if (u0 < s) line(g.joints, { x: atU(u0), y }, { x: atU(s), y });
+    }
+    for (let k = 1; k < rows; k++) {
+      const u = s - (paved * k) / rows;
+      const y1 = Math.min(D + paved, circleY(u) ?? yc - Rc);
+      if (y1 > yc - Rc) line(g.joints, { x: atU(u), y: yc - Rc }, { x: atU(u), y: y1 });
+    }
   };
 
   // Front street: it runs through.
@@ -439,7 +478,8 @@ function buildGeometry(lot: Lot): ContextGeom {
     line(side.edges, { x: xs - EDGE, y: B.y0 }, { x: xs - EDGE, y: stop });
     line(side.edges, { x: xf + EDGE, y: B.y0 }, { x: xf + EDGE, y: stop });
     side.label = { at: { x: xs - STREET * 0.3, y: Math.min(D / 2, cw0 - 5000) }, angle: 0 };
-    streets.push(side);
+    // The corner street goes under the front group, so its asphalt never covers the curb returns.
+    streets.unshift(side);
   }
 
   // Neighbor lots of the same size as the lot, each with a skeleton house, up to the context edge.
@@ -530,7 +570,7 @@ function buildGeometry(lot: Lot): ContextGeom {
   }));
   const groupFor = (sd: Side): StreetGroup | undefined =>
     sd === lot.frontSide
-      ? worldStreets[0]
+      ? worldStreets.find((g) => g.key === 'front')
       : sd === lot.cornerSide
         ? worldStreets.find((g) => g.key === 'corner')
         : undefined;
