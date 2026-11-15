@@ -2,7 +2,7 @@
  * Minha Casinha plan collection Worker.
  *
  * POST /v1/plans stores one project JSON in R2. The gallery routes (GET) need
- * `Authorization: Bearer <GALLERY_KEY>`.
+ * `Authorization: Bearer <GALLERY_KEY>`, and so does DELETE /v1/plans/<device>/<project>.
  *
  * @typedef {object} Env
  * @property {R2Bucket} PLANS
@@ -59,8 +59,9 @@ async function route(request, env) {
 
   const match = url.pathname.match(/^\/v1\/plans\/([^/]+)\/([^/]+)$/);
   if (match) {
-    if (method !== 'GET') return text('Method not allowed', 405);
-    return getPlan(request, env, match[1], match[2]);
+    if (method === 'GET') return getPlan(request, env, match[1], match[2]);
+    if (method === 'DELETE') return deletePlan(request, env, match[1], match[2]);
+    return text('Method not allowed', 405);
   }
 
   return text('Not found', 404);
@@ -186,6 +187,22 @@ async function getPlan(request, env, device, project) {
 }
 
 /**
+ * Idempotent: a missing plan also returns 204.
+ *
+ * @param {Request} request
+ * @param {Env} env
+ * @param {string} device
+ * @param {string} project
+ */
+async function deletePlan(request, env, device, project) {
+  if (!(await isAuthorized(request, env))) return text('Unauthorized', 401);
+  if (!ID_PATTERN.test(device) || !ID_PATTERN.test(project)) return text('Bad id', 400);
+
+  await env.PLANS.delete(planKey(device, project));
+  return new Response(null, { status: 204 });
+}
+
+/**
  * Compares SHA-256 digests so the check takes the same time for any key length.
  *
  * @param {Request} request
@@ -287,7 +304,7 @@ function withCommonHeaders(response, origin) {
   headers.set('Vary', 'Origin');
   if (origin && ALLOWED_ORIGINS.has(origin)) {
     headers.set('Access-Control-Allow-Origin', origin);
-    headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     headers.set('Access-Control-Allow-Headers', 'Authorization, Content-Type');
     headers.set('Access-Control-Max-Age', '86400');
   }
