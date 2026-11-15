@@ -1,5 +1,7 @@
 import { OPENING_SPECS } from '../catalog/openingSpecs.ts';
 import { presetFor } from '../catalog/roomPresets.ts';
+import { bboxOf, isRectilinear, signedArea, simplifyRing } from '../geometry/shape.ts';
+import type { Rect } from '../geometry/types.ts';
 import { DEFAULT_LOT } from './defaults.ts';
 import { DEFAULT_PROJECT_NAME } from './factories.ts';
 import { newId } from './ids.ts';
@@ -218,64 +220,7 @@ function cleanFill(fill: Fill, fallbackColor: string, opts: SanitizeOptions, log
 
 const roundVec = (p: Vec): Vec => ({ x: Math.round(p.x), y: Math.round(p.y) });
 
-function signedArea(ring: Ring): number {
-  let sum = 0;
-  for (let i = 0; i < ring.length; i++) {
-    const a = ring[i]!;
-    const b = ring[(i + 1) % ring.length]!;
-    sum += a.x * b.y - b.x * a.y;
-  }
-  return sum / 2;
-}
-
-/** Drops repeated points, collinear points and zero-width spikes, until stable. */
-function simplifyRing(ring: Ring): Ring {
-  let pts = ring.slice();
-  let changed = true;
-  while (changed && pts.length >= 3) {
-    changed = false;
-    const out: Ring = [];
-    for (let i = 0; i < pts.length; i++) {
-      const prev = out.length > 0 ? out[out.length - 1]! : pts[pts.length - 1]!;
-      const cur = pts[i]!;
-      const next = pts[(i + 1) % pts.length]!;
-      const repeated = cur.x === prev.x && cur.y === prev.y;
-      const collinear =
-        (prev.x === cur.x && cur.x === next.x) || (prev.y === cur.y && cur.y === next.y);
-      if (repeated || collinear) changed = true;
-      else out.push(cur);
-    }
-    pts = out;
-  }
-  return pts;
-}
-
-function isRectilinearRing(ring: Ring): boolean {
-  if (ring.length < 4 || ring.length % 2 !== 0) return false;
-  for (let i = 0; i < ring.length; i++) {
-    const a = ring[i]!;
-    const b = ring[(i + 1) % ring.length]!;
-    const vertical = a.x === b.x;
-    const horizontal = a.y === b.y;
-    if (vertical === horizontal) return false;
-  }
-  return true;
-}
-
-interface Bbox {
-  x0: Mm;
-  y0: Mm;
-  x1: Mm;
-  y1: Mm;
-}
-
-function ringBbox(ring: Ring): Bbox {
-  const xs = ring.map((p) => p.x);
-  const ys = ring.map((p) => p.y);
-  return { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) };
-}
-
-const bboxInside = (inner: Bbox, outer: Bbox): boolean =>
+const rectInside = (inner: Rect, outer: Rect): boolean =>
   inner.x0 >= outer.x0 && inner.y0 >= outer.y0 && inner.x1 <= outer.x1 && inner.y1 <= outer.y1;
 
 /** Rounded, simplified and rectilinear ring with the requested orientation, or null. */
@@ -289,7 +234,7 @@ function cleanRing(ring: Ring, lot: Lot, sign: 1 | -1, onClamp: () => void): Rin
   });
   if (clamped) onClamp();
   const simple = simplifyRing(pts);
-  if (!isRectilinearRing(simple)) return null;
+  if (!isRectilinear(simple)) return null;
   const area = signedArea(simple);
   if (area === 0) return null;
   return Math.sign(area) === sign ? simple : simple.reverse();
@@ -306,12 +251,12 @@ function cleanShape(shape: Shape, lot: Lot, log: RepairLog): Shape | null {
     log.add('areaDropped');
     return null;
   }
-  const box = ringBbox(outer);
+  const box = bboxOf([outer]);
   const holes: Ring[] = [];
   let fixed = false;
   for (const raw of rawHoles) {
     const hole = cleanRing(raw, lot, -1, onClamp);
-    if (hole && bboxInside(ringBbox(hole), box)) holes.push(hole);
+    if (hole && rectInside(bboxOf([hole]), box)) holes.push(hole);
     else fixed = true;
   }
   const result = [outer, ...holes];
