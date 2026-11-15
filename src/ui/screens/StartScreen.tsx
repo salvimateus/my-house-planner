@@ -30,6 +30,7 @@ import { errorMessage } from '../Menu.tsx';
 import { ThemeToggle } from '../ThemeToggle.tsx';
 import { Logo } from './Logo.tsx';
 import './StartScreen.css';
+import { track } from '../../analytics/track.ts';
 
 const NAME_MAX = 80;
 const rtf = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' });
@@ -395,7 +396,10 @@ export function StartScreen(): ReactElement {
                   onOpen={() =>
                     open(
                       `tpl:${t.id}`,
-                      async () => openDocAsCopy(await t.load()),
+                      async () => {
+                        await openDocAsCopy(await t.load());
+                        track('template_open', { template_id: t.id });
+                      },
                       'Não foi possível abrir o exemplo.',
                     )
                   }
@@ -407,9 +411,7 @@ export function StartScreen(): ReactElement {
 
         <footer className="start-foot">
           <ShieldCheck className="start-foot-icon" aria-hidden="true" />
-          <p>
-            Suas plantas ficam salvas só neste navegador. Nada vai para a internet sem você mandar.
-          </p>
+          <p>Suas plantas ficam salvas só neste navegador.</p>
           <Button variant="ghost" size="sm" onClick={() => uiStore.getState().openDialog('about')}>
             Sobre
           </Button>

@@ -1,3 +1,4 @@
+import { track } from '../analytics/track.ts';
 import { CodecError, MAX_FILE_CHARS, parseProject, serializeProject } from '../model/codec.ts';
 import type { ProjectDoc } from '../model/types.ts';
 import { userMessageOf } from '../persistence/db.ts';
@@ -41,6 +42,7 @@ export function downloadProjectFile(doc: ProjectDoc): void {
   a.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
   noteFileExported();
+  track('project_file_export', { method: 'download' });
   toast(`Arquivo “${file.name}” salvo. Guarde-o ou envie para quem vai ver a planta.`, {
     tone: 'success',
   });
@@ -76,6 +78,7 @@ export async function openProjectFile(file: File): Promise<void> {
   }
   if (text.length > MAX_FILE_CHARS) throw new CodecError('Arquivo grande demais para uma planta.');
   await importProjectText(text, { suffix: ' (importada)' });
+  track('project_file_import');
 }
 
 /** Shows the file picker. Resolves after the chosen file opens, or when the user cancels. */

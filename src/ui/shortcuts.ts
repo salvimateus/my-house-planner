@@ -1,5 +1,6 @@
 import { castDraft } from 'immer';
 import { nanoid } from 'nanoid';
+import { track } from '../analytics/track.ts';
 import { copyArea, duplicateArea, hasAreaClipboard, pasteArea } from '../editor/select/area.ts';
 import { deleteFrontageItem } from '../editor/select/frontage.ts';
 import { withFixedSize } from '../editor/select/item.ts';
@@ -209,6 +210,7 @@ export const commands = {
       return;
     }
     if (buildMode) ui.setBuildMode(buildMode);
+    if (tool !== ui.tool) track('tool_select', { tool_id: tool });
     ui.setTool(tool);
   },
 

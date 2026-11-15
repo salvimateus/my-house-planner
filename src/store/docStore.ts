@@ -1,5 +1,6 @@
 import { type Draft, produce } from 'immer';
 import { createStore, useStore } from 'zustand';
+import { track } from '../analytics/track.ts';
 import type { ProjectDoc } from '../model/types.ts';
 
 const LIMIT = 200;
@@ -92,12 +93,14 @@ export const docStore = createStore<DocState & DocActions>()((set, get) => ({
     const { past, doc, future, gesture, readOnly } = get();
     if (gesture || readOnly || !doc || past.length === 0) return;
     set({ doc: past[past.length - 1]!, past: past.slice(0, -1), future: [doc, ...future] });
+    track('undo');
   },
 
   redo: () => {
     const { past, doc, future, gesture, readOnly } = get();
     if (gesture || readOnly || !doc || future.length === 0) return;
     set({ doc: future[0]!, past: [...past, doc], future: future.slice(1) });
+    track('redo');
   },
 }));
 

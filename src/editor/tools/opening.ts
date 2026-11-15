@@ -1,3 +1,4 @@
+import { track } from '../../analytics/track.ts';
 import { OPENING_SPECS } from '../../catalog/openingSpecs.ts';
 import { hitTest } from '../../geometry/hitTest.ts';
 import { emit } from '../../juice/events.ts';
@@ -63,6 +64,7 @@ function commitOpening(
   ctx.ui.setSheet('inspector', 'peek');
   ctx.feedback.place();
   emit({ type: 'opening-placed', openingId: opening.id });
+  track('opening_place', { opening_type: type });
   announceSwing(opening.id);
   return opening;
 }

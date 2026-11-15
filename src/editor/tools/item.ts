@@ -1,3 +1,4 @@
+import { track } from '../../analytics/track.ts';
 import { itemDef } from '../../catalog/registry.ts';
 import { hitTest } from '../../geometry/hitTest.ts';
 import { rotatedAabb } from '../../geometry/shape.ts';
@@ -167,6 +168,7 @@ export function placeItem(
   keepCatalog(ctx, () => ctx.ui.select({ kind: 'item', ids: [item.id] }));
   ctx.feedback.place();
   emit({ type: 'item-placed', itemId: item.id });
+  track('item_place', { item_id: item.type });
   hintContinueOnce();
   return item;
 }

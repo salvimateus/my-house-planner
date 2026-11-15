@@ -21,6 +21,7 @@ import { type BuildMode, EMPTY_TRANSIENT } from '../../store/uiStore.ts';
 import { toast } from '../../ui/controls/Toast.tsx';
 import type { PointerInput, Tool, ToolContext } from './types.ts';
 import './build.css';
+import { track } from '../../analytics/track.ts';
 
 /* ------------------------------------------------------------------------------------------------
  * Names
@@ -439,6 +440,7 @@ function finishRect(d: RectDraft, ctx: ToolContext): void {
   if (!next || next === doc) return;
   if (res.messages.length) toast(res.messages.join(' '), { undo: true });
   ctx.feedback.place();
+  track('room_create', { room_type: presetId });
 
   const derived = sceneOf(next).areas.get(area.id);
   if (derived) {

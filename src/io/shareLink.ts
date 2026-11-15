@@ -1,4 +1,5 @@
 import { createStore, useStore } from 'zustand';
+import { track } from '../analytics/track.ts';
 import { MAX_FILE_CHARS } from '../model/codec.ts';
 import type { ProjectDoc } from '../model/types.ts';
 import { PersistenceError, userMessageOf } from '../persistence/db.ts';
@@ -167,6 +168,7 @@ async function handleHash(): Promise<void> {
       suffix: '',
       label: 'Planta compartilhada aberta. Ela já está salva aqui.',
     });
+    track('share_link_open');
   } finally {
     busy = false;
   }

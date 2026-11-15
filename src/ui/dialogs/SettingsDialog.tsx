@@ -10,6 +10,7 @@ import { commitWallThickness, WallThicknessPicker } from '../controls/WallThickn
 import { commands } from '../shortcuts.ts';
 import { type EffectiveTheme, useEffectiveTheme } from '../useEffectiveTheme.ts';
 import './SettingsDialog.css';
+import { track } from '../../analytics/track.ts';
 
 const MOTION_OPTIONS: { value: UiState['prefs']['motion']; label: string }[] = [
   { value: 'auto', label: 'Automático' },
@@ -138,7 +139,10 @@ export function SettingsDialog(): ReactElement {
             showLabel
             options={THEME_OPTIONS}
             value={theme}
-            onChange={(next) => ui.setPrefs({ theme: next })}
+            onChange={(next) => {
+              ui.setPrefs({ theme: next });
+              track('theme_change', { theme: next });
+            }}
           />
         </section>
 

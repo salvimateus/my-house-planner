@@ -4,6 +4,7 @@ import { uiStore } from '../store/uiStore.ts';
 import { IconButton, type IconButtonProps } from './controls/IconButton.tsx';
 import { useEffectiveTheme } from './useEffectiveTheme.ts';
 import './ThemeToggle.css';
+import { track } from '../analytics/track.ts';
 
 /** Switches to the opposite of the theme on screen and stores it as an explicit choice. */
 export function ThemeToggle({
@@ -21,7 +22,10 @@ export function ThemeToggle({
       label={label}
       title={label}
       icon={<Icon key={theme} className="theme-toggle-icon" />}
-      onClick={() => uiStore.getState().setPrefs({ theme: next })}
+      onClick={() => {
+        uiStore.getState().setPrefs({ theme: next });
+        track('theme_change', { theme: next });
+      }}
     />
   );
 }

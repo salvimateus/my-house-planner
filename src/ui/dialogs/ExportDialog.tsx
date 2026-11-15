@@ -31,6 +31,7 @@ import { Segmented } from '../controls/Segmented.tsx';
 import { Switch } from '../controls/Switch.tsx';
 import { toast } from '../controls/Toast.tsx';
 import './ExportDialog.css';
+import { errorCode, track } from '../../analytics/track.ts';
 
 const FORMAT_OPTIONS: { value: ExportFormat; label: string }[] = [
   { value: 'pdf', label: 'PDF vetorial' },
@@ -96,6 +97,24 @@ async function createFile(
   const r = await exportPng(doc, opts, dpi);
   return { file: r.file, png: r.size };
 }
+
+/** The export settings as short analytics values: the switches on, the frame and the color. */
+function exportParams(format: ExportFormat, opts: ExportOptions, dpi: PngDpi) {
+  const { paper, frame, scale, mono, ...switches } = opts;
+  const on = Object.entries(switches)
+    .filter(([, v]) => v)
+    .map(([k]) => k);
+  return {
+    format,
+    paper,
+    scale: scale === null ? 'auto' : `1:${scale}`,
+    dpi: format === 'png' ? dpi : undefined,
+    options: [`frame:${frame}`, mono ? 'mono' : 'color', ...on].join(','),
+  };
+}
+
+const shareMethod = (outcome: 'shared' | 'downloaded') =>
+  outcome === 'shared' ? ('web_share' as const) : ('download' as const);
 
 /** One object URL for the file, revoked when the file changes and on unmount. */
 function useObjectUrl(file: File | null): string | null {
@@ -200,23 +219,25 @@ export function ExportDialog(): ReactElement {
       setPhase({ kind: 'ready', file: r.file, png: r.png });
       feedback.success();
       emit({ type: 'export-done', format });
+      track('export_generate', exportParams(format, opts, dpi));
     } catch (err) {
       if (id !== run.current) return;
-      setPhase({
-        kind: 'error',
-        message: userMessageOf(err, 'Não foi possível criar o arquivo. Tente de novo.'),
-      });
+      const message = userMessageOf(err, 'Não foi possível criar o arquivo. Tente de novo.');
+      setPhase({ kind: 'error', message });
+      track('app_error', { error_code: errorCode(message) });
     }
   };
 
   const download = (file: File) => {
     if (!fileUrl) return;
     downloadUrl(fileUrl, file.name);
+    track('export_download', { format });
     toast(`Arquivo “${file.name}” salvo.`, { tone: 'success' });
   };
 
   const share = async (file: File) => {
     const outcome = await shareOrDownload(file, doc?.name || 'Planta');
+    if (outcome !== 'cancelled') track('export_share', { format, method: shareMethod(outcome) });
     if (outcome === 'downloaded') {
       toast(
         'Este navegador não compartilha arquivos. O arquivo foi baixado: envie-o por onde preferir.',

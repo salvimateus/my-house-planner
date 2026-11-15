@@ -1,4 +1,5 @@
 import { createStore, useStore } from 'zustand';
+import { track } from '../analytics/track.ts';
 import { type SunDate, sunTimes } from '../geometry/sun.ts';
 import { reducedMotion } from '../juice/tween.ts';
 
@@ -108,7 +109,11 @@ export const sunStore = createStore<SunState & SunActions>()((set, get) => {
     date: nearestSeason(new Date()),
     minutes: 9 * 60,
     playing: false,
-    toggle: () => (get().on ? get().close() : set({ on: true })),
+    toggle: () => {
+      if (get().on) return get().close();
+      set({ on: true });
+      track('sun_panel_open');
+    },
     close: () => {
       stopLoop();
       set({ on: false, playing: false });

@@ -13,6 +13,7 @@ import { Switch } from '../controls/Switch.tsx';
 import { toast } from '../controls/Toast.tsx';
 import { errorMessage } from '../Menu.tsx';
 import './LotWizard.css';
+import { track } from '../../analytics/track.ts';
 
 const FRONT_MIN = toMm(3);
 const FRONT_MAX = toMm(100);
@@ -224,6 +225,7 @@ export function LotWizard(): ReactElement {
     setBusy(true);
     try {
       await newProject(input);
+      track('plan_create', { lot_width_m: input.width / 1000, lot_depth_m: input.depth / 1000 });
     } catch (err) {
       toast(errorMessage(err, 'Não foi possível criar a planta. Tente de novo.'), {
         tone: 'error',

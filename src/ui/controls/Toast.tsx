@@ -5,6 +5,7 @@ import { createStore, useStore } from 'zustand';
 import { docStore } from '../../store/docStore.ts';
 import { cx } from './cx.ts';
 import './Toast.css';
+import { errorCode, track } from '../../analytics/track.ts';
 
 export type ToastTone = 'info' | 'success' | 'error';
 
@@ -50,6 +51,7 @@ export function toast(message: string, opts: ToastOptions = {}): void {
     opts.action ??
     (opts.undo ? { label: 'Desfazer', run: () => docStore.getState().undo() } : null);
   const item: ToastItem = { id, message, tone: opts.tone ?? 'info', action, leaving: false };
+  if (item.tone === 'error') track('app_error', { error_code: errorCode(message) });
   const visible = toastStore.getState().items.filter((t) => !t.leaving);
   for (const old of visible.slice(0, Math.max(0, visible.length - MAX_VISIBLE + 1)))
     dismiss(old.id);

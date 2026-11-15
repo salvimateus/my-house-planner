@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { createStore, useStore } from 'zustand';
+import { track } from '../analytics/track.ts';
 import { MATERIALS } from '../catalog/registry.ts';
 import { emit } from '../juice/events.ts';
 import { MAX_NAME_CHARS, parseProject } from '../model/codec.ts';
@@ -169,6 +170,7 @@ export async function openProject(id: Id): Promise<void> {
   const lock = await acquireProjectLock(id);
   await applyView(id);
   enterEditor(doc, lock, !lock.granted);
+  track('project_open', { source: 'list' });
 }
 
 /**

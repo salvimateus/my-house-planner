@@ -12,6 +12,7 @@ import { Button } from '../controls/Button.tsx';
 import { Dialog } from '../controls/Dialog.tsx';
 import { toast } from '../controls/Toast.tsx';
 import './ShareDialog.css';
+import { track } from '../../analytics/track.ts';
 
 type LinkState =
   | { kind: 'busy' }
@@ -78,6 +79,7 @@ export function ShareDialog(): ReactElement {
     const outcome = await shareOrDownload(file, title);
     if (outcome === 'cancelled') return;
     noteFileExported();
+    track('project_file_export', { method: outcome === 'shared' ? 'web_share' : 'download' });
     if (outcome === 'downloaded') {
       toast(`Arquivo “${file.name}” baixado. Envie-o por onde preferir.`, { tone: 'success' });
     }
@@ -95,6 +97,7 @@ export function ShareDialog(): ReactElement {
   const copyLink = async (url: string) => {
     if (await copyText(url)) {
       setCopied(true);
+      track('share_link_create', { method: 'copy' });
       toast('Link copiado. Cole na conversa com quem vai ver a planta.', { tone: 'success' });
       return;
     }
@@ -107,6 +110,7 @@ export function ShareDialog(): ReactElement {
 
   const sendLink = async (url: string) => {
     const outcome = await shareLink(url, title, `Planta “${title}” feita no app Minha Casinha`);
+    if (outcome === 'shared') track('share_link_create', { method: 'web_share' });
     if (outcome === null) await copyLink(url);
   };
 
