@@ -7,6 +7,8 @@
  *
  * A single UsageCounter Durable Object enforces a hard quota so the bucket stays
  * inside the R2 free tier: total stored bytes and successful writes per UTC month.
+ * The same object serves /v1/live, a hibernatable WebSocket that pushes gallery
+ * changes to authed clients. The key arrives in the first message, never in the URL.
  *
  * @typedef {object} Env
  * @property {R2Bucket} PLANS
@@ -16,7 +18,8 @@
  *
  * @typedef {{ month: string, writes: number, bytes: number, plans: number, seeded: boolean }} Meta
  * @typedef {{ b: number, t: number }} SizeEntry
- * @typedef {{ ok: true, previous: number | null, month: string }
+ * @typedef {{ authed: boolean, openedAt: number }} SocketState
+ * @typedef {{ ok: true, previous: number | null, month: string, listeners: number }
  *   | { ok: false, reason: 'storage' | 'writes', retryAfter: number }
  *   | { ok: false, reason: 'unseeded' }} Reservation
  */
@@ -37,6 +40,12 @@ const PREFIX = 'plans/';
 export const BYTES_LIMIT = 1_000_000_000;
 export const WRITES_LIMIT = 100_000;
 const STORAGE_RETRY_AFTER = 86400;
+const AUTH_TIMEOUT_MS = 10_000;
+const MAX_AUTHED_SOCKETS = 10;
+const MAX_OPEN_SOCKETS = 20;
+const MAX_SOCKET_MESSAGE = 1024;
+const PING = '{"type":"ping"}';
+const PONG = '{"type":"pong"}';
 const META_KEY = 'meta';
 const SIZE_PREFIX = 'p:';
 
@@ -55,6 +64,7 @@ export default {
       console.error(error);
       response = text('Internal error', 500);
     }
+    if (response.status === 101) return response;
     return withCommonHeaders(response, origin);
   },
 };
@@ -64,6 +74,15 @@ export default {
  * against all other calls to this object.
  */
 export class UsageCounter extends DurableObject {
+  /**
+   * @param {DurableObjectState} ctx
+   * @param {Env} env
+   */
+  constructor(ctx, env) {
+    super(ctx, env);
+    ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(PING, PONG));
+  }
+
   /**
    * @param {string} key
    * @param {number} newBytes
@@ -88,7 +107,7 @@ export class UsageCounter extends DurableObject {
     if (previous === null) meta.plans += 1;
     this.ctx.storage.kv.put(SIZE_PREFIX + key, { b: newBytes, t: Date.now() });
     this.ctx.storage.kv.put(META_KEY, meta);
-    return { ok: true, previous, month: meta.month };
+    return { ok: true, previous, month: meta.month, listeners: this.#authedSockets().length };
   }
 
   /**
@@ -116,15 +135,20 @@ export class UsageCounter extends DurableObject {
     this.ctx.storage.kv.put(META_KEY, meta);
   }
 
-  /** @param {string} key */
+  /**
+   * @param {string} key
+   * @returns {number} the number of authed live sockets
+   */
   release(key) {
     const meta = this.#meta();
     const entry = this.#size(key);
-    if (!entry) return;
-    meta.bytes = Math.max(0, meta.bytes - entry.b);
-    meta.plans = Math.max(0, meta.plans - 1);
-    this.ctx.storage.kv.delete(SIZE_PREFIX + key);
-    this.ctx.storage.kv.put(META_KEY, meta);
+    if (entry) {
+      meta.bytes = Math.max(0, meta.bytes - entry.b);
+      meta.plans = Math.max(0, meta.plans - 1);
+      this.ctx.storage.kv.delete(SIZE_PREFIX + key);
+      this.ctx.storage.kv.put(META_KEY, meta);
+    }
+    return this.#authedSockets().length;
   }
 
   /**
@@ -159,6 +183,134 @@ export class UsageCounter extends DurableObject {
     return this.usage();
   }
 
+  /**
+   * Sends one event, with the current usage, to every authed live socket.
+   *
+   * @param {Record<string, unknown>} event
+   */
+  broadcast(event) {
+    const message = JSON.stringify({ ...event, usage: publicUsage(this.usage()) });
+    for (const ws of this.#authedSockets()) {
+      try {
+        ws.send(message);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  }
+
+  /** @param {Request} request */
+  async fetch(request) {
+    if (request.headers.get('Upgrade') !== 'websocket') return text('Upgrade required', 426);
+    const pair = new WebSocketPair();
+    const [client, server] = Object.values(pair);
+    await this.acceptSocket(server);
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  /**
+   * Accepts a hibernatable socket and arms the auth timeout alarm.
+   *
+   * @param {WebSocket} ws
+   */
+  async acceptSocket(ws) {
+    const tooMany = this.ctx.getWebSockets().length >= MAX_OPEN_SOCKETS;
+    this.ctx.acceptWebSocket(ws);
+    if (tooMany) {
+      ws.close(4429, 'too many connections');
+      return;
+    }
+    const openedAt = Date.now();
+    ws.serializeAttachment(/** @type {SocketState} */ ({ authed: false, openedAt }));
+    if ((await this.ctx.storage.getAlarm()) === null) {
+      await this.ctx.storage.setAlarm(openedAt + AUTH_TIMEOUT_MS);
+    }
+  }
+
+  /**
+   * @param {WebSocket} ws
+   * @param {string | ArrayBuffer} message
+   */
+  async webSocketMessage(ws, message) {
+    const state = /** @type {SocketState | null} */ (ws.deserializeAttachment());
+    if (!state) return;
+    /** @type {{ type?: unknown, key?: unknown } | null} */
+    let data = null;
+    if (typeof message === 'string' && message.length <= MAX_SOCKET_MESSAGE) {
+      try {
+        data = JSON.parse(message);
+      } catch {
+        data = null;
+      }
+    }
+    if (data?.type === 'ping') {
+      ws.send(PONG);
+      return;
+    }
+    if (state.authed) return;
+
+    if (Date.now() - state.openedAt > AUTH_TIMEOUT_MS) {
+      ws.close(4408, 'auth timeout');
+      return;
+    }
+    if (data?.type !== 'auth' || typeof data.key !== 'string') {
+      ws.close(4401, 'unauthorized');
+      return;
+    }
+    if (!(await keyMatches(data.key, this.env.GALLERY_KEY))) {
+      ws.close(4401, 'unauthorized');
+      return;
+    }
+    if (this.#authedSockets().length >= MAX_AUTHED_SOCKETS) {
+      ws.close(4429, 'too many connections');
+      return;
+    }
+    ws.serializeAttachment(/** @type {SocketState} */ ({ ...state, authed: true }));
+    ws.send(JSON.stringify({ type: 'ready', usage: publicUsage(this.usage()) }));
+  }
+
+  /**
+   * @param {WebSocket} ws
+   * @param {number} code
+   * @param {string} reason
+   */
+  webSocketClose(ws, code, reason) {
+    try {
+      ws.close(code, reason);
+    } catch {
+      // Already closed.
+    }
+  }
+
+  /**
+   * @param {WebSocket} _ws
+   * @param {unknown} error
+   */
+  webSocketError(_ws, error) {
+    console.error(error);
+  }
+
+  /** Closes sockets that did not authenticate in time, then re-arms for the rest. */
+  async alarm() {
+    const now = Date.now();
+    let next = Number.POSITIVE_INFINITY;
+    for (const ws of this.ctx.getWebSockets()) {
+      const state = /** @type {SocketState | null} */ (ws.deserializeAttachment());
+      if (!state || state.authed) continue;
+      const deadline = state.openedAt + AUTH_TIMEOUT_MS;
+      if (deadline <= now) {
+        try {
+          ws.close(4408, 'auth timeout');
+        } catch (error) {
+          console.error(error);
+        }
+      } else {
+        next = Math.min(next, deadline);
+      }
+    }
+    if (Number.isFinite(next)) await this.ctx.storage.setAlarm(next);
+  }
+
   usage() {
     const meta = this.#meta();
     const reason =
@@ -174,6 +326,14 @@ export class UsageCounter extends DurableObject {
       reason,
       seeded: meta.seeded,
     };
+  }
+
+  /** @returns {WebSocket[]} */
+  #authedSockets() {
+    return this.ctx.getWebSockets().filter((ws) => {
+      const state = /** @type {SocketState | null} */ (ws.deserializeAttachment());
+      return state?.authed === true;
+    });
   }
 
   /**
@@ -224,6 +384,14 @@ async function route(request, env) {
     if (method === 'GET') return getPlan(request, env, match[1], match[2]);
     if (method === 'DELETE') return deletePlan(request, env, match[1], match[2]);
     return text('Method not allowed', 405);
+  }
+
+  if (url.pathname === '/v1/live') {
+    if (method !== 'GET') return text('Method not allowed', 405);
+    if (request.headers.get('Upgrade') !== 'websocket') return text('Upgrade required', 426);
+    const origin = request.headers.get('Origin');
+    if (!origin || !ALLOWED_ORIGINS.has(origin)) return text('Forbidden', 403);
+    return usageCounter(env).fetch(request);
   }
 
   if (url.pathname === '/v1/usage') {
@@ -315,16 +483,17 @@ async function savePlan(request, env, url) {
     );
   }
 
+  const customMetadata = {
+    name: cleanName(params.get('name')),
+    w: cleanMeters(params.get('w')),
+    d: cleanMeters(params.get('d')),
+    updated: cleanDate(params.get('updated')),
+    bytes: String(bytes.length),
+  };
   try {
     await env.PLANS.put(key, bytes, {
       httpMetadata: { contentType: 'application/json' },
-      customMetadata: {
-        name: cleanName(params.get('name')),
-        w: cleanMeters(params.get('w')),
-        d: cleanMeters(params.get('d')),
-        updated: cleanDate(params.get('updated')),
-        bytes: String(bytes.length),
-      },
+      customMetadata,
     });
   } catch (error) {
     await counter
@@ -333,6 +502,18 @@ async function savePlan(request, env, url) {
     throw error;
   }
 
+  if (reservation.listeners > 0) {
+    const plan = {
+      device,
+      project,
+      name: customMetadata.name,
+      lotWidthM: toNumberOrNull(customMetadata.w),
+      lotDepthM: toNumberOrNull(customMetadata.d),
+      updatedAt: customMetadata.updated,
+      bytes: bytes.length,
+    };
+    await notify(counter, { type: 'plan', plan });
+  }
   return new Response(null, { status: 204 });
 }
 
@@ -402,11 +583,14 @@ async function deletePlan(request, env, device, project) {
 
   const key = planKey(device, project);
   await env.PLANS.delete(key);
+  const counter = usageCounter(env);
+  let listeners = 0;
   try {
-    await usageCounter(env).release(key);
+    listeners = await counter.release(key);
   } catch (error) {
     console.error(error);
   }
+  if (listeners > 0) await notify(counter, { type: 'deleted', device, project });
   return new Response(null, { status: 204 });
 }
 
@@ -428,7 +612,9 @@ async function getUsage(request, env) {
  */
 async function recountUsage(request, env) {
   if (!(await isAuthorized(request, env))) return text('Unauthorized', 401);
-  const usage = await seedCounter(env, usageCounter(env), false);
+  const counter = usageCounter(env);
+  const usage = await seedCounter(env, counter, false);
+  await notify(counter, { type: 'usage' });
   return Response.json(publicUsage(usage));
 }
 
@@ -461,26 +647,49 @@ function publicUsage(usage) {
   return rest;
 }
 
+/**
+ * Pushes a live event. A failure here never fails the write that caused it.
+ *
+ * @param {ReturnType<typeof usageCounter>} counter
+ * @param {Record<string, unknown>} event
+ */
+async function notify(counter, event) {
+  try {
+    await counter.broadcast(event);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 /** @param {Env} env */
 function usageCounter(env) {
   return /** @type {any} */ (env.USAGE.get(env.USAGE.idFromName('global')));
 }
 
 /**
- * Compares SHA-256 digests so the check takes the same time for any key length.
- *
  * @param {Request} request
  * @param {Env} env
  */
 async function isAuthorized(request, env) {
   const header = request.headers.get('Authorization') ?? '';
-  if (!env.GALLERY_KEY || !header.startsWith('Bearer ')) return false;
+  if (!header.startsWith('Bearer ')) return false;
+  return keyMatches(header.slice(7), env.GALLERY_KEY);
+}
+
+/**
+ * Compares SHA-256 digests so the check takes the same time for any key length.
+ *
+ * @param {string} given
+ * @param {string | undefined} expected
+ */
+async function keyMatches(given, expected) {
+  if (!expected) return false;
   const encoder = new TextEncoder();
-  const [given, expected] = await Promise.all([
-    crypto.subtle.digest('SHA-256', encoder.encode(header.slice(7))),
-    crypto.subtle.digest('SHA-256', encoder.encode(env.GALLERY_KEY)),
+  const [a, b] = await Promise.all([
+    crypto.subtle.digest('SHA-256', encoder.encode(given)),
+    crypto.subtle.digest('SHA-256', encoder.encode(expected)),
   ]);
-  return crypto.subtle.timingSafeEqual(given, expected);
+  return crypto.subtle.timingSafeEqual(a, b);
 }
 
 /**
