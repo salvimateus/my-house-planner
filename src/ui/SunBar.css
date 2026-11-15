@@ -5,17 +5,18 @@
     --sun-day: oklch(0.88 0.14 90);
     --sun-gold: oklch(0.78 0.16 75);
     --sun-gold-strong: oklch(0.5 0.12 65);
+    container: sun-bar / inline-size;
     position: absolute;
     right: calc(12px + env(safe-area-inset-right));
-    bottom: calc(12px + var(--tap) + 10px);
+    bottom: calc(12px + var(--tap) + 12px);
     z-index: 11;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    width: min(380px, calc(100% - 24px));
-    padding: 8px;
+    gap: 12px;
+    width: min(clamp(360px, 32vw, 440px), calc(100% - 24px));
+    padding: 16px;
     border: 1px solid color-mix(in oklch, var(--line) 80%, transparent);
-    border-radius: 18px;
+    border-radius: 20px;
     background: color-mix(in oklch, var(--surface) 94%, transparent);
     box-shadow: var(--shadow-lg);
     color: var(--ink);
@@ -23,13 +24,13 @@
     animation: sun-bar-in var(--dur-modal) var(--ease-enter);
 
     &[data-compact] {
-      gap: 4px;
+      gap: 6px;
       right: calc(12px + var(--tap) + 8px + env(safe-area-inset-right));
       left: calc(12px + env(safe-area-inset-left));
       bottom: calc(var(--sheet-peek) + 12px);
       width: auto;
-      padding: 6px;
-      border-radius: 16px;
+      padding: 12px;
+      border-radius: 18px;
       transition: translate var(--dur-modal) var(--ease-state);
 
       .shell-stage[data-sheet="hidden"] & {
@@ -48,8 +49,47 @@
   .sun-row {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
     min-width: 0;
+  }
+
+  /* Narrow bar: the season select joins the compass and the status wraps below with the actions. */
+  .sun-season-select {
+    display: none;
+    flex: 1 1 calc(100% - 46px);
+    min-width: 0;
+    height: var(--tap);
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  @container sun-bar (width < 306px) {
+    .sun-info {
+      flex-wrap: wrap;
+      row-gap: 6px;
+    }
+
+    .sun-season-select {
+      display: block;
+    }
+
+    .sun-status {
+      flex: 1 1 0;
+    }
+  }
+
+  .sun-actions {
+    display: flex;
+    flex: none;
+    gap: 8px;
+    margin-left: auto;
   }
 
   .sun-btn {
@@ -57,11 +97,11 @@
     flex: none;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    min-width: 36px;
-    height: 36px;
-    padding: 0 6px;
-    border-radius: 11px;
+    gap: 6px;
+    min-width: var(--tap);
+    height: var(--tap);
+    padding: 0 10px;
+    border-radius: 12px;
     color: var(--ink);
     font-size: 0.8125rem;
     font-weight: 650;
@@ -86,7 +126,18 @@
     }
   }
 
+  .sun-more,
+  .sun-close {
+    border: 1px solid var(--line);
+    background: var(--surface);
+
+    .sun-bar[data-compact] & {
+      padding: 0;
+    }
+  }
+
   .sun-play {
+    padding: 0;
     background: var(--sun-gold);
     color: oklch(0.25 0.05 60);
 
@@ -113,7 +164,7 @@
   .sun-range {
     flex: 1 1 auto;
     min-width: 0;
-    height: 36px;
+    height: var(--tap);
     margin: 0;
     background: transparent;
     appearance: none;
@@ -203,14 +254,17 @@
   }
 
   .sun-status {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     min-width: 0;
-    overflow: hidden;
     color: var(--ink-2);
     font-size: 0.8125rem;
     font-weight: 600;
+    line-height: 1.25;
     white-space: nowrap;
-    text-overflow: ellipsis;
+
+    .sun-bar[data-compact] & {
+      white-space: normal;
+    }
 
     &[data-night] {
       color: var(--sun-night);
@@ -218,65 +272,77 @@
   }
 
   .sun-seasons {
-    display: flex;
-    gap: 4px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
     min-width: 0;
     margin: 0;
     padding: 0;
     border: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
+
+    @container sun-bar (width < 306px) {
+      display: none;
+    }
   }
 
   .sun-chip {
-    display: inline-flex;
-    flex: 1 1 auto;
-    align-items: baseline;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 1px;
     min-width: 0;
-    height: 30px;
-    padding: 0 8px;
+    min-height: var(--tap);
+    padding: 4px 6px;
     border: 1px solid var(--line);
-    border-radius: 999px;
+    border-radius: 12px;
     background: var(--surface);
     color: var(--ink);
-    font-size: 0.75rem;
-    font-weight: 650;
-    line-height: 28px;
-    white-space: nowrap;
     transition:
       background-color var(--dur-fast) var(--ease-state),
       border-color var(--dur-fast) var(--ease-state);
+
+    @media (hover: hover) {
+      &:hover:not([aria-pressed="true"]) {
+        background: color-mix(in oklch, var(--ink) 5%, var(--surface));
+      }
+    }
 
     &[aria-pressed="true"] {
       border-color: var(--sun-gold-strong);
       background: color-mix(in oklch, var(--sun-gold) 30%, var(--surface));
       color: oklch(0.32 0.08 60);
     }
+  }
 
-    .sun-bar[data-compact] & {
-      padding: 0 5px;
-      font-size: 0.71875rem;
-    }
+  .sun-chip-name {
+    font-size: 0.8125rem;
+    font-weight: 650;
+    line-height: 1.2;
+    white-space: nowrap;
   }
 
   .sun-chip-date {
     color: var(--ink-2);
     font-size: 0.6875rem;
     font-weight: 550;
+    line-height: 1.2;
+
+    .sun-chip[aria-pressed="true"] & {
+      color: oklch(0.42 0.07 60);
+    }
   }
 
   .sun-summary {
-    max-height: min(40vh, 320px);
-    padding: 4px 6px 8px;
+    max-height: min(40dvh, 320px);
+    padding: 0 2px 12px;
     border-bottom: 1px solid var(--line);
     overflow-y: auto;
     overscroll-behavior: contain;
     font-size: 0.8125rem;
 
     .sun-bar[data-compact] & {
-      max-height: min(30vh, 200px);
+      max-height: min(30dvh, 200px);
     }
   }
 

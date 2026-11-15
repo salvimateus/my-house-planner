@@ -14,6 +14,7 @@ import { useDoc } from '../store/docStore.ts';
 import { useScene } from '../store/selectors.ts';
 import {
   SEASONS,
+  type Season,
   SUN_MAX_MINUTES,
   SUN_MIN_MINUTES,
   SUN_STEP_MINUTES,
@@ -26,6 +27,7 @@ const pct = (m: number) =>
   `${(Math.min(1, Math.max(0, (m - SUN_MIN_MINUTES) / SPAN)) * 100).toFixed(1)}%`;
 const quarter = (m: number) => Math.round(m / 15) * 15;
 const pad2 = (n: number) => String(n).padStart(2, '0');
+const whenOf = (s: Season) => `${pad2(s.date.day)}/${pad2(s.date.month)}`;
 
 function joinPt(parts: string[]): string {
   if (parts.length < 2) return parts[0] ?? '';
@@ -112,15 +114,16 @@ export function SunBar({ compact }: { compact: boolean }): ReactElement {
 
   const times = useMemo(() => sunTimes(date), [date]);
   const pos = sunPosition(date, minutes);
-  const night = minutes < times.sunrise || minutes > times.sunset;
+  const night = minutes < times.sunrise || minutes > times.sunset || Math.round(pos.elevation) <= 0;
   const northDeg = doc?.lot.northDeg ?? 0;
   const summary = useMemo(
     () => (open && doc ? sunSummary(sunModelOf(doc, scene), date, northDeg) : null),
     [open, doc, scene, date, northDeg],
   );
+  const season = SEASONS.find((x) => x.date.month === date.month && x.date.day === date.day);
   const clock = formatClock(minutes);
   const status = night
-    ? 'Noite: sem sol'
+    ? 'Sol abaixo do horizonte'
     : `Altura ${Math.round(pos.elevation)}° · ${cardinalOf(pos.azimuth)}`;
   const track = {
     '--sun-rise': pct(times.sunrise),
@@ -179,45 +182,63 @@ export function SunBar({ compact }: { compact: boolean }): ReactElement {
         </output>
       </div>
 
-      <div className="sun-row">
+      <div className="sun-row sun-info">
         <SunCompass
           azimuth={pos.azimuth}
           elevation={pos.elevation}
           northDeg={northDeg}
           night={night}
         />
+        <select
+          className="sun-season-select"
+          aria-label="Estação"
+          title="Estação"
+          value={season?.id ?? ''}
+          onChange={(e) => {
+            const next = SEASONS.find((x) => x.id === e.currentTarget.value);
+            if (next) setDate(next.date);
+          }}
+        >
+          {SEASONS.map((x) => (
+            <option key={x.id} value={x.id}>
+              {`${x.label} · ${whenOf(x)}`}
+            </option>
+          ))}
+        </select>
         <span className="sun-status" data-night={night ? 'true' : undefined}>
           {status}
         </span>
-        <button
-          type="button"
-          className="sun-btn sun-more"
-          aria-expanded={open}
-          aria-controls={open ? panelId : undefined}
-          aria-label="Sol nos cômodos"
-          title="Sol nos cômodos"
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? <ChevronDown aria-hidden="true" /> : <ChevronUp aria-hidden="true" />}
-          {compact ? null : <span>Cômodos</span>}
-        </button>
-        <button
-          type="button"
-          className="sun-btn sun-close"
-          aria-label="Fechar"
-          title="Fechar"
-          onClick={close}
-        >
-          <X aria-hidden="true" />
-          {compact ? null : <span>Fechar</span>}
-        </button>
+        <div className="sun-actions">
+          <button
+            type="button"
+            className="sun-btn sun-more"
+            aria-expanded={open}
+            aria-controls={open ? panelId : undefined}
+            aria-label="Sol nos cômodos"
+            title="Sol nos cômodos"
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? <ChevronDown aria-hidden="true" /> : <ChevronUp aria-hidden="true" />}
+            {compact ? null : <span>Cômodos</span>}
+          </button>
+          <button
+            type="button"
+            className="sun-btn sun-close"
+            aria-label="Fechar"
+            title="Fechar"
+            onClick={close}
+          >
+            <X aria-hidden="true" />
+            {compact ? null : <span>Fechar</span>}
+          </button>
+        </div>
       </div>
 
       <fieldset className="sun-seasons">
         <legend className="sr-only">Época do ano</legend>
         {SEASONS.map((s) => {
           const active = s.date.month === date.month && s.date.day === date.day;
-          const when = `${pad2(s.date.day)}/${pad2(s.date.month)}`;
+          const when = whenOf(s);
           return (
             <button
               key={s.id}
@@ -227,8 +248,8 @@ export function SunBar({ compact }: { compact: boolean }): ReactElement {
               title={`${s.label}, ${when}`}
               onClick={() => setDate(s.date)}
             >
-              {s.label}
-              {compact ? null : <span className="sun-chip-date num">{when}</span>}
+              <span className="sun-chip-name">{s.label}</span>
+              <span className="sun-chip-date num">{when}</span>
             </button>
           );
         })}
