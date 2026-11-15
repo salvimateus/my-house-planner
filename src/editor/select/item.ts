@@ -18,22 +18,36 @@ export const normalizeRotation = (deg: number): number => ((Math.round(deg) % 36
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const roundTo = (v: number, step: Mm) => Math.round(v / step) * step;
 
-/** The size of an item that cannot be resized (min equals max on both axes), else null. */
-export function fixedSize(def: ItemDef): { w: Mm; d: Mm } | null {
-  return def.min.w === def.max.w && def.min.d === def.max.d ? def.min : null;
+/** Per axis: the fixed value when the catalog min equals the max, else null. */
+export function fixedAxes(def: ItemDef): { w: Mm | null; d: Mm | null } {
+  return {
+    w: def.min.w === def.max.w ? def.min.w : null,
+    d: def.min.d === def.max.d ? def.min.d : null,
+  };
 }
 
-/** The item at its fixed catalog size; a document saved with another size snaps back to it. */
+/** The size of an item that cannot be resized on either axis, else null. */
+export function fixedSize(def: ItemDef): { w: Mm; d: Mm } | null {
+  const f = fixedAxes(def);
+  return f.w !== null && f.d !== null ? { w: f.w, d: f.d } : null;
+}
+
+/** The size with each fixed axis at its catalog value. */
+export function fitFixed(def: ItemDef, w: Mm, d: Mm): { w: Mm; d: Mm } {
+  const f = fixedAxes(def);
+  return { w: f.w ?? w, d: f.d ?? d };
+}
+
+/** The item with its fixed axes at the catalog value; a document saved otherwise snaps back. */
 export function withFixedSize(item: Item): Item {
-  const f = fixedSize(itemDef(item.type));
-  return f && (item.w !== f.w || item.d !== f.d) ? { ...item, w: f.w, d: f.d } : item;
+  const { w, d } = fitFixed(itemDef(item.type), item.w, item.d);
+  return w !== item.w || d !== item.d ? { ...item, w, d } : item;
 }
 
 export function itemSize(def: ItemDef, variant: string | null): { w: Mm; d: Mm } {
-  const fixed = fixedSize(def);
-  if (fixed) return { ...fixed };
   const v = variant ? def.variants?.find((x) => x.id === variant) : undefined;
-  return v ? { w: v.w, d: v.d } : def.size;
+  const size = v ?? def.size;
+  return fitFixed(def, size.w, size.d);
 }
 
 /** The variant whose size matches, so a manual resize to a catalog size shows that chip again. */
@@ -132,11 +146,9 @@ function editItems(label: string, ids: Iterable<Id>, fn: (item: Item, def: ItemD
       if (!set.has(i.id)) continue;
       const def = itemDef(i.type);
       fn(i, def);
-      const fixed = fixedSize(def);
-      if (fixed) {
-        i.w = fixed.w;
-        i.d = fixed.d;
-      }
+      const size = fitFixed(def, i.w, i.d);
+      i.w = size.w;
+      i.d = size.d;
     }
   });
 }
@@ -442,7 +454,7 @@ export const itemHandler: SelectHandler = {
     if (!selected || !itemsUsable(ctx)) return [];
     const item = withFixedSize(selected);
     const def = itemDef(item.type);
-    const fixed = fixedSize(def) !== null;
+    const fixed = fixedAxes(def);
     const size = isCoarse() ? tuning.touch.handlePx : tuning.touch.mouseHandlePx;
     const zoom = ctx.camera.get().zoom;
     const sw = item.w * zoom;
@@ -458,13 +470,15 @@ export const itemHandler: SelectHandler = {
       handles.push({ id, x: s.x, y: s.y, shape: 'square', cursor });
     };
     // Handles must leave room to grab the item itself.
-    if (!fixed && sw >= size * 1.6 && sd >= size * 1.6) for (const id of CORNERS) add(id);
-    if (!fixed && !def.keepAspect) {
-      if (sw >= size * 3.5) {
+    const freeW = fixed.w === null;
+    const freeD = fixed.d === null;
+    if (freeW && freeD && sw >= size * 1.6 && sd >= size * 1.6) for (const id of CORNERS) add(id);
+    if (!def.keepAspect) {
+      if (freeD && sw >= size * 3.5) {
         add('n');
         add('s');
       }
-      if (sd >= size * 3.5) {
+      if (freeW && sd >= size * 3.5) {
         add('e');
         add('w');
       }
@@ -487,7 +501,11 @@ export const itemHandler: SelectHandler = {
     if (phase === 'start') {
       const item = singleSelected(ctx);
       if (!item || !itemsUsable(ctx)) return;
-      if (id !== 'rotate' && fixedSize(itemDef(item.type))) return;
+      if (id !== 'rotate') {
+        const [sx, sy] = HANDLE_DIR[id as Exclude<HandleId, 'rotate'>];
+        const fixed = fixedAxes(itemDef(item.type));
+        if ((sx !== 0 && fixed.w !== null) || (sy !== 0 && fixed.d !== null)) return;
+      }
       handle = { id: id as HandleId, base: withFixedSize(item), last: '' };
       ctx.doc.beginGesture(id === 'rotate' ? 'Girar objeto' : 'Mudar tamanho');
       return;

@@ -13,6 +13,7 @@ import { useEffect, useId, useMemo, useState } from 'react';
 import { itemDef } from '../../catalog/registry.ts';
 import type { ItemDef } from '../../catalog/types.ts';
 import {
+  fixedAxes,
   fixedSize,
   normalizeRotation,
   restackItems,
@@ -257,14 +258,28 @@ function FixedSize({ size }: { size: { w: Mm; d: Mm } }): ReactElement {
   );
 }
 
+function FixedAxis({ label, value }: { label: string; value: Mm }): ReactElement {
+  return (
+    <p className="item-fixed-size">
+      <Ruler className="item-fixed-size-icon" aria-hidden="true" />
+      <span>
+        {label} <strong className="item-fixed-size-value num">{formatLengthShort(value)} m</strong>
+        <span className="item-fixed-size-tag"> · fixa</span>
+      </span>
+    </p>
+  );
+}
+
 function SingleItem({ item }: { item: Item }): ReactElement {
   const def = itemDef(item.type);
+  const axes = fixedAxes(def);
   const fixed = fixedSize(def);
-  // A fixed-size item keeps only the variants that do not change its size.
+  // Only the variants that keep the fixed axes stay on offer.
   const variants = (def.variants ?? []).filter(
-    (v) => !fixed || (v.w === fixed.w && v.d === fixed.d),
+    (v) => (axes.w === null || v.w === axes.w) && (axes.d === null || v.d === axes.d),
   );
-  const shown = fixed ?? item;
+  const shown = { w: axes.w ?? item.w, d: axes.d ?? item.d };
+  const depthLabel = axes.w !== null ? 'Comprimento' : 'Profundidade';
   return (
     <>
       <div className="item-identity">
@@ -310,23 +325,29 @@ function SingleItem({ item }: { item: Item }): ReactElement {
           <FixedSize size={fixed} />
         ) : (
           <>
+            {axes.w !== null ? <FixedAxis label="Largura" value={axes.w} /> : null}
+            {axes.d !== null ? <FixedAxis label={depthLabel} value={axes.d} /> : null}
             <div className="item-size">
-              <MeasureInput
-                label="Largura"
-                unit="cm"
-                value={item.w}
-                min={def.min.w}
-                max={def.max.w}
-                onCommit={(w) => setItemSize(item.id, w, item.d)}
-              />
-              <MeasureInput
-                label="Profundidade"
-                unit="cm"
-                value={item.d}
-                min={def.min.d}
-                max={def.max.d}
-                onCommit={(d) => setItemSize(item.id, item.w, d)}
-              />
+              {axes.w === null ? (
+                <MeasureInput
+                  label="Largura"
+                  unit="cm"
+                  value={shown.w}
+                  min={def.min.w}
+                  max={def.max.w}
+                  onCommit={(w) => setItemSize(item.id, w, shown.d)}
+                />
+              ) : null}
+              {axes.d === null ? (
+                <MeasureInput
+                  label={depthLabel}
+                  unit="cm"
+                  value={shown.d}
+                  min={def.min.d}
+                  max={def.max.d}
+                  onCommit={(d) => setItemSize(item.id, shown.w, d)}
+                />
+              ) : null}
             </div>
             {def.keepAspect ? (
               <p className="item-note">Largura e profundidade mudam juntas, na mesma proporção.</p>
