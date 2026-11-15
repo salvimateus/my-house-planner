@@ -8,6 +8,7 @@ import { Segmented } from '../controls/Segmented.tsx';
 import { Switch } from '../controls/Switch.tsx';
 import { commitWallThickness, WallThicknessPicker } from '../controls/WallThicknessPicker.tsx';
 import { commands } from '../shortcuts.ts';
+import { type EffectiveTheme, useEffectiveTheme } from '../useEffectiveTheme.ts';
 import './SettingsDialog.css';
 
 const MOTION_OPTIONS: { value: UiState['prefs']['motion']; label: string }[] = [
@@ -16,8 +17,7 @@ const MOTION_OPTIONS: { value: UiState['prefs']['motion']; label: string }[] = [
   { value: 'full', label: 'Completo' },
 ];
 
-const THEME_OPTIONS: { value: UiState['prefs']['theme']; label: string }[] = [
-  { value: 'auto', label: 'Automático' },
+const THEME_OPTIONS: { value: EffectiveTheme; label: string }[] = [
   { value: 'light', label: 'Claro' },
   { value: 'dark', label: 'Escuro' },
 ];
@@ -93,6 +93,7 @@ function WallSettings(): ReactElement {
 export function SettingsDialog(): ReactElement {
   const open = useUi((s) => s.dialog === 'settings');
   const prefs = useUi((s) => s.prefs);
+  const theme = useEffectiveTheme();
   const snapStep = useUi((s) => s.snapStep);
   const snapEnabled = useUi((s) => s.snapEnabled);
   const ui = uiStore.getState();
@@ -136,8 +137,8 @@ export function SettingsDialog(): ReactElement {
             label="Tema"
             showLabel
             options={THEME_OPTIONS}
-            value={prefs.theme}
-            onChange={(theme) => ui.setPrefs({ theme })}
+            value={theme}
+            onChange={(next) => ui.setPrefs({ theme: next })}
           />
         </section>
 

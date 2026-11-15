@@ -58,6 +58,7 @@ export interface UiState {
     sound: boolean;
     haptics: boolean;
     motion: 'auto' | 'reduced' | 'full';
+    /** 'auto' means the user has never chosen: the app follows the system theme. */
     theme: 'auto' | 'light' | 'dark';
   };
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
