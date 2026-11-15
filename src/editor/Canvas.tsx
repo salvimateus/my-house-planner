@@ -12,7 +12,7 @@ import { camera, cameraStore } from '../store/cameraStore.ts';
 import { docStore, useDoc } from '../store/docStore.ts';
 import { useScene } from '../store/selectors.ts';
 import { type UiState, uiStore, useUi } from '../store/uiStore.ts';
-import { lotViewBounds, setToolKeyHandler } from '../ui/shortcuts.ts';
+import { fitClearOfChrome, fitLotView, lotViewBounds, setToolKeyHandler } from '../ui/shortcuts.ts';
 import { attachInput } from './InputRouter.ts';
 import { Effects } from './overlay/Effects.tsx';
 import { OverlaySvg } from './overlay/OverlaySvg.tsx';
@@ -79,8 +79,8 @@ function isTypingTarget(t: EventTarget | null): boolean {
  * muro, grid fade and a camera fit. A tap skips it. Returns the clean-up.
  */
 function playLotReveal(svg: SVGSVGElement, doc: ProjectDoc): () => void {
-  const bounds = lotViewBounds(doc.lot);
-  const pad = tuning.camera.fitPaddingPx;
+  const bounds = fitClearOfChrome(lotViewBounds(doc.lot));
+  const pad = 0;
   camera.fit(bounds, pad, false);
   if (reducedMotion()) return () => {};
 
@@ -339,7 +339,7 @@ export function Canvas(): ReactElement {
     const current = docStore.getState().doc;
     if (!current) return;
     if (isBlank(current)) revealStop.current = playLotReveal(svg, current);
-    else camera.fit(lotViewBounds(current.lot), tuning.camera.fitPaddingPx, false);
+    else fitLotView(current.lot, false);
   }, [docId]);
 
   useEffect(

@@ -59,6 +59,105 @@ export function lotViewBounds(lot: Lot): Rect {
   return r;
 }
 
+interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+/** Floating chrome over the canvas: status chip, canvas controls and the open bottom sheet. */
+const CHROME_SELECTORS = ['.status-chip', '.canvas-controls', '.sheet-scroller:not([data-hidden])'];
+const CHROME_GAP = 8;
+
+/** Chrome boxes in canvas px. The bottom sheet counts only with its peek height. */
+function chromeBoxes(): Box[] {
+  if (typeof document === 'undefined') return [];
+  const canvas = document.querySelector('.canvas');
+  if (!canvas) return [];
+  const c = canvas.getBoundingClientRect();
+  const out: Box[] = [];
+  for (const sel of CHROME_SELECTORS) {
+    const el = document.querySelector(sel);
+    if (!el) continue;
+    let r = el.getBoundingClientRect();
+    if (sel.startsWith('.sheet')) {
+      const peek = Number.parseFloat(getComputedStyle(el).getPropertyValue('--sheet-peek')) || 0;
+      if (peek <= 0) continue;
+      r = new DOMRect(c.left, c.bottom - peek, c.width, peek);
+    }
+    if (r.width <= 0 || r.height <= 0) continue;
+    out.push({
+      x0: r.left - c.left,
+      y0: r.top - c.top,
+      x1: r.right - c.left,
+      y1: r.bottom - c.top,
+    });
+  }
+  return out;
+}
+
+const overlaps = (a: Box, b: Box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+
+/**
+ * The rect to pass to `camera.fit(rect, 0)` so `b` fits with the padding and stays clear of the
+ * floating chrome. A chrome box adds an inset on its nearest side only when it would cover `b`.
+ */
+export function fitClearOfChrome(b: Rect): Rect {
+  const { vw, vh } = camera.get();
+  const pad = tuning.camera.fitPaddingPx;
+  const ins: Record<'t' | 'r' | 'b' | 'l', number> = { t: pad, r: pad, b: pad, l: pad };
+  const boxes = chromeBoxes();
+  const w = Math.max(1, b.x1 - b.x0);
+  const h = Math.max(1, b.y1 - b.y0);
+  let view = { zoom: 1, cx: 0, cy: 0 };
+  for (let pass = 0; pass < 4; pass++) {
+    const aw = Math.max(1, vw - ins.l - ins.r);
+    const ah = Math.max(1, vh - ins.t - ins.b);
+    const zoom = Math.min(
+      tuning.camera.maxZoom,
+      Math.max(tuning.camera.minZoom, Math.min(aw / w, ah / h)),
+    );
+    view = {
+      zoom,
+      cx: (b.x0 + b.x1) / 2 - (ins.l - ins.r) / 2 / zoom,
+      cy: (b.y0 + b.y1) / 2 - (ins.t - ins.b) / 2 / zoom,
+    };
+    const lot: Box = {
+      x0: vw / 2 + (b.x0 - view.cx) * zoom,
+      y0: vh / 2 + (b.y0 - view.cy) * zoom,
+      x1: vw / 2 + (b.x1 - view.cx) * zoom,
+      y1: vh / 2 + (b.y1 - view.cy) * zoom,
+    };
+    let grew = false;
+    for (const e of boxes) {
+      if (!overlaps(e, lot)) continue;
+      const vertical =
+        e.y0 + e.y1 < vh
+          ? { side: 't' as const, need: e.y1 + CHROME_GAP }
+          : { side: 'b' as const, need: vh - e.y0 + CHROME_GAP };
+      const horizontal =
+        e.x0 + e.x1 < vw
+          ? { side: 'l' as const, need: e.x1 + CHROME_GAP }
+          : { side: 'r' as const, need: vw - e.x0 + CHROME_GAP };
+      const pick = vertical.need <= horizontal.need ? vertical : horizontal;
+      if (pick.need > ins[pick.side]) {
+        ins[pick.side] = pick.need;
+        grew = true;
+      }
+    }
+    if (!grew) break;
+  }
+  const hw = vw / 2 / view.zoom;
+  const hh = vh / 2 / view.zoom;
+  return { x0: view.cx - hw, y0: view.cy - hh, x1: view.cx + hw, y1: view.cy + hh };
+}
+
+/** Fits the lot, its sidewalks and streets, clear of the floating chrome. */
+export function fitLotView(lot: Lot, animate = true): void {
+  camera.fit(fitClearOfChrome(lotViewBounds(lot)), 0, animate);
+}
+
 function shapeCenter(points: Vec[] | undefined): Vec {
   if (!points || points.length === 0) return { x: 0, y: 0 };
   let x0 = Number.POSITIVE_INFINITY;
@@ -120,7 +219,7 @@ export const commands = {
   fitView(animate = true): void {
     const doc = docStore.getState().doc;
     if (!doc) return;
-    camera.fit(lotViewBounds(doc.lot), tuning.camera.fitPaddingPx, animate);
+    fitLotView(doc.lot, animate);
   },
 
   zoomBy(factor: number): void {

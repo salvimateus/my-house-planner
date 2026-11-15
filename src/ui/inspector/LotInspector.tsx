@@ -85,7 +85,14 @@ export function LotInspector(): ReactElement | null {
         <h3 id="lot-street-title" className="lot-section-title">
           Rua
         </h3>
-        <Button icon={<RotateCw />} onClick={rotateFront} block>
+        <Button
+          icon={<RotateCw />}
+          onClick={() => {
+            rotateFront();
+            commands.fitView();
+          }}
+          block
+        >
           Girar frente
         </Button>
         <Switch
