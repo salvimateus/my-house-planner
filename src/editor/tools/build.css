@@ -1,0 +1,47 @@
+@layer components {
+  .build-fx {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .build-fx-hatch-bg {
+    fill: var(--danger);
+    fill-opacity: 0.1;
+  }
+
+  .build-fx-hatch-line {
+    fill: var(--danger);
+    fill-opacity: 0.42;
+  }
+
+  /* Overlapped parts of other rooms: hatched, so the user reads "this part changes owner". */
+  .overlay-ghost .ghost-carve {
+    fill: url(#casinha-carve-hatch) var(--danger);
+    fill-opacity: 1;
+  }
+
+  .build-fx-trace {
+    fill: none;
+    stroke: var(--brand);
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  .build-fx-open {
+    fill: none;
+    stroke: #2f3339;
+    stroke-opacity: 0.75;
+    stroke-width: 2px;
+    stroke-dasharray: 7 5;
+
+    &[data-selected="true"] {
+      stroke: var(--select);
+      stroke-opacity: 1;
+      stroke-width: 4px;
+    }
+  }
+}

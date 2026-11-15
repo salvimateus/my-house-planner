@@ -1,5 +1,7 @@
+import { castDraft } from 'immer';
 import { nanoid } from 'nanoid';
 import type { ToolId } from '../editor/tools/types.ts';
+import { deleteArea } from '../geometry/areaOps.ts';
 import type { Rect } from '../geometry/types.ts';
 import { feedback } from '../juice/feedback.ts';
 import { tuning } from '../juice/tuning.ts';
@@ -163,12 +165,13 @@ export const commands = {
     if (sel.kind === 'area') {
       const area = doc.areas.find((a) => a.id === sel.id);
       if (!area) return false;
+      const res = deleteArea(doc, sel.id);
+      if (!res.valid) return false;
       commit('Excluir cômodo', (d) => {
-        d.areas = d.areas.filter((a) => a.id !== sel.id);
-        d.openBoundaries = d.openBoundaries.filter(([a, b]) => a !== sel.id && b !== sel.id);
+        Object.assign(d, castDraft(res.patch));
       });
       feedback.remove(shapeCenter(area.shape[0]));
-      toast(`“${area.name}” excluído.`, { undo: true });
+      toast([`“${area.name}” excluído.`, ...res.messages].join(' '), { undo: true });
     } else {
       const ids = new Set(sel.ids);
       if (ids.size === 0) return false;

@@ -1,0 +1,33 @@
+@layer components {
+  .wall-inspector {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .wall-summary {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .wall-title {
+    font-size: 1.0625rem;
+    font-weight: 700;
+  }
+
+  .wall-meta {
+    color: var(--ink-2);
+    font-size: 0.9375rem;
+  }
+
+  .wall-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .wall-note {
+    color: var(--ink-2);
+    font-size: 0.875rem;
+  }
+}
