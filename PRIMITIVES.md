@@ -72,7 +72,7 @@ Status is `confirmed` or `inferred`; `pending` marks code not yet on the integra
   The tool lookup by id for everything that dispatches to the active tool. Contract: `TOOLS: Record<ToolId, Tool>`, `toolFor(id)`; a new [[PRIMITIVES#Tool]] is reachable only after it is added here.
   Consumers: 2 (Canvas, devApi).
 - **`toolContext`**, `src/editor/toolContext.ts`, confirmed, pending
-  The single `ToolContext` of the app; every getter reads the stores live, so tools never hold a state snapshot. Contract: interface `ToolContext { getDoc, getScene, getUi, doc, ui, camera, feedback, snapContext(), tolMm(px?) }` in `src/editor/tools/types.ts`; `doc` is `readOnly` plus the [[PRIMITIVES#History]] actions; `tolMm` defaults to `tolPxFor(pointerKind())`, the mouse or touch tolerance from `tuning.touch`; `setPointerKind` is called by [[PRIMITIVES#attachInput]] on each press; `setCursorSink` is registered by Canvas; `setCanvasCursor(cursor | null)` sets the hover cursor, and null restores the tool cursor.
+  The single `ToolContext` of the app; every getter reads the stores live, so tools never hold a state snapshot. Contract: interface `ToolContext { getDoc, getScene, getUi, doc, ui, camera, feedback, snapContext(), tolMm(px?) }` in `src/editor/tools/types.ts`; `doc` is `readOnly` plus the [[PRIMITIVES#History]] actions; `feedback` is [[PRIMITIVES#feedback]]; `tolMm` defaults to `tolPxFor(pointerKind())`, the mouse or touch tolerance from `tuning.touch`; `setPointerKind` is called by [[PRIMITIVES#attachInput]] on each press; `setCursorSink` is registered by Canvas; `setCanvasCursor(cursor | null)` sets the hover cursor, and null restores the tool cursor.
   Consumers: 5 (Canvas, InputRouter, select tool, overlay Handles, devApi).
 - **`attachInput`**, `src/editor/InputRouter.ts`, confirmed, pending
   The only pointer arbitration on the canvas, so tools receive taps and drags, never raw pointer events. Contract: `attachInput(svg, { tool(), ctx(), spaceHeld(), onPan?(active) }) -> cleanup`; a drag starts past `tuning.touch.dragSlopMousePx` or `dragSlopTouchPx`; long press is touch and pen only and ends the gesture; `onDragStart` false or absent, the middle button or Space pans; a second pointer, Escape or a tool switch in a gesture calls `onCancel`, then `ctx.doc.cancelGesture()`, then clears the transient, and a second pointer then pinches; moves reach tools at most once per animation frame, and the last move lands before `onDragEnd`; Ctrl+wheel and plain wheel zoom, Shift+wheel and horizontal wheel pan; `onHover` gets mouse and pen moves only while no pointer is down.
@@ -98,3 +98,36 @@ Status is `confirmed` or `inferred`; `pending` marks code not yet on the integra
 - **`renderOffscreen`**, `src/render/renderOffscreen.ts`, confirmed, pending
   Synchronous React render into a hidden container on `document.body`, so layout, `getBBox` and computed styles work for export and thumbnails. Contract: `renderOffscreen(node) -> { root, dispose() }`, where `root` is the first rendered element; it throws and cleans up when the tree renders no element; the caller must call `dispose()`.
   Consumers: 1 (`renderThumbSvg(doc) -> string` in `src/render/thumb.ts`, the 240 × 160 thumbnail with grid, textures and measures off).
+
+## juice
+
+- **`feedback`**, `src/juice/feedback.ts` (contract `Feedback` in `src/editor/tools/types.ts`), confirmed, pending
+  The one feedback channel of the tools, which combines [[PRIMITIVES#playSound]], [[PRIMITIVES#vibrate]] and [[PRIMITIVES#ScreenEffects]]. Contract: `tick(), place(), thunk(), remove(at: Vec)` (whoosh plus a burst at a world point), `invalid(target?)` (error plus a shake; with no target it shakes `.canvas`), `success()`; each channel checks its own preference; the import calls `installSoundUnlock()`.
+  Consumers: 3 (toolContext, select/opening.ts, shortcuts).
+- **`playSound`**, `src/juice/sound.ts`, confirmed, pending
+  Short synthesized UI sounds with no audio files. Contract: `playSound(name: SoundName)` for `tick | pop | thunk | whoosh | error | success`, `installSoundUnlock()`; zzfx loads lazily on the first `pointerdown` or `keydown` while `prefs.sound` is on, so every sound before that gesture is silent; a repeat of the same sound inside its per-sound gap is dropped, and nothing plays while the document is hidden.
+  Consumers: 1 (feedback).
+- **`vibrate`**, `src/juice/haptics.ts`, confirmed, pending
+  A short phone vibration behind the haptics preference. Contract: `vibrate(pattern: number | number[])`; it does nothing while `prefs.haptics` is off, before the first user activation or without `navigator.vibrate`; one shared gap, `tuning.haptics.minGapMs`, applies to all patterns, so a second call inside it is dropped.
+  Consumers: 1 (feedback).
+- **`ScreenEffects`**, `src/juice/effects.ts` (host `src/editor/overlay/Effects.tsx`), confirmed, pending
+  Transient canvas effects as Web Animations, outside the React render. Contract: `burst(world: Vec)` (screen px, dropped off screen), `shake(el)`, `pop(el)`, `pulseRect(worldRect)` (a ring in world mm), `setEffectsHost({ world, screen } | null)`; `burst` and `pulseRect` do nothing until the `Effects` overlay registers the host, and `tuning.effects.maxNodes` caps the live nodes; all of them read `reducedMotion()` from `src/juice/tween.ts`: `burst`, `shake` and `pop` skip, `pulseRect` shows still for the same time.
+  Consumers: 3 (feedback (`burst`, `shake`), HealthPanel (`pulseRect`), Effects overlay (`setEffectsHost`)); `pop` has none.
+
+## education
+
+- **`EducationProgress`**, `src/education/storage.ts`, confirmed, pending
+  The once-only memory of hints, demos and lessons. Contract: `seen(key), markSeen(key), readCount(key), writeCount(key, n), resetEducation()`; localStorage keys take the `casinha:edu:` prefix; an in-memory mirror keeps each hint to once per session when storage is blocked; `resetEducation` runs on the `tutorial-requested` event in EducationLayer.
+  Consumers: 5 (EducationLayer, tips, DemoPlayer, Coach, NetAreaLesson).
+- **`DemoPlan`**, `src/education/demos.ts`, confirmed, pending
+  A ghost-hand demo of one tool, fitted to the current plan and view. Contract: `planDemo(tool: DemoTool) -> DemoPlan { caption, hand: HandKey[], decorate(layer, timing) -> Animation[] } | null`, `DEMO_TOOLS`; all points are page px; it is null when the plan or the visible canvas (the part above an open bottom sheet) has no target; `DemoPlayer.tsx` plays it on `tool-activated` while the demo of that tool is not seen.
+  Consumers: 1 (DemoPlayer).
+- **`WallThicknessHost`**, `src/education/explainers/WallThickness.tsx`, confirmed, pending
+  The wall thickness explainer dialog, which tells why the net area is smaller than the drawn area. Contract: `openWallThickness()` opens it from anywhere; it reads `doc.structure` for the internal and external values; mount exactly one `WallThicknessHost`; EducationLayer mounts it only on the editor screen, so on other screens the dialog shows only when the editor mounts.
+  Consumers: 3 (EducationLayer (host), HealthPanel, NetAreaLesson).
+- **`TIPS`**, `src/education/tips.ts`, confirmed, pending
+  Soft rules of thumb for the plan, as text that guides and does not judge. Contract: `TIPS: Record<TipId, Tip { id, title, text, explainer?: 'wall-thickness' }>`, `contextTips(doc) -> Tip[]` (most specific first), `startContextTips() -> cleanup`, which shows a tip once as a toast on `opening-placed` (a door on a bathroom wall) and `ruler-created`, with the seen key `tip:<id>` in [[PRIMITIVES#EducationProgress]].
+  Consumers: 2 (EducationLayer (`startContextTips`), HealthPanel (`contextTips`)).
+- **`lessonActiveMs`**, `src/education/NetAreaLesson.tsx`, confirmed, pending
+  The time left on the net area lesson, so other education marks do not cover it. Contract: `lessonActiveMs() -> ms`, 0 when no lesson shows; Coach waits this plus `tuning.coach.nextDelayMs` before its next mark.
+  Consumers: 1 (Coach).

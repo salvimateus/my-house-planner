@@ -1,0 +1,32 @@
+@layer components {
+  .fx-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .fx-burst-dot {
+    fill: var(--ink-2);
+  }
+
+  .fx-burst-dot-alt {
+    fill: var(--brand);
+  }
+
+  .fx-burst-ring {
+    fill: none;
+    stroke: var(--ink-2);
+    stroke-width: 1.5px;
+    stroke-opacity: 0.6;
+  }
+
+  .fx-pulse {
+    fill: var(--select);
+    fill-opacity: 0.08;
+    stroke: var(--select);
+    stroke-width: 3px;
+  }
+}

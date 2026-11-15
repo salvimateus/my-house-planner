@@ -12,8 +12,12 @@ export const tuning = {
   lotReveal: { outlineMs: 600, sidewalkMs: 400, neighborStaggerMs: 70, cameraMs: 900 },
   netLesson: { chipMs: 600, staggerMs: 700, holdMs: 2400, rooms: 3 },
   shake: { px: 6, ms: 280 },
-  ghostHand: { loops: 2 },
+  ghostHand: { loops: 2, loopMs: 2600, startDelayMs: 450 },
   sound: { volume: 0.25 },
+  haptics: { placeMs: 10, thunkMs: 14, minGapMs: 30 },
+  effects: { maxNodes: 40, popScale: 1.12, popMs: 200, pulseMs: 900 },
+  coach: { firstRoomDelayMs: 1700, nextDelayMs: 900, pinchHoldMs: 4500 },
+  startArt: { drawMs: 1400, staggerMs: 90 },
   camera: {
     fitPaddingPx: 24,
     minZoom: 0.004,
