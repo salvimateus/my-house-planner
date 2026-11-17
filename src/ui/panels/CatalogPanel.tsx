@@ -1,5 +1,5 @@
 import { PenLine, Search, X } from 'lucide-react';
-import type { DragEvent as ReactDragEvent, ReactElement } from 'react';
+import type { DragEvent as ReactDragEvent, ReactElement, RefObject } from 'react';
 import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { ITEMS } from '../../catalog/registry.ts';
 import type { ItemCategory, ItemDef } from '../../catalog/types.ts';
@@ -9,6 +9,8 @@ import {
   placeItemAtViewCenter,
   showPlacementGhost,
 } from '../../editor/tools/item.ts';
+import { tuning } from '../../juice/tuning.ts';
+import { reducedMotion } from '../../juice/tween.ts';
 import type { LayerId, Mm, Vec } from '../../model/types.ts';
 import { formatCm } from '../../model/units.ts';
 import { WalkwayPreview } from '../../render/layers/WalkwaysLayer.tsx';
@@ -254,6 +256,119 @@ function useFinePointer(): boolean {
   return fine;
 }
 
+/**
+ * Mouse and keyboard reach for the chip row: a vertical wheel scrolls it sideways until an end,
+ * a mouse drag scrolls it, and the arrow keys move focus between chips. Touch keeps native scroll.
+ */
+function useChipRow(ref: RefObject<HTMLFieldSetElement | null>): void {
+  useEffect(() => {
+    const row = ref.current;
+    if (!row) return;
+    let drag: { id: number; x: number; left: number; moved: boolean } | null = null;
+    let swallowClick = false;
+
+    const wheel = (e: WheelEvent) => {
+      if (e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      const max = row.scrollWidth - row.clientWidth;
+      const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? row.clientWidth : 1;
+      const dy = e.deltaY * k;
+      // At an end the wheel goes back to the panel, so the page never feels stuck.
+      if (max <= 0 || (dy < 0 && row.scrollLeft <= 0) || (dy > 0 && row.scrollLeft >= max - 1)) {
+        return;
+      }
+      e.preventDefault();
+      const notch = Math.abs(dy) >= 40;
+      row.scrollBy({ left: dy, behavior: notch && !reducedMotion() ? 'smooth' : 'instant' });
+    };
+
+    const down = (e: PointerEvent) => {
+      swallowClick = false;
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      if (row.scrollWidth <= row.clientWidth) return;
+      drag = { id: e.pointerId, x: e.clientX, left: row.scrollLeft, moved: false };
+    };
+    const move = (e: PointerEvent) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dx = e.clientX - drag.x;
+      if (!drag.moved) {
+        if (Math.abs(dx) < tuning.touch.dragSlopMousePx) return;
+        drag.moved = true;
+        row.setPointerCapture(e.pointerId);
+        row.dataset.dragging = '';
+      }
+      row.scrollLeft = drag.left - dx;
+    };
+    const end = (e: PointerEvent) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      swallowClick = drag.moved;
+      drag = null;
+      // Only the click of this same gesture is swallowed; a later Enter on a chip still selects.
+      if (swallowClick) {
+        setTimeout(() => {
+          swallowClick = false;
+        }, 0);
+      }
+      delete row.dataset.dragging;
+    };
+    // Capture phase, so a drag that ends over a chip does not select it.
+    const click = (e: MouseEvent) => {
+      if (!swallowClick) return;
+      swallowClick = false;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      const chips = [...row.querySelectorAll<HTMLButtonElement>('.chip:not(:disabled)')];
+      const at = chips.indexOf(document.activeElement as HTMLButtonElement);
+      if (at < 0) return;
+      // Also at the row ends, so the global arrow-key nudge never moves the selected object.
+      e.preventDefault();
+      chips[at + (e.key === 'ArrowRight' ? 1 : -1)]?.focus({ preventScroll: true });
+    };
+    // Native focus scroll skips a chip that is only partly clipped, so keyboard focus reveals it.
+    const focus = (e: FocusEvent) => {
+      if (e.target instanceof HTMLElement && e.target.matches('.chip:focus-visible')) {
+        revealChip(row, e.target, !reducedMotion());
+      }
+    };
+
+    row.addEventListener('wheel', wheel, { passive: false });
+    row.addEventListener('pointerdown', down);
+    row.addEventListener('pointermove', move);
+    row.addEventListener('pointerup', end);
+    row.addEventListener('pointercancel', end);
+    row.addEventListener('click', click, true);
+    row.addEventListener('keydown', key);
+    row.addEventListener('focusin', focus);
+    return () => {
+      row.removeEventListener('wheel', wheel);
+      row.removeEventListener('pointerdown', down);
+      row.removeEventListener('pointermove', move);
+      row.removeEventListener('pointerup', end);
+      row.removeEventListener('pointercancel', end);
+      row.removeEventListener('click', click, true);
+      row.removeEventListener('keydown', key);
+      row.removeEventListener('focusin', focus);
+    };
+  }, [ref]);
+}
+
+/** Scrolls the row only as far as needed to show the chip clear of the edge fades. */
+function revealChip(row: HTMLElement, chip: Element, smooth: boolean): void {
+  const pad = Number.parseFloat(getComputedStyle(row).scrollPaddingInlineStart) || 0;
+  const r = row.getBoundingClientRect();
+  const c = chip.getBoundingClientRect();
+  const start = c.left - r.left + row.scrollLeft;
+  const end = start + c.width;
+  let left: number | null = null;
+  if (start < row.scrollLeft + pad) left = start - pad;
+  else if (end > row.scrollLeft + row.clientWidth - pad) left = end - row.clientWidth + pad;
+  if (left === null) return;
+  row.scrollTo({ left, behavior: smooth ? 'smooth' : 'instant' });
+}
+
 /** Furniture catalog: search, category chips and a card grid. A tap places the item. */
 export function CatalogPanel(): ReactElement {
   const [query, setQuery] = useState(lastQuery);
@@ -261,11 +376,25 @@ export function CatalogPanel(): ReactElement {
   const deferred = useDeferredValue(query);
   const fine = useFinePointer();
   const stopDrag = useRef<(() => void) | null>(null);
+  const chipsRef = useRef<HTMLFieldSetElement>(null);
+  const chipsShown = useRef(false);
+
+  useChipRow(chipsRef);
 
   useEffect(() => {
     lastQuery = query;
     lastCategory = category;
   }, [query, category]);
+
+  // The panel reopens on the last category: jump to it at once, then glide on later picks.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the picked category is the trigger
+  useEffect(() => {
+    const row = chipsRef.current;
+    const chip = row?.querySelector('[aria-pressed="true"]');
+    if (!row || !chip) return;
+    revealChip(row, chip, chipsShown.current && !reducedMotion());
+    chipsShown.current = true;
+  }, [category]);
 
   useEffect(() => () => stopDrag.current?.(), []);
 
@@ -330,7 +459,7 @@ export function CatalogPanel(): ReactElement {
         ) : null}
       </div>
 
-      <fieldset className="catalog-chips">
+      <fieldset ref={chipsRef} className="catalog-chips">
         <legend className="sr-only">Categorias</legend>
         <Chip selected={category === null} onClick={() => setCategory(null)}>
           Todos

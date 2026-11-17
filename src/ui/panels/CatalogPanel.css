@@ -70,8 +70,10 @@
     }
   }
 
-  /* One scrolling row on phones; the grid below stays in view. */
+  /* One scrolling row, so the grid below stays in view. Edge fades show only on the side that has
+     more chips; a row that fits has no timeline, so both fades stay at zero. */
   .catalog-chips {
+    --chips-fade: 1.5rem;
     display: flex;
     gap: 0.375rem;
     min-width: 0;
@@ -81,9 +83,70 @@
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--chips-fade);
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      black var(--chips-fade-start),
+      black calc(100% - var(--chips-fade-end)),
+      transparent
+    );
+
+    /* Without scroll timelines the animation would hold its last frame: a left fade only. */
+    @supports (animation-timeline: scroll()) {
+      animation: catalog-chips-fade linear both;
+      animation-timeline: scroll(self inline);
+    }
+
+    @supports not (animation-timeline: scroll()) {
+      --chips-fade-end: var(--chips-fade);
+    }
+
+    @media (pointer: fine) {
+      scrollbar-width: thin;
+      scrollbar-color: var(--line-strong) transparent;
+      cursor: grab;
+    }
+
+    &[data-dragging] {
+      scroll-snap-type: none;
+      cursor: grabbing;
+      user-select: none;
+    }
 
     & .chip {
       flex: none;
+      scroll-snap-align: start;
+    }
+  }
+
+  @property --chips-fade-start {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+  }
+
+  @property --chips-fade-end {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+  }
+
+  @keyframes catalog-chips-fade {
+    0% {
+      --chips-fade-start: 0px;
+      --chips-fade-end: var(--chips-fade);
+    }
+    5% {
+      --chips-fade-start: var(--chips-fade);
+    }
+    95% {
+      --chips-fade-end: var(--chips-fade);
+    }
+    100% {
+      --chips-fade-start: var(--chips-fade);
+      --chips-fade-end: 0px;
     }
   }
 
